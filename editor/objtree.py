@@ -23,10 +23,11 @@ OP_CALL = 0x02
 OP_PRIM = 0x03
 OP_ASSIGN = 0x04
 OP_CONDITIONAL = 0x05
-OP_ROTATE = 0x06
-OP_SCALE = 0x07
-OP_TRANSLATE = 0x08
-OP_LIGHT = 0x09
+OP_NOPLEAF = 0x06
+OP_ROTATE = 0x07
+OP_SCALE = 0x08
+OP_TRANSLATE = 0x09
+OP_LIGHT = 0x0a
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -556,7 +557,8 @@ def exportnode(node, out, labeled, labelmap, constmap, todo):
     visitchildren = node.export(out, labelmap, constmap, todo)
     if len(visitchildren) != node.export_nchildren():
         if len(visitchildren) == 0:
-            raise ExportException("Childless non-primitive node %s (%s)" % (node.getName(), node.__class__))
+            out += [OP_NOPLEAF]
+            #raise ExportException("Childless non-primitive node %s (%s)" % (node.getName(), node.__class__))
         if node.export_nchildren() == 0:
             raise ExportException("Primitive node with children %s (%s)" % (node.getName(), node.__class__))
         if len(visitchildren) > 1:

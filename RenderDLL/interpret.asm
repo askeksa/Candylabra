@@ -278,12 +278,12 @@ _traverse:
 	call _parseParam
 	xor eax, eax
 	lodsb
-	push dword [ebx+eax*4]
+	;push dword [ebx+eax*4]
 	fstp dword [ebx+eax*4]
-	push eax
+	;push eax
 	call _traverse
-	pop eax
-	pop dword [ebx+eax*4]
+	;pop eax
+	;pop dword [ebx+eax*4]
 	ret
 	
 .not_assign:
@@ -312,6 +312,12 @@ _traverse:
 	ret	
 	
 .not_conditional:
+	dec eax
+	jnz .not_nopleaf
+
+	ret
+
+.not_nopleaf:
 	;; ----------------
 	;; transform
 	;; rotate, scale or translate
@@ -338,5 +344,4 @@ _traverse:
 	call	[eax + edx*4]
 
 	call _traverse
-
 	ret
