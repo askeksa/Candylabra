@@ -434,8 +434,8 @@ class Primitive(ObjectNode):
 
     def export(self, out, labelmap, constmap, todo):
         out += [OP_PRIM]
+        out += [self.index]
         self.exportDefinitions(out, constmap)
-        #out += [self.index]
         return self.children
 
 
