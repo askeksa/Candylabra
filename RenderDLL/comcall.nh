@@ -1,0 +1,123 @@
+; Com functions
+
+; Common
+cc_Release				equ	2
+
+; ID3DXMesh
+cc_DrawSubset			equ 3
+cc_GetNumFaces			equ	4
+cc_GetNumVertices		equ	5
+cc_CloneMeshFVF			equ 11
+cc_LockVertexBuffer		equ	15
+cc_UnlockVertexBuffer	equ	16
+cc_LockIndexBuffer		equ	17
+cc_UnlockIndexBuffer	equ	18
+cc_GenerateAdjacency	equ	22
+
+; IDirect3DVolumeTexture9
+cc_LockBox				equ 19
+cc_UnlockBox			equ 20
+
+; IDirect3DTexture9
+cc_LockRect				equ 19
+cc_UnlockRect			equ 20
+
+; IDirect3D9
+cc_CreateDevice			equ 16
+
+; IDirect3DDevice9
+cc_GetSurfaceLevel				equ 18
+cc_CreateTexture				equ 23
+cc_CreateVolumeTexture			equ 24
+cc_CreateCubeTexture			equ 25
+cc_CreateVertexBuffer			equ 26
+cc_CreateIndexBuffer			equ 27
+cc_UpdateTexture				equ 31
+cc_SetRenderTarget				equ 37
+cc_GetRenderTarget				equ 38
+cc_BeginScene					equ 41
+cc_EndScene						equ 42
+cc_Clear						equ 43
+cc_SetRenderState				equ 57
+cc_SetTexture					equ 65
+cc_SetSamplerState				equ 69
+cc_DrawIndexedPrimitive			equ 82
+cc_DrawPrimitiveUP				equ 83
+cc_SetFVF						equ 89
+cc_CreateVertexShader			equ 91
+cc_SetVertexShader				equ 92
+cc_SetVertexShaderConstantF		equ 94
+cc_SetStreamSource				equ 100
+cc_SetIndices					equ 104
+cc_CreatePixelShader			equ 106
+cc_SetPixelShader				equ 107
+cc_SetPixelShaderConstantF		equ 109
+
+;ID3DXBuffer
+cc_GetBufferPointer				equ 3
+
+
+; ID3DXPRTEngine
+cc_ClosestRayIntersects	equ	34
+
+;ID3DXFont
+cc_DrawTextA					equ 14
+
+;ID3DXMatrixStack
+cc_Pop							equ 3
+cc_Push							equ 4
+cc_LoadIdentity					equ 5
+cc_Rotate						equ	11
+cc_RotateLocal					equ 12
+cc_Scale						equ 13
+cc_ScaleLocal					equ 14
+cc_Translate					equ 15
+cc_TranslateLocal				equ 16
+cc_GetTop						equ 17
+
+;LPD3DXEFFECT
+cc_Begin						equ 63
+cc_BeginPass					equ 64
+cc_EndPass						equ 66
+cc_EffectEnd					equ 67
+
+;ID3DXRenderToEnvMap
+cc_BeginCube					equ 5
+cc_Face							equ 9
+cc_End							equ 10
+
+;IDirect3DIndexBuffer9 / IDirect3DVertexBuffer9
+cc_Lock							equ 11
+cc_Unlock						equ 12
+
+;;Com handles
+ch_d3dd					equ 0
+ch_matrix_stack			equ 4
+ch_composite_index		equ 8
+ch_composite_vertex		equ 12
+ch_effect				equ 16
+ch_random_texture		equ 20
+ch_texture0				equ 24
+ch_texture1				equ 28
+ch_texture2				equ 32
+ch_surface0				equ 36
+ch_surface1				equ 40
+ch_surface2				equ 44
+ch_backbuffer			equ 48
+
+	extern  _COMHandles
+
+%macro	comcall	2
+	mov		eax, %1
+	push	eax
+	mov		eax, [eax]
+	call	[eax + (cc_%2)*4]
+%endmacro
+
+%define	comhandle(a)	(_COMHandles + ch_ %+ a)
+
+;%macro	comcall 2
+;	push	byte cc_%2
+;	mov		eax, %1
+;	call	_MethodCall
+;%endmacro
