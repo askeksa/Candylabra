@@ -187,11 +187,10 @@ _interpret@4:
 section traverse code align=1
 _traverse:
 	xor eax, eax
+.skip_label:
 	lodsb
 	test al, al
-	jns .not_label
-	lodsb
-	.not_label:
+	js .skip_label
 	
 	dec eax
 	jnz .not_fanout
