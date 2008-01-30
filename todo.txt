@@ -1,0 +1,24 @@
+Conditionals skal have to børn
+Floating point parse error
+ikke crash når exporteren møder en fejl
+farv fejlknuder røde
+assignments med kun et tekstfelt
+integrerede tekstfelter
+tastaturstyring
+eksplicit rækkefølge på børn
+visning af implicitte børn
+fjernelse af eksplicit kant når implicit opstår
+tegn kanter øverst
+inverter selection
+copy
+fornuftig save/load håndtering
+
+negation
+floor
+globale transformationer og checkpoint
+lokale assignments
+
+kamera
+musik-integrering
+splines
+subrutiner
