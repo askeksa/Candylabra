@@ -22,12 +22,13 @@ OP_FANOUT = 0x01
 OP_CALL = 0x02
 OP_PRIM = 0x03
 OP_ASSIGN = 0x04
-OP_CONDITIONAL = 0x05
-OP_NOPLEAF = 0x06
-OP_ROTATE = 0x07
-OP_SCALE = 0x08
-OP_TRANSLATE = 0x09
-OP_LIGHT = 0x0a
+OP_LOCALASSIGN = 0x05
+OP_CONDITIONAL = 0x06
+OP_NOPLEAF = 0x07
+OP_SAVETRANS = 0x8
+OP_ROTATE = 0x09
+OP_SCALE = 0x0a
+OP_TRANSLATE = 0x0b
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -152,6 +153,18 @@ class ObjectNode(object):
 
     def setParamName(self, p_index, p_name):
         pass
+
+
+class SaveTransform(ObjectNode):
+    def getName(self):
+        return "Fix"
+
+    def brickColor(self):
+        return 0xc060a0
+
+    def export(self, out, labelmap, constmap, todo):
+        out += [OP_SAVETRANS]
+        return self.children
 
 
 class Transform(ObjectNode):
@@ -293,9 +306,12 @@ class Repeat(ObjectNode):
 
     def option(self, op, value):
         if value:
-            intval = int(value)
-            if intval >= 0:
-                self.n = intval
+            try:
+                intval = int(value)
+                if intval >= 0:
+                    self.n = intval
+            except ValueError:
+                pass
         return self.n
 
     def collectMeshes(self, tmlist, bindings, matrix):
@@ -369,12 +385,26 @@ class DefinitionNode(ObjectNode):
             self.definitions = [(p_name, self.definitions[0][1])]
             self.parameters = [p_name]
 
+
+class GlobalDefinition(DefinitionNode):
     def brickColor(self):
-        return 0x80a080
+        return 0xa0a080
 
     def export(self, out, labelmap, constmap, todo):
         var_index = getConstIndex(self.var, constmap)
         out += [OP_ASSIGN]
+        self.exportDefinitions(out, constmap)
+        out += [var_index]
+        return self.children
+
+
+class LocalDefinition(DefinitionNode):
+    def brickColor(self):
+        return 0xc09080
+
+    def export(self, out, labelmap, constmap, todo):
+        var_index = getConstIndex(self.var, constmap)
+        out += [OP_LOCALASSIGN]
         self.exportDefinitions(out, constmap)
         out += [var_index]
         return self.children

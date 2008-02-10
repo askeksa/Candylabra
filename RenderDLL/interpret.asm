@@ -198,9 +198,9 @@ _traverse:
 	;; fanout
 	;; ----------------
 	.fanout_loop:
-		comcall dword [comhandle(matrix_stack)], Push
+		;comcall dword [comhandle(matrix_stack)], Push
 		call _traverse
-		comcall dword [comhandle(matrix_stack)], Pop
+		;comcall dword [comhandle(matrix_stack)], Pop
 		cmp byte [esi], byte 0
 		jne .fanout_loop
 	lodsb
@@ -277,15 +277,29 @@ _traverse:
 	call _parseParam
 	xor eax, eax
 	lodsb
-	;push dword [ebx+eax*4]
 	fstp dword [ebx+eax*4]
-	;push eax
 	call _traverse
-	;pop eax
-	;pop dword [ebx+eax*4]
 	ret
 	
 .not_assign:
+	dec eax
+	jnz .not_local_assign
+
+	;; ----------------
+	;; local assignment
+	;; ----------------
+	call _parseParam
+	xor eax, eax
+	lodsb
+	push dword [ebx+eax*4]
+	push eax
+	fstp dword [ebx+eax*4]
+	call _traverse
+	pop eax
+	pop dword [ebx+eax*4]
+	ret
+	
+.not_local_assign:
 	dec eax
 	jnz .not_conditional
 
@@ -317,6 +331,15 @@ _traverse:
 	ret
 
 .not_nopleaf:
+	dec eax
+	jnz .not_savetrans
+
+	comcall dword [comhandle(matrix_stack)], Push
+	call _traverse
+	comcall dword [comhandle(matrix_stack)], Pop
+	ret
+
+.not_savetrans:
 	;; ----------------
 	;; transform
 	;; rotate, scale or translate
