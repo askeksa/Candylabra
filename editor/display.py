@@ -79,8 +79,10 @@ class MeshDisplay(Component):
                 for i,c in enumerate(constants):
                     struct.pack_into('f', self.exported_constants, i*4, c)
             self.badnode = None
+            self.getRoot().window.setError(None)
         except ot.ExportException, e:
             self.badnode = e.node
+            self.getRoot().window.setError(e.message)
     
     def setProjection(self):
         compsize = math.sqrt(self.size[0] * self.size[1])
@@ -498,11 +500,15 @@ class BrickField(Container):
             for c in newbricks:
                 c.field = self
                 c.gridpos = tadd(c.gridpos, offset)
-                # HACK to allow changing saved primitives
+                # HACKs to improve loading compatibility
                 if isinstance(c.node, ot.Primitive):
                     c.node.options = ["kind"]
                 if isinstance(c.node, ot.Identity) and not "label" in c.node.__dict__:
                     c.node.label = ""
+                if isinstance(c.node, ot.DefinitionNode):
+                    globaldef = ot.GlobalDefinition(c.node.var)
+                    globaldef.definitions = c.node.definitions
+                    c.node = globaldef
                 self.addChild(c)
         except IOError:
             tkMessageBox.showerror("File error", "Could not read file")

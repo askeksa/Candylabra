@@ -1,8 +1,8 @@
-Conditionals skal have to børn
-Floating point parse error
-ikke crash når exporteren møder en fejl
-farv fejlknuder røde
-assignments med kun et tekstfelt
+-Conditionals skal have to børn
++floating point parse error
++ikke crash når exporteren møder en fejl
++farv fejlknuder røde
++assignments med kun et tekstfelt
 integrerede tekstfelter
 tastaturstyring
 eksplicit rækkefølge på børn
@@ -13,10 +13,10 @@ inverter selection
 copy
 fornuftig save/load håndtering
 
-negation
++negation
 floor
-globale transformationer og checkpoint
-lokale assignments
++globale transformationer og checkpoint
++lokale assignments
 
 kamera
 musik-integrering

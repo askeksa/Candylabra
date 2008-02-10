@@ -270,7 +270,10 @@ class Component(object):
         return inter != (0,0,0,0)
 
     def rootsize(self):
-        return self.parent.rootsize()
+        return self.getRoot().size
+
+    def getRoot(self):
+        return self.parent.getRoot()
 
 
 class Container(Component):
@@ -455,8 +458,8 @@ class Root(Container):
             self.setPosAndSize(self.pos, (w,h))
         return event
 
-    def rootsize(self):
-        return self.size
+    def getRoot(self):
+        return self
 
 
 class Window(object):
@@ -465,6 +468,7 @@ class Window(object):
         self.root = root
         self.quit = False
         self.manager = InputManager()
+        self.error = None
 
         root.window = self
         root.calculateMinMax()
@@ -515,6 +519,13 @@ class Window(object):
     def setTitle(self, title):
         self.title = title
 
+    def setError(self, error):
+        self.error = error
+
     def updateTitle(self, fps):
         (x,y,w,h),c,d,s,wnd = d3d.getWindow()
-        d3d.setWindow(x,y,w,h, unicode("%s - %.1f fps" % (self.title, fps)))
+        if self.error:
+            titlestring = "Error: " + self.error
+        else:
+            titlestring = "%s - %.1f fps" % (self.title, fps)
+        d3d.setWindow(x,y,w,h, unicode(titlestring))
