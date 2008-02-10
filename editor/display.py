@@ -63,10 +63,12 @@ class MeshDisplay(Component):
         self.eyedist = 10.0
         self.constmap = {}
         self.badnode = None
+        self.reftime = 0
 
     def setTree(self, tree):
         self.tree = tree
         self.exportTree()
+        self.reftime = time.clock()
         #    print constants
         #    sys.stdout.flush()
 
@@ -119,7 +121,7 @@ class MeshDisplay(Component):
             self.bindings = {}
 
             #self.exportTree()
-            self.setBinding("time", time.clock())
+            self.setBinding("time", time.clock()-self.reftime)
             self.setBinding("frame", frame)
             frame += 1
             
