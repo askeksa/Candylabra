@@ -62,6 +62,7 @@ class MeshDisplay(Component):
             0,0,0,1)
         self.eyedist = 10.0
         self.constmap = {}
+        self.badnode = None
 
     def setTree(self, tree):
         self.tree = tree
@@ -70,13 +71,17 @@ class MeshDisplay(Component):
         #    sys.stdout.flush()
 
     def exportTree(self):
-        if self.tree is not None:
-            program, constants, self.constmap = ot.export(self.tree)
-            for i,p in enumerate(program):
-                self.exported_program[i] = chr(p)
-            for i,c in enumerate(constants):
-                struct.pack_into('f', self.exported_constants, i*4, c)
-
+        try:
+            if self.tree is not None:
+                program, constants, self.constmap = ot.export(self.tree)
+                for i,p in enumerate(program):
+                    self.exported_program[i] = chr(p)
+                for i,c in enumerate(constants):
+                    struct.pack_into('f', self.exported_constants, i*4, c)
+            self.badnode = None
+        except ot.ExportException, e:
+            self.badnode = e.node
+    
     def setProjection(self):
         compsize = math.sqrt(self.size[0] * self.size[1])
         centerx = self.pos[0] + self.size[0]/2
@@ -96,7 +101,7 @@ class MeshDisplay(Component):
 
     def render(self, info):
         global frame
-        if self.tree:
+        if self.tree and not self.badnode:
             d3d.setView((0,0,0),(0,0,1),CAMERA_FAR_Z)
             self.setProjection()
 
@@ -178,7 +183,13 @@ class Brick(TextBevel):
                     self.field.current_pos and
                     self.field.getGridPos(self.field.current_pos) == self.gridpos)
         self.pressed = (self == self.field.active or self in self.field.selected)
-        TextBevel.render(self, info)
+        if self.field.display.badnode == self.node:
+            realcolor = self.color
+            self.color = 0xff0000
+            TextBevel.render(self, info)
+            self.color = realcolor
+        else:
+            TextBevel.render(self, info)
 
     def below(self, other):
         return (self.gridpos[0] == other.gridpos[0] and 
@@ -305,11 +316,18 @@ class BrickField(Container):
         any_va = False
         if brick:
             node = brick.node
+
             def valuefunc(param, value):
                 if param in node.options:
                     return node.option(param, value)
                 p_index = [d[0] for d in node.definitions].index(param)
                 if value is not None:
+                    valuestr = str(value)
+                    eq_pos = valuestr.find("=")
+                    if eq_pos != -1:
+                        p_name = valuestr[0:eq_pos].strip()
+                        value = valuestr[eq_pos+1:]
+                        node.setParamName(p_index, p_name)
                     try:
                         node.definitions[p_index][1].setExp(value)
                     except SyntaxError:

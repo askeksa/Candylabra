@@ -57,7 +57,10 @@ class DefValue(object):
         self.setExp(exp)
 
     def setExp(self, exp):
-        self.exp = str(exp)
+        if isinstance(exp, types.FloatType):
+            self.exp = "%.7f" % exp
+        else:
+            self.exp = str(exp)
         self.compiled = None
 
     def getValue(self, bindings):
@@ -73,8 +76,11 @@ class DefValue(object):
     def getFreeVariables(self):
         return self.freevars
 
-    def export(self, out, constmap):
-        exportexp(self.exp, out, constmap)
+    def export(self, node, out, constmap):
+        try:
+            exportexp(self.exp, out, constmap)
+        except Exception, e:
+            raise ExportException(node, e.message)
 
 
 class ObjectNode(object):
@@ -142,7 +148,10 @@ class ObjectNode(object):
 
     def exportDefinitions(self, out, constmap):
         for (name, d) in reversed(self.definitions):
-            d.export(out, constmap)
+            d.export(self, out, constmap)
+
+    def setParamName(self, p_index, p_name):
+        pass
 
 
 class Transform(ObjectNode):
@@ -333,7 +342,7 @@ class Conditional(ObjectNode):
 
     def export(self, out, labelmap, constmap, todo):
         if len(self.children) != 2:
-            raise ExportException("Conditional must have two children")
+            raise ExportException(self, "Conditional must have two children")
         out += [OP_CONDITIONAL]
         self.exportDefinitions(out, constmap)
         todo.append(([self.children[0]], len(out)))
@@ -347,7 +356,6 @@ class DefinitionNode(ObjectNode):
         self.var = var
         ObjectNode.__init__(self)
         self.definitions = [(var, DefValue(0.0))]
-        self.options = ["var"]
 
     def getName(self):
         name = "%s = %s" % (self.var, self.definitions[0][1].exp)
@@ -355,12 +363,11 @@ class DefinitionNode(ObjectNode):
             name = name[0:14]
         return name
 
-    def option(self, op, value):
-        if value and value.isalnum() and value[0].isalpha():
-            self.var = value
-            self.definitions = [(value, self.definitions[0][1])]
-            self.parameters = [value]
-        return self.var
+    def setParamName(self, p_index, p_name):
+        if p_name.isalnum() and p_name[0].isalpha():
+            self.var = p_name
+            self.definitions = [(p_name, self.definitions[0][1])]
+            self.parameters = [p_name]
 
     def brickColor(self):
         return 0x80a080
@@ -492,9 +499,15 @@ def exportexp(exp, out, constmap):
             return instructions     #parenthesized expression
         else:
             tmp = lookahead()
-            if tok == '-':  #hack to allow negative constants
-                tok = '-' + gettoken()
-                tmp = lookahead()
+            if tok == '-':
+                try:
+                    float(tmp)
+                    #hack to allow negative constants
+                    tok = '-' + gettoken()
+                    tmp = lookahead()
+                except ValueError:
+                    #negation modelled as 0-
+                    return operators['-'] + [getConstIndex(0.0, constmap)] + factor()
     
             if tmp == '(':          #function invokation
                 gettoken()
@@ -537,7 +550,9 @@ def exportexp(exp, out, constmap):
 
 
 class ExportException(Exception):
-    pass
+    def __init__(self, node, message):
+        Exception.__init__(self, message)
+        self.node = node
 
 def marklabels(node, visited, labeled):
     if node in visited:
@@ -558,9 +573,8 @@ def exportnode(node, out, labeled, labelmap, constmap, todo):
     if len(visitchildren) != node.export_nchildren():
         if len(visitchildren) == 0:
             out += [OP_NOPLEAF]
-            #raise ExportException("Childless non-primitive node %s (%s)" % (node.getName(), node.__class__))
         if node.export_nchildren() == 0:
-            raise ExportException("Primitive node with children %s (%s)" % (node.getName(), node.__class__))
+            raise ExportException(node, "Primitive node with children")
         if len(visitchildren) > 1:
             out += [OP_FANOUT]
     for c in visitchildren:
