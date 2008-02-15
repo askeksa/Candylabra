@@ -68,7 +68,6 @@ class MeshDisplay(Component):
     def setTree(self, tree):
         self.tree = tree
         self.exportTree()
-        self.reftime = time.clock()
         #    print constants
         #    sys.stdout.flush()
 
@@ -386,6 +385,7 @@ class BrickField(Container):
                         self.selected = set([b])
                     if event.double:
                         self.setRoot(b)
+                        self.display.reftime = time.clock()
                     else:
                         self.status = BrickField.MOVING
                         self.origin_brick = b
