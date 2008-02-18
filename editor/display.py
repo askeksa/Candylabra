@@ -507,7 +507,7 @@ class BrickField(Container):
                     c.node.options = ["kind"]
                 if isinstance(c.node, ot.Identity) and not "label" in c.node.__dict__:
                     c.node.label = ""
-                if isinstance(c.node, ot.DefinitionNode):
+                if isinstance(c.node, ot.DefinitionNode) and not isinstance(c.node, ot.LocalDefinition):
                     globaldef = ot.GlobalDefinition(c.node.var)
                     globaldef.definitions = c.node.definitions
                     c.node = globaldef
