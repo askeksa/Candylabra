@@ -78,20 +78,6 @@ _parseParam:
 	ret	
 	.not_clamp:
 	dec eax
-	jne .not_exp
-		;; exp function - argh!
-		fld1
-		fld st1
-		fprem
-		fstp st1
-		f2xm1
-		fld1
-		faddp st1
-		fscale
-		fstp st1
-		ret
-	.not_exp
-	dec eax
 	jne .not_round
 		frndint
 		;fld1
@@ -108,6 +94,20 @@ _parseParam:
 	call _parseParam
 	pop eax
 	
+	dec eax
+	jne .not_pow
+	fyl2x
+	;; exp function - argh!
+	fld1
+	fld st1
+	fprem
+	fstp st1
+	f2xm1
+	fld1
+	faddp st1
+	fscale
+	fstp st1
+.not_pow
 	dec eax
 	jne .not_add
 	faddp st1
@@ -208,6 +208,22 @@ _traverse:
 
 .not_fanout
 	dec eax
+	jnz .not_savetrans
+
+	;; ----------------
+	;; fanout with fix
+	;; ----------------
+	.fanout_savetrans_loop:
+		comcall dword [comhandle(matrix_stack)], Push
+		call _traverse
+		comcall dword [comhandle(matrix_stack)], Pop
+		cmp byte [esi], byte 0
+		jne .fanout_savetrans_loop
+	lodsb
+	ret
+
+.not_savetrans:
+	dec eax
 	jnz .not_call
 	;; ----------------
 	;; repeat/call
@@ -216,16 +232,17 @@ _traverse:
 	lodsb
 
 	push esi
-	dec byte [esi]
+	dec word [esi]
 	jz .recur_end
 
-	;recurse
-	mov esi, dword [_jump_locations+eax*4]
-	call _traverse
+		;recurse
+		mov esi, dword [_jump_locations+eax*4]
+		call _traverse
 
 	.recur_end
 	pop esi
-	inc byte [esi]
+	inc word [esi]
+	lodsb
 	lodsb
 	ret
 
@@ -331,15 +348,6 @@ _traverse:
 	ret
 
 .not_nopleaf:
-	dec eax
-	jnz .not_savetrans
-
-	comcall dword [comhandle(matrix_stack)], Push
-	call _traverse
-	comcall dword [comhandle(matrix_stack)], Pop
-	ret
-
-.not_savetrans:
 	;; ----------------
 	;; transform
 	;; rotate, scale or translate

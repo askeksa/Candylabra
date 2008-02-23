@@ -19,13 +19,13 @@ import struct
 
 
 OP_FANOUT = 0x01
-OP_CALL = 0x02
-OP_PRIM = 0x03
-OP_ASSIGN = 0x04
-OP_LOCALASSIGN = 0x05
-OP_CONDITIONAL = 0x06
-OP_NOPLEAF = 0x07
-OP_SAVETRANS = 0x8
+OP_SAVETRANS = 0x2
+OP_CALL = 0x03
+OP_PRIM = 0x04
+OP_ASSIGN = 0x05
+OP_LOCALASSIGN = 0x06
+OP_CONDITIONAL = 0x07
+OP_NOPLEAF = 0x08
 OP_ROTATE = 0x09
 OP_SCALE = 0x0a
 OP_TRANSLATE = 0x0b
@@ -154,6 +154,9 @@ class ObjectNode(object):
     def setParamName(self, p_index, p_name):
         pass
 
+    def variableChildren(self):
+        return False
+
 
 class SaveTransform(ObjectNode):
     def getName(self):
@@ -162,9 +165,15 @@ class SaveTransform(ObjectNode):
     def brickColor(self):
         return 0xc060a0
 
+    def export_nchildren(self):
+        return len(self.children)
+
     def export(self, out, labelmap, constmap, todo):
         out += [OP_SAVETRANS]
         return self.children
+
+    def variableChildren(self):
+        return True
 
 
 class Transform(ObjectNode):
@@ -328,7 +337,10 @@ class Repeat(ObjectNode):
 
     def export(self, out, labelmap, constmap, todo):
         todo.append((self.children, len(out)+1))
-        out += [OP_CALL, 0, self.n+1]
+        n_rep = self.n+1
+        if (n_rep % 256) == 255 or (n_rep / 256) > 254:
+            raise ExportException(self, "Illegal repeat count")
+        out += [OP_CALL, 0, (n_rep % 256), (n_rep / 256)]
         return []
 
 
@@ -499,12 +511,11 @@ def newLabel(node, labelmap):
 
 
 def exportexp(exp, out, constmap):
-    id_regexp = re.compile('[a-zA-Z_]\w*')
+    id_regexp = re.compile('[a-zA-Z_][0-9a-zA-Z_]*')
     tokens_regexp = re.compile(
-        '\s|/\*([^*]|[\r\n]|\*+[^*/]|[\r\n])*\*+/|//.*|'
-        '({|}|\*|\/|\+|-|,|\(|\)|:)' # delimiters
+        '\s+|({|}|\*|\/|\+|-|\^|\(|\))' # delimiters
         )
-    operators = {'sin': [0x81], 'clamp':[0x82], 'exp':[0x83], 'round':[0x84], '+': [0x85], '-': [0x86], '*': [0x87], '/': [0x88]}
+    operators = {'sin': [0x81], 'clamp':[0x82], 'round':[0x83], '^':[0x84], '+': [0x85], '-': [0x86], '*': [0x87], '/': [0x88]}
 
     def is_id(s):
         return id_regexp.match(s) != None
@@ -521,7 +532,7 @@ def exportexp(exp, out, constmap):
         else:
             return None
 
-    def factor():
+    def prim():
         tok = gettoken()
         if tok == '(':
             instructions = expression()
@@ -537,10 +548,10 @@ def exportexp(exp, out, constmap):
                     tmp = lookahead()
                 except ValueError:
                     #negation modelled as 0-
-                    return operators['-'] + [getConstIndex(0.0, constmap)] + factor()
+                    return operators['-'] + [getConstIndex(0.0, constmap)] + prim()
     
             if tmp == '(':          #function invokation
-                gettoken()
+                assert gettoken() == '('
                 e = expression()
                 assert gettoken() == ')'
                 return operators[tok] + e
@@ -551,7 +562,18 @@ def exportexp(exp, out, constmap):
                         tok = '0'+tok
                     tok = float(tok)
                 return [getConstIndex(tok, constmap)]
+
+    def factor():
+        instructions = prim()
+        tmp = lookahead()
+        while (tmp in ['^']):
+            gettoken()
+            right = prim()
+            instructions = operators[tmp] + right + instructions
+            tmp = lookahead()
     
+        return instructions
+        
     def term():
         instructions = factor()
         tmp = lookahead()
@@ -594,7 +616,7 @@ def marklabels(node, visited, labeled):
 
 def exportnode(node, out, labeled, labelmap, constmap, todo):
     if node in labelmap:
-        out += [OP_CALL, labelmap[node], 0]
+        out += [OP_CALL, labelmap[node], 0, 0]
         return
     if node in labeled:
         label = newLabel(node, labelmap)
@@ -609,7 +631,7 @@ def exportnode(node, out, labeled, labelmap, constmap, todo):
             out += [OP_FANOUT]
     for c in visitchildren:
         exportnode(c, out, labeled, labelmap, constmap, todo)
-    if len(visitchildren) > 1:
+    if len(visitchildren) > 1 or node.variableChildren():
         out += [0]
 
 # return list of byte values and list of constants
