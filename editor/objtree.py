@@ -169,6 +169,8 @@ class SaveTransform(ObjectNode):
         return len(self.children)
 
     def export(self, out, labelmap, constmap, todo):
+        if len(self.children) == 0:
+            raise ExportException(self, "Fix node with no children")
         out += [OP_SAVETRANS]
         return self.children
 
