@@ -653,8 +653,9 @@ def export(root):
     constmap["time"] = 0
     constmap["frame"] = 1
     constmap["seed"] = 2
-    for i in range(16):
-        constmap["chan%d" % i] = i+3
+    constmap["bgr"] = 3
+    constmap["bgg"] = 4
+    constmap["bgb"] = 5
     exportnode(root, out, labeled, labelmap, constmap, todo)
 
     while todo:
