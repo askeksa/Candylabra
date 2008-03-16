@@ -113,7 +113,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	}
 
 	for(int i = 0; i < numChannels*128; i++) {
-		channelDeltas[i] = (channelDeltas[i] + offset) / 44100.0f;
+		channelDeltas[i] = (channelDeltas[i] + offset) / beatSamples;
 	}
 
 
