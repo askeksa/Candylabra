@@ -63,6 +63,7 @@ class MeshDisplay(Component):
         self.eyedist = 10.0
         self.constmap = {}
         self.badnode = None
+        self.timebar = None
         # self.reftime = 0
 
     def setTree(self, tree):
@@ -106,7 +107,9 @@ class MeshDisplay(Component):
 
     def render(self, info):
         global frame
-        if self.tree and not self.badnode:
+        if self.tree and self.timebar and not self.badnode:
+            if self.timebar.draggable.status != Draggable.DRAGGING:
+                self.timebar.area_pos = getMusicPos()*1000
             d3d.setView((0,0,0),(0,0,1),CAMERA_FAR_Z)
             self.setProjection()
 
@@ -123,7 +126,7 @@ class MeshDisplay(Component):
 
             #self.exportTree()
             #self.setBinding("time", time.clock()-self.reftime)
-            self.setBinding("time", getMusicPos())
+            self.setBinding("time", self.timebar.area_pos/1000.)
             self.setBinding("frame", frame)
             frame += 1
             

@@ -82,12 +82,34 @@ def export():
         except ot.ExportException, e:
             tkMessageBox.showerror(title = "Export error", message = e.message)
 
+class TimeSlider(Scrollbar):
+    music_was_playing = False
+    def initDragging(self):
+        Scrollbar.initDragging(self)
+        self.music_was_playing = musicIsPlaying()
+        stopMusic()
+
+    def updateDragging(self, delta):
+        Scrollbar.updateDragging(self, delta)
+
+    def stopDragging(self):
+        Scrollbar.stopDragging(self)
+        if self.music_was_playing:
+            playMusic(self.area_pos/1000.)
+        
 
 if __name__ == "__main__":
     Tkinter.Tk().withdraw()
 
+    initMusic()
     display = MeshDisplay()
     display.weight = 2.0
+    timebar = TimeSlider(ORIENTATION_HORIZONTAL)
+    timebar.area_shown = 10000
+    timebar.area_total = 1000*getMusicLength()+timebar.area_shown
+    timebar.area_pos = 0
+    timebar.weight = 0.001
+    display.timebar = timebar
     scrollbarv = Scrollbar(ORIENTATION_VERTICAL)
     valuebar = ValueBar()
     valuebar.addChild(Component())
@@ -155,15 +177,16 @@ if __name__ == "__main__":
     hseq.addChild(buttonpane)
     hseq.addChild(scrollfield)
     hseq.addChild(scrollbarv)
+    edit_seq = Sequence(ORIENTATION_VERTICAL)
+    edit_seq.addChild(timebar)
+    edit_seq.addChild(hseq)
     vseq.addChild(display)
     vseq.addChild(adjuster)
-    vseq.addChild(hseq)
+    vseq.addChild(edit_seq)
     vseq.addChild(valuebar)
 
     root = EditorRoot(display)
     root.addChild(vseq)
-
-    initMusic()
 
     window = Window(u"ObjectEditTool", root)
     quit = 100
