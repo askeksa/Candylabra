@@ -134,7 +134,6 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		dllinit();
 		inited = true;
 	}
-	return 0;
 
 	//set state
 	COMHandles.device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
@@ -207,13 +206,14 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
 	COMHandles.effect->EndPass();
 
+	return 0;
 	COMHandles.device->SetVertexShader(NULL);
 	COMHandles.device->SetPixelShader(NULL);
 	
 	
 	CHECK(COMHandles.device->StretchRect(COMHandles.backbuffer, &scissorRect, COMHandles.surfaces[0], NULL, D3DTEXF_LINEAR));
 
-	COMHandles.device->SetScissorRect(NULL);
+	CHECK(COMHandles.device->SetScissorRect(NULL));
 	//COMHandles.device->SetViewport(NULL);
 
 /*
