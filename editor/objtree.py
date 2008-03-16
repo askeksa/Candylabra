@@ -514,9 +514,9 @@ def newLabel(node, labelmap):
 def exportexp(exp, out, constmap):
     id_regexp = re.compile('[a-zA-Z_][0-9a-zA-Z_]*')
     tokens_regexp = re.compile(
-        '\s+|({|}|\*|\/|%|\+|-|\^|\||\(|\))' # delimiters
+        '\s+|({|}|\*|\/|%|#|\+|-|\^|\||\(|\))' # delimiters
         )
-    operators = {'sin': [0x82], 'clamp':[0x83], 'round':[0x84], '^':[0x85], '+': [0x86], '-': [0x87], '*': [0x88], '/': [0x89], '%': [0x8A], '|': [0x8B]}
+    operators = {'sin': [0x82], 'clamp':[0x83], 'round':[0x84], '^':[0x85], '+': [0x86], '-': [0x87], '*': [0x88], '/': [0x89], '%': [0x8A], '|': [0x8B], '#': [0x8C]}
 
     def is_id(s):
         return id_regexp.match(s) != None
@@ -569,7 +569,7 @@ def exportexp(exp, out, constmap):
     def factor():
         instructions = prim()
         tmp = lookahead()
-        while (tmp in ['^','|']):
+        while (tmp in ['^','|', '#']):
             gettoken()
             right = prim()
             instructions = operators[tmp] + right + instructions
