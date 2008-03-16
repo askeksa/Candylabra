@@ -13,6 +13,7 @@ import pickle
 from ctypes import *
 import struct
 
+import pygame
 
 CAMERA_NEAR_Z = 0.125
 CAMERA_FAR_Z = 1024.0
@@ -120,7 +121,8 @@ class MeshDisplay(Component):
             self.bindings = {}
 
             #self.exportTree()
-            self.setBinding("time", time.clock()-self.reftime)
+            #self.setBinding("time", time.clock()-self.reftime)
+            self.setBinding("time", pygame.mixer.music.get_pos()/1000.-8192/44100.+.1)
             self.setBinding("frame", frame)
             frame += 1
             
@@ -385,7 +387,8 @@ class BrickField(Container):
                         self.selected = set([b])
                     if event.double:
                         self.setRoot(b)
-                        self.display.reftime = time.clock()
+                        #self.display.reftime = time.clock()
+                        pygame.mixer.music.play(-1,0)
                     else:
                         self.status = BrickField.MOVING
                         self.origin_brick = b

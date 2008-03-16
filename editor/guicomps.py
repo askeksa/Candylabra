@@ -126,6 +126,7 @@ class Button(TextBevel):
             if event.buttonDown(BUTTON_LEFT):
                 self.status = Button.PRESSED
                 self.pressed = True
+
                 return None
             return event
         else: # PRESSED

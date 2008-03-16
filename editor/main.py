@@ -16,10 +16,15 @@ import tkSimpleDialog
 import tkMessageBox
 import Tkinter
 
-
 filename = None
 field = None
 window = None
+
+import pygame
+pygame.mixer.init(44100, -16, 2, 4096)
+#pygame.mixer.music.load("j:\Shared\cs2.1.mp3")
+pygame.mixer.music.load("J:\Shared\\test.ogg")
+#pygame.mixer.music.load("G:\musik\mod\mobyle.mod")
 
 def setfilename(n):
     global filename
