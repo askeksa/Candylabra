@@ -8,6 +8,25 @@ extern _composite_iptr
 extern _composite_vptr
 extern _num_vertices
 extern _num_faces
+extern _channelDeltas
+extern _numChannels
+
+section realdata data align=4
+_rand_scale: dd 0.000030517578125	;1/32768
+_rand_seed2: dd 0
+
+section rand code align=1
+_frandom@0:
+	mov eax, dword [_constantPool+8]
+	imul eax, 16307
+	add eax, byte 17
+	mov [_constantPool+8], eax
+	shr eax, 14
+	push eax
+	fild word [esp]
+	fmul dword [_rand_scale]
+	pop eax
+	ret
 
 ;opcode types:
 ;1: fanout
@@ -54,19 +73,26 @@ _parseParam:
 		fld dword [ebx+eax*4]
 		ret
 	.not_constant:
+	and al, 0x7F
+		dec eax
+		jne .not_rand
+		call _frandom@0
+		ret
+	.not_rand
+	
 	;;unary operations
 	;load first argument
 	push eax
 	call _parseParam
 	pop eax
 	
-	and al, 0x7F
+	
 	dec eax
 	jne .not_sin
 	fmul	dword [_param_scales+0*4]
 	fsin
 	ret
-	.not_sin:
+.not_sin:
 	dec eax
 	jne .not_clamp
 	fldz
@@ -74,19 +100,14 @@ _parseParam:
 	jc .dont_clamp
 	fstp st0
 	fldz
-	.dont_clamp
+.dont_clamp
 	ret	
 	.not_clamp:
 	dec eax
 	jne .not_round
 		frndint
-		;fld1
-		;fld st1
-		;fprem
-		;fstp st1
-		;fsubp st1
-		ret
-	.not_round
+	ret
+.not_round
 	
 	;;binary operations
 	;load second argument
@@ -124,6 +145,24 @@ _parseParam:
 	jne .not_div
 	fdivp st1
 .not_div:
+	dec eax
+	jne .not_modulus
+	fprem
+	fstp st1
+.not_modulus:
+	dec eax
+	jne .not_delta
+	
+	push eax
+	fistp dword [esp]
+	pop ebp
+	push eax
+	fistp dword [esp]
+	pop eax
+	shl eax, 9
+	fld dword [_channelDeltas+eax+ebp*4]
+.not_delta
+
 	ret	
 
 section sclparam data align=4

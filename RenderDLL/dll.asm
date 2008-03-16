@@ -13,12 +13,14 @@ extern __imp__D3DXWeldVertices@28
 extern __imp__D3DXComputeNormals@8
 extern _num_faces
 extern _num_vertices
+extern _syncinit@0
 
 global _dllinit@0
 
 section demoinit code align=1
 _dllinit@0:
 	pusha
+	call _syncinit@0
 
 	;; ---------------------------------
 	;; init mesh

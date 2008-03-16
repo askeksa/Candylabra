@@ -6,8 +6,11 @@
 #include <d3dx9.h>
 #include <dxerr.h>
 #include <cstdio>
+#include "MemoryFile.h"
 #include "objgen.h"
 #include "comcall.h"
+
+using namespace std;
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -46,12 +49,27 @@ extern "C" {
 
 	void __stdcall loadMeshDataFromFile() {
 	}
+
+	int noteSamples;
+	int numChannels;
+	int numRows;
+	float channelDeltas[256*128];
+	int channelCounts[256*12];
+	unsigned char* notes;
+	MemoryFile* mf;
+	void __stdcall syncinit() {
+		mf = new MemoryFile("sync");
+		int* ptr = (int*)mf->getPtr();
+		noteSamples = *ptr++;
+		numChannels = *ptr++;
+		numRows = *ptr++;
+		notes = (unsigned char*)ptr;
+	}
 };
 
 bool inited = false;
 
 extern "C" {
-
 	struct vertex {
 		D3DXVECTOR3 pos;
 		D3DXVECTOR3 normal;
@@ -69,6 +87,31 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		dllinit();
 		inited = true;
 	}
+
+	
+	int totalSamples = numRows*noteSamples*16;
+	int sample = ((int) (constants[0] * 44100)) % totalSamples;
+	int row = sample / noteSamples;
+	int offset = sample % noteSamples;
+
+	for(int i = 0; i < numChannels*256; i++)
+		channelDeltas[i] = 0;
+
+	for(int i = 0; i < row; i++) {
+		for(int j = 0; j < numChannels*128; j++) {
+			channelDeltas[j] += noteSamples;
+		}
+		for(int j = 0; j < numChannels; j++) {
+			int n = notes[j*numRows*16+i] & 0x7F;
+			if(n != 0 && n != 0x7F)
+				channelDeltas[j*128+n] = 0;
+		}
+	}
+
+	for(int i = 0; i < numChannels*128; i++) {
+		channelDeltas[i] = (channelDeltas[i] + offset) / 44100.0f;
+	}
+
 
 	memcpy(constantPool, constants, sizeof(float)*256);
 	interpret(program);
