@@ -134,6 +134,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		dllinit();
 		inited = true;
 	}
+	return 0;
 
 	//set state
 	COMHandles.device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
@@ -173,9 +174,8 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	memcpy(constantPool, constants, sizeof(float)*256);
 	interpret(program);
 
-	COMHandles.effect->Begin(0, 0);
+	
 	{//projection matrix
-		D3DXMATRIX proj;
 		float width = scissorRect.right - scissorRect.left;
 		float height = scissorRect.bottom - scissorRect.top;
 		
@@ -195,27 +195,21 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		COMHandles.device->SetTransform(D3DTS_PROJECTION, &proj);
 	}
 	
-/*
-	compsize = self.size[0]
-	centerx = self.pos[0] + self.size[0]/2
-		centery = self.pos[1] + self.size[1]/2
-		wsize = self.rootsize()
-		factor = CAMERA_NEAR_Z / CAMERA_ZOOM / compsize
-		l = -centerx * factor
-		r = (wsize[0]-centerx) * factor
-		t = centery * factor
-		b = (centery-wsize[1]) * factor
-		matrix = MatrixPerspectiveOffCenterLH(l,r,b,t,CAMERA_NEAR_Z,CAMERA_FAR_Z)
-		d3d.setMatrix(matrix, d3dc.MATRIX.PROJECTION)
-*/
-
-
+	COMHandles.effect->Begin(0, 0);
 	DWORD color = (((int)(constantPool[3] * 255))<<16) + (((int)(constantPool[4] * 255))<<8) + ((int)(constantPool[5] * 255));
 	COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, color, 1.0f, 0);
+	
+	COMHandles.effect->BeginPass(1);
 	COMHandles.device->SetFVF(MY_FVF);
 	COMHandles.device->SetIndices(COMHandles.composite_index);
 	COMHandles.device->SetStreamSource(0, COMHandles.composite_vertex, 0, sizeof(vertex));
+	COMHandles.device->SetVertexShaderConstantF(0, (float*)&proj, 4);
 	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
+	COMHandles.effect->EndPass();
+
+	COMHandles.device->SetVertexShader(NULL);
+	COMHandles.device->SetPixelShader(NULL);
+	
 	
 	CHECK(COMHandles.device->StretchRect(COMHandles.backbuffer, &scissorRect, COMHandles.surfaces[0], NULL, D3DTEXF_LINEAR));
 
