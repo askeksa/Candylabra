@@ -515,9 +515,9 @@ def newLabel(node, labelmap):
 def exportexp(exp, out, constmap):
     id_regexp = re.compile('[a-zA-Z_][0-9a-zA-Z_]*')
     tokens_regexp = re.compile(
-        '\s+|({|}|\*|\/|\+|-|\^|\(|\))' # delimiters
+        '\s+|({|}|\*|\/|%|\+|-|\^|\||\(|\))' # delimiters
         )
-    operators = {'sin': [0x81], 'clamp':[0x82], 'round':[0x83], '^':[0x84], '+': [0x85], '-': [0x86], '*': [0x87], '/': [0x88]}
+    operators = {'sin': [0x82], 'clamp':[0x83], 'round':[0x84], '^':[0x85], '+': [0x86], '-': [0x87], '*': [0x88], '/': [0x89], '%': [0x8A], '|': [0x8B]}
 
     def is_id(s):
         return id_regexp.match(s) != None
@@ -563,12 +563,14 @@ def exportexp(exp, out, constmap):
                     if tok[0] == '.':
                         tok = '0'+tok
                     tok = float(tok)
+                elif tok == 'rand':
+                    return [0x81]
                 return [getConstIndex(tok, constmap)]
 
     def factor():
         instructions = prim()
         tmp = lookahead()
-        while (tmp in ['^']):
+        while (tmp in ['^','|']):
             gettoken()
             right = prim()
             instructions = operators[tmp] + right + instructions
@@ -579,10 +581,13 @@ def exportexp(exp, out, constmap):
     def term():
         instructions = factor()
         tmp = lookahead()
-        while (tmp in ['*', '/']):
+        while (tmp in ['*', '/', '%']):
             gettoken()
             right = factor()
-            instructions = operators[tmp] + instructions + right
+            if tmp == '%':
+                instructions = operators[tmp] + right + instructions
+            else:
+                instructions = operators[tmp] + instructions + right
             tmp = lookahead()
     
         return instructions
@@ -648,8 +653,9 @@ def export(root):
     constmap = {}
     constmap["time"] = 0
     constmap["frame"] = 1
+    constmap["seed"] = 2
     for i in range(16):
-        constmap["chan%d" % i] = i+2
+        constmap["chan%d" % i] = i+3
     exportnode(root, out, labeled, labelmap, constmap, todo)
 
     while todo:
