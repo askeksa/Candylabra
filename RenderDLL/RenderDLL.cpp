@@ -99,7 +99,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		channelCounts[i] = 0;
 	}
 
-	for(int i = 0; i < row; i++) {
+	for(int i = 0; i <= row; i++) {
 		for(int j = 0; j < numChannels*128; j++) {
 			channelDeltas[j] += noteSamples;
 		}
