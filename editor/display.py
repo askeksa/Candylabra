@@ -89,7 +89,7 @@ class MeshDisplay(Component):
             self.getRoot().window.setError(e.message)
     
     def setProjection(self):
-        compsize = math.sqrt(self.size[0] * self.size[1])
+        compsize = self.size[0]
         centerx = self.pos[0] + self.size[0]/2
         centery = self.pos[1] + self.size[1]/2
         wsize = self.rootsize()

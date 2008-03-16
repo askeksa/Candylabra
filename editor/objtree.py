@@ -620,11 +620,14 @@ def marklabels(node, visited, labeled):
         for c in node.children:
             marklabels(c, visited, labeled)
 
-def exportnode(node, out, labeled, labelmap, constmap, todo):
+def exportnode(node, out, labeled, labelmap, constmap, todo, seenlabels):
     if node in labelmap:
+        if node in seenlabels:
+            raise ExportException(node, "Loop without repeat")
         out += [OP_CALL, labelmap[node], 0, 0]
         return
     if node in labeled:
+        seenlabels.add(node)
         label = newLabel(node, labelmap)
         out += [OP_LABEL]
     visitchildren = node.export(out, labelmap, constmap, todo)
@@ -636,9 +639,11 @@ def exportnode(node, out, labeled, labelmap, constmap, todo):
         if len(visitchildren) > 1:
             out += [OP_FANOUT]
     for c in visitchildren:
-        exportnode(c, out, labeled, labelmap, constmap, todo)
+        exportnode(c, out, labeled, labelmap, constmap, todo, seenlabels)
     if len(visitchildren) > 1 or node.variableChildren():
         out += [0]
+    if node in seenlabels:
+        seenlabels.remove(node)
 
 # return list of byte values and list of constants
 def export(root):
@@ -657,14 +662,14 @@ def export(root):
     constmap["bgg"] = 4
     constmap["bgb"] = 5
     constmap["fov"] = 6
-    exportnode(root, out, labeled, labelmap, constmap, todo)
+    exportnode(root, out, labeled, labelmap, constmap, todo, set())
 
     while todo:
         nodes,ref_index = todo.pop()
         dummy = Identity()
         dummy.children = list(nodes)
         labeled.add(dummy)
-        exportnode(dummy, out, labeled, labelmap, constmap, todo)
+        exportnode(dummy, out, labeled, labelmap, constmap, todo, set())
         out[ref_index] = labelmap[dummy]
         
     out += [OP_LABEL, OP_END]
