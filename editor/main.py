@@ -83,10 +83,10 @@ def export():
             tkMessageBox.showerror(title = "Export error", message = e.message)
 
 class TimeSlider(Scrollbar):
-    music_was_playing = False
+    #music_was_playing = False
     def initDragging(self):
         Scrollbar.initDragging(self)
-        self.music_was_playing = musicIsPlaying()
+        #self.music_was_playing = musicIsPlaying()
         stopMusic()
 
     def updateDragging(self, delta):
@@ -94,9 +94,32 @@ class TimeSlider(Scrollbar):
 
     def stopDragging(self):
         Scrollbar.stopDragging(self)
-        if self.music_was_playing:
-            playMusic(self.area_pos/1000.)
+        #if self.music_was_playing:
+        #    playMusic(self.area_pos/1000.)
+        display.playbutton.repeatAction()
         
+class PlayButton(Button):
+    active = False
+    display = None
+    def action(self):
+        if self.active:
+            self.active = False
+            self.text = "Play"
+            self.color = 0x808080
+            stopMusic()
+        else:
+            self.active = True
+            self.color = 0xcc5555
+            self.text = "Stop"
+            playMusic(self.display.timebar.area_pos/1000.)
+
+    def repeatAction(self):
+        self.active = not self.active
+        self.action()
+        
+    def __init__(self, display):
+        self.display = display
+        Button.__init__(self, self.action, "Play", 0x808080)
 
 if __name__ == "__main__":
     Tkinter.Tk().withdraw()
@@ -104,12 +127,19 @@ if __name__ == "__main__":
     initMusic()
     display = MeshDisplay()
     display.weight = 2.0
+    timepane = Sequence(ORIENTATION_HORIZONTAL)
     timebar = TimeSlider(ORIENTATION_HORIZONTAL)
     timebar.area_shown = 10000
     timebar.area_total = 1000*getMusicLength()+timebar.area_shown
     timebar.area_pos = 0
-    timebar.weight = 0.001
+    timebar.weight = 100000
+    playbutton = PlayButton(display)
+    timepane.addChild(playbutton)
+    timepane.addChild(timebar)
+    timepane.weight = 0.001
+    
     display.timebar = timebar
+    display.playbutton = playbutton
     scrollbarv = Scrollbar(ORIENTATION_VERTICAL)
     valuebar = ValueBar()
     valuebar.addChild(Component())
@@ -178,7 +208,7 @@ if __name__ == "__main__":
     hseq.addChild(scrollfield)
     hseq.addChild(scrollbarv)
     edit_seq = Sequence(ORIENTATION_VERTICAL)
-    edit_seq.addChild(timebar)
+    edit_seq.addChild(timepane)
     edit_seq.addChild(hseq)
     vseq.addChild(display)
     vseq.addChild(adjuster)
