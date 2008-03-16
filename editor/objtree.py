@@ -17,7 +17,6 @@ import re
 import types
 import struct
 
-
 OP_FANOUT = 0x01
 OP_SAVETRANS = 0x2
 OP_CALL = 0x03
