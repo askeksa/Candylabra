@@ -617,6 +617,9 @@ class ValueAdjuster(TextBevel, Draggable):
                 value_delta = base/100.0 * delta
                 self.setValue(self.orig_value + value_delta)
 
+    def stopDragging(self):
+        pass
+
 
 class ValueBar(Sequence):
     def __init__(self):
