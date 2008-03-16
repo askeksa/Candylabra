@@ -9,6 +9,7 @@ extern _composite_vptr
 extern _num_vertices
 extern _num_faces
 extern _channelDeltas
+extern _channelCounts
 extern _numChannels
 
 section realdata data align=4
@@ -162,6 +163,19 @@ _parseParam:
 	shl eax, 9
 	fld dword [_channelDeltas+eax+ebp*4]
 .not_delta
+	dec eax
+	jne .not_count
+	
+	push eax
+	fistp dword [esp]
+	pop ebp
+	push eax
+	fistp dword [esp]
+	pop eax
+	shl eax, 9
+	fild dword [_channelCounts+eax+ebp*4]
+.not_count
+
 
 	ret	
 

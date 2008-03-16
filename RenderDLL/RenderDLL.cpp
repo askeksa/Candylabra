@@ -54,7 +54,7 @@ extern "C" {
 	int numChannels;
 	int numRows;
 	float channelDeltas[256*128];
-	int channelCounts[256*12];
+	int channelCounts[256*128];
 	unsigned char* notes;
 	MemoryFile* mf;
 	void __stdcall syncinit() {
@@ -87,15 +87,17 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		dllinit();
 		inited = true;
 	}
-
 	
 	int totalSamples = numRows*noteSamples*16;
-	int sample = ((int) (constants[0] * 44100)) % totalSamples;
+	int beatSamples = noteSamples * 4;
+	int sample = ((int) (constants[0] * beatSamples)) % totalSamples;
 	int row = sample / noteSamples;
 	int offset = sample % noteSamples;
 
-	for(int i = 0; i < numChannels*256; i++)
-		channelDeltas[i] = 0;
+	for(int i = 0; i < numChannels*256; i++) {
+		channelDeltas[i] = 44100*10;
+		channelCounts[i] = 0;
+	}
 
 	for(int i = 0; i < row; i++) {
 		for(int j = 0; j < numChannels*128; j++) {
@@ -103,8 +105,10 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		}
 		for(int j = 0; j < numChannels; j++) {
 			int n = notes[j*numRows*16+i] & 0x7F;
-			if(n != 0 && n != 0x7F)
+			if(n != 0 && n != 0x7F) {
 				channelDeltas[j*128+n] = 0;
+				channelCounts[j*128+n]++;
+			}
 		}
 	}
 
