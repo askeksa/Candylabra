@@ -119,7 +119,7 @@ _parseParam:
 	dec eax
 	jne .not_pow
 	fyl2x
-	;; exp function - argh!
+	;; pow function - argh!
 	fld1
 	fld st1
 	fprem

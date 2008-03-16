@@ -656,6 +656,7 @@ def export(root):
     constmap["bgr"] = 3
     constmap["bgg"] = 4
     constmap["bgb"] = 5
+    constmap["fov"] = 6
     exportnode(root, out, labeled, labelmap, constmap, todo)
 
     while todo:

@@ -99,10 +99,8 @@ ch_effect				equ 16
 ch_random_texture		equ 20
 ch_texture0				equ 24
 ch_texture1				equ 28
-ch_texture2				equ 32
 ch_surface0				equ 36
 ch_surface1				equ 40
-ch_surface2				equ 44
 ch_backbuffer			equ 48
 
 	extern  _COMHandles
@@ -115,9 +113,3 @@ ch_backbuffer			equ 48
 %endmacro
 
 %define	comhandle(a)	(_COMHandles + ch_ %+ a)
-
-;%macro	comcall 2
-;	push	byte cc_%2
-;	mov		eax, %1
-;	call	_MethodCall
-;%endmacro

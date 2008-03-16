@@ -7,6 +7,9 @@ const int MAX_VERTICES = 1638400;
 const int MAX_FACES = 3276800;
 const int MY_FVF = (D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_DIFFUSE);
 
-const int NUM_TEXTURES = 3;
+const int NUM_TEXTURES = 2;
+const int TEXTURE_WIDTH = 256;
+const int TEXTURE_HEIGHT = 256;
+
 
 #endif
