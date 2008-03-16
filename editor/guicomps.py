@@ -206,10 +206,12 @@ class Draggable(Bevel):
         else: # DRAGGING
             if event.buttonDown(BUTTON_RIGHT):
                 self.delegate.updateDragging(0)
+                self.delegate.stopDragging()
                 self.setIdle(event, manager)
                 return None
             self.delegate.updateDragging(pos - self.drag_origin)
             if event.buttonUp(BUTTON_LEFT):
+                self.delegate.stopDragging()
                 self.setIdle(event, manager)
             return None
 
@@ -260,6 +262,9 @@ class Adjuster(Draggable):
         self.succ.weight = succ_size * sum(self.old_weights) / (pred_size + succ_size)
 
         self.parent.setPosAndSize(self.parent.pos, self.parent.size)
+
+    def stopDragging(self):
+        pass
 
 
 class ScrollbarContainer(Container):
@@ -318,6 +323,9 @@ class Scrollbar(Container):
         area_pos = int(round(self.orig_area_pos + delta * self.area_total / float(self.container.size[o])))
         area_pos = max(0, min(self.area_total-self.area_shown, area_pos))
         self.area_pos = area_pos
+
+    def stopDragging(self):
+        pass
 
     def updateDraggableSizeAndPos(self):
         o = self.orientation
