@@ -108,7 +108,7 @@ class MeshDisplay(Component):
     def render(self, info):
         global frame
         if self.tree and self.timebar and not self.badnode:
-            if self.timebar.draggable.status != Draggable.DRAGGING:
+            if self.timebar.draggable.status != Draggable.DRAGGING and self.playbutton.active:
                 self.timebar.area_pos = getMusicPos()*1000
             d3d.setView((0,0,0),(0,0,1),CAMERA_FAR_Z)
             self.setProjection()
@@ -126,7 +126,7 @@ class MeshDisplay(Component):
 
             #self.exportTree()
             #self.setBinding("time", time.clock()-self.reftime)
-            self.setBinding("time", self.timebar.area_pos/1000.)
+            self.setBinding("time", max(0,self.timebar.area_pos/1000.))
             self.setBinding("frame", frame)
             frame += 1
             
@@ -392,7 +392,7 @@ class BrickField(Container):
                     if event.double:
                         self.setRoot(b)
                         #self.display.reftime = time.clock()
-                        playMusic(0)
+                        #playMusic(0)
                     else:
                         self.status = BrickField.MOVING
                         self.origin_brick = b
@@ -622,7 +622,6 @@ class ValueAdjuster(TextBevel, Draggable):
 
     def stopDragging(self):
         pass
-
 
 class ValueBar(Sequence):
     def __init__(self):
