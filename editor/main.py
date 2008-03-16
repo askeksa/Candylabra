@@ -3,6 +3,7 @@
 from gui import *
 from guicomps import *
 from display import *
+from music import *
 import d3d
 import d3dc
 import objtree as ot
@@ -19,12 +20,6 @@ import Tkinter
 filename = None
 field = None
 window = None
-
-import pygame
-pygame.mixer.init(44100, -16, 2, 4096)
-#pygame.mixer.music.load("j:\Shared\cs2.1.mp3")
-pygame.mixer.music.load("test.ogg")
-#pygame.mixer.music.load("G:\musik\mod\mobyle.mod")
 
 def setfilename(n):
     global filename
@@ -167,6 +162,8 @@ if __name__ == "__main__":
 
     root = EditorRoot(display)
     root.addChild(vseq)
+
+    initMusic()
 
     window = Window(u"ObjectEditTool", root)
     quit = 100

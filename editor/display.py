@@ -2,6 +2,7 @@
 
 from gui import *
 from guicomps import *
+from music import *
 import d3d
 import d3dc
 import objtree as ot
@@ -12,8 +13,6 @@ import time
 import pickle
 from ctypes import *
 import struct
-
-import pygame
 
 CAMERA_NEAR_Z = 0.125
 CAMERA_FAR_Z = 1024.0
@@ -64,11 +63,13 @@ class MeshDisplay(Component):
         self.eyedist = 10.0
         self.constmap = {}
         self.badnode = None
-        self.reftime = 0
+        # self.reftime = 0
 
     def setTree(self, tree):
         self.tree = tree
         self.exportTree()
+        if tree is None:
+            stopMusic()
         #    print constants
         #    sys.stdout.flush()
 
@@ -122,7 +123,7 @@ class MeshDisplay(Component):
 
             #self.exportTree()
             #self.setBinding("time", time.clock()-self.reftime)
-            self.setBinding("time", pygame.mixer.music.get_pos()/1000.-8192/44100.+.1)
+            self.setBinding("time", getMusicPos())
             self.setBinding("frame", frame)
             frame += 1
             
@@ -388,7 +389,7 @@ class BrickField(Container):
                     if event.double:
                         self.setRoot(b)
                         #self.display.reftime = time.clock()
-                        pygame.mixer.music.play(-1,0)
+                        playMusic(0)
                     else:
                         self.status = BrickField.MOVING
                         self.origin_brick = b
