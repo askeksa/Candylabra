@@ -41,7 +41,7 @@ float4 f4(S x): COLOR {
 	x.p2.z *= w2.x;
 	float3 v = normalize(x.p2);
 	float i = 1+dot(x.n, v);
-	return float4(((i*w2.y+w2.z)*(x.c+pow(i, w2.w)*0.5f)).rgb, x.c.a);
+	return float4(((i*w2.y+w2.z)*x.c+pow(i, w2.w)*w3.x).rgb, x.c.a);
 }
 
 float4 f5(S x): COLOR {
