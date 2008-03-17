@@ -75,7 +75,7 @@ extern "C" {
 		for(int i = 0; i < 2; i++) {
 			CHECK(COMHandles.device->CreateTexture(TEXTURE_WIDTH, TEXTURE_HEIGHT, 1, 
 				D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &COMHandles.textures[i], NULL));
-			COMHandles.textures[i]->GetSurfaceLevel(0, &COMHandles.surfaces[i]);
+			CHECK(COMHandles.textures[i]->GetSurfaceLevel(0, &COMHandles.surfaces[i]));
 		}
 		
 		COMHandles.device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &COMHandles.backbuffer);
@@ -169,6 +169,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		channelDeltas[i] = (channelDeltas[i] + offset) / beatSamples;
 	}
 
+	constantPool[6] = 1.0f;
 
 	memcpy(constantPool, constants, sizeof(float)*256);
 	interpret(program);
@@ -194,26 +195,24 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		COMHandles.device->SetTransform(D3DTS_PROJECTION, &proj);
 	}
 	
-	COMHandles.effect->Begin(0, 0);
+	//COMHandles.effect->Begin(0, 0);
 	DWORD color = (((int)(constantPool[3] * 255))<<16) + (((int)(constantPool[4] * 255))<<8) + ((int)(constantPool[5] * 255));
 	COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, color, 1.0f, 0);
 	
-	COMHandles.effect->BeginPass(1);
+	//COMHandles.effect->BeginPass(1);
 	COMHandles.device->SetFVF(MY_FVF);
 	COMHandles.device->SetIndices(COMHandles.composite_index);
 	COMHandles.device->SetStreamSource(0, COMHandles.composite_vertex, 0, sizeof(vertex));
-	COMHandles.device->SetVertexShaderConstantF(0, (float*)&proj, 4);
+	//COMHandles.device->SetVertexShaderConstantF(0, (float*)&proj, 4);
 	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
-	COMHandles.effect->EndPass();
+	//COMHandles.effect->EndPass();
 
-	return 0;
-	COMHandles.device->SetVertexShader(NULL);
-	COMHandles.device->SetPixelShader(NULL);
+	//COMHandles.device->SetVertexShader(NULL);
+	//COMHandles.device->SetPixelShader(NULL);
 	
-	
-	CHECK(COMHandles.device->StretchRect(COMHandles.backbuffer, &scissorRect, COMHandles.surfaces[0], NULL, D3DTEXF_LINEAR));
+	//CHECK(COMHandles.device->StretchRect(COMHandles.backbuffer, &scissorRect, COMHandles.surfaces[0], NULL, D3DTEXF_LINEAR));
 
-	CHECK(COMHandles.device->SetScissorRect(NULL));
+	//CHECK(COMHandles.device->SetScissorRect(NULL));
 	//COMHandles.device->SetViewport(NULL);
 
 /*
@@ -240,17 +239,17 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
 	pass(0, 1, 2, w);
 */
-	COMHandles.effect->End();
+	//COMHandles.effect->End();
 
 	//restore state
-	COMHandles.device->SetVertexShader(NULL);
-	COMHandles.device->SetPixelShader(NULL);
-	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	//COMHandles.device->SetVertexShader(NULL);
+	//COMHandles.device->SetPixelShader(NULL);
+	//COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 
-	COMHandles.device->SetScissorRect(&scissorRect);
-	COMHandles.device->SetViewport(&viewport);
+	//COMHandles.device->SetScissorRect(&scissorRect);
+	//COMHandles.device->SetViewport(&viewport);
 
-	COMHandles.device->SetTexture(0, 0);
+	//COMHandles.device->SetTexture(0, 0);
 
 
 	return 0;
