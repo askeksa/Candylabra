@@ -102,21 +102,27 @@ class PlayButton(Button):
     active = False
     display = None
     def action(self):
-        if self.active:
-            self.active = False
-            self.text = "Play"
-            self.color = 0x808080
-            stopMusic()
-        else:
-            self.active = True
-            self.color = 0xcc5555
-            self.text = "Stop"
-            playMusic(self.display.timebar.area_pos/1000.)
+        self.active = not self.active
+        self.repeatAction()
 
     def repeatAction(self):
-        self.active = not self.active
-        self.action()
+        if self.active:
+            self.activate()
+        else:
+            self.passivate()
         
+    def activate(self):
+        self.active = True
+        self.color = 0xcc5555
+        self.text = "Stop"
+        playMusic(self.display.timebar.area_pos/1000.)
+        
+    def passivate(self):
+        self.active = False
+        self.text = "Play"
+        self.color = 0x808080
+        stopMusic()    
+
     def __init__(self, display):
         self.display = display
         Button.__init__(self, self.action, "Play", 0x808080)
