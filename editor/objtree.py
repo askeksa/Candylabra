@@ -450,7 +450,7 @@ class Primitive(ObjectNode):
     meshes = None
 
     def __init__(self, index):
-        ObjectNode.__init__(self, ["r","g","b"])
+        ObjectNode.__init__(self, ["a", "r","g","b"])
         self.index = index
         self.meshes = None
         self.default = 0.5
@@ -516,7 +516,7 @@ def exportexp(exp, out, constmap):
     tokens_regexp = re.compile(
         '\s+|({|}|\*|\/|%|#|\+|-|\^|\||\(|\))' # delimiters
         )
-    operators = {'sin': [0x82], 'clamp':[0x83], 'round':[0x84], '^':[0x85], '+': [0x86], '-': [0x87], '*': [0x88], '/': [0x89], '%': [0x8A], '|': [0x8B], '#': [0x8C]}
+    operators = {'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], '^':[0xF5], '+': [0xF6], '-': [0xF7], '*': [0xF8], '/': [0xF9], '%': [0xFA], '|': [0xFB], '#': [0xFC]}
 
     def is_id(s):
         return id_regexp.match(s) != None
@@ -563,7 +563,7 @@ def exportexp(exp, out, constmap):
                         tok = '0'+tok
                     tok = float(tok)
                 elif tok == 'rand':
-                    return [0x81]
+                    return [0xF1]
                 return [getConstIndex(tok, constmap)]
 
     def factor():
@@ -662,6 +662,21 @@ def export(root):
     constmap["bgg"] = 4
     constmap["bgb"] = 5
     constmap["fov"] = 6
+    constmap["paddy"] = 7
+
+    constmap["glow1"] = 8
+    constmap["glow2"] = 9
+    constmap["glow3"] = 10
+    constmap["glow4"] = 11
+
+    constmap["shad1"] = 12
+    constmap["shad2"] = 13
+    constmap["shad3"] = 14
+    constmap["shad4"] = 15
+    constmap["shad5"] = 16
+    constmap["shad6"] = 17
+    constmap["shad7"] = 18
+    constmap["shad8"] = 19
     exportnode(root, out, labeled, labelmap, constmap, todo, set())
 
     while todo:

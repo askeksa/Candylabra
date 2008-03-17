@@ -68,13 +68,13 @@ section parsepar code align=1
 _parseParam:
 	xor eax, eax
 	lodsb
-	test al, al
-	js .not_constant
+	cmp eax, dword 0xF0
+	jg .not_constant
 		;load constant
 		fld dword [ebx+eax*4]
 		ret
 	.not_constant:
-	and al, 0x7F
+	sub eax, dword 0xF0
 		dec eax
 		jne .not_rand
 		call _frandom@0
@@ -109,7 +109,6 @@ _parseParam:
 		frndint
 	ret
 .not_round
-	
 	;;binary operations
 	;load second argument
 	push eax
@@ -162,6 +161,7 @@ _parseParam:
 	pop eax
 	shl eax, 9
 	fld dword [_channelDeltas+eax+ebp*4]
+	ret
 .not_delta
 	dec eax
 	jne .not_count
@@ -174,9 +174,8 @@ _parseParam:
 	pop eax
 	shl eax, 9
 	fild dword [_channelCounts+eax+ebp*4]
+	ret
 .not_count
-
-
 	ret	
 
 section sclparam data align=4
@@ -310,7 +309,7 @@ _traverse:
 	
 	push byte 3
 	pop edx
-	push byte 3
+	push byte 4
 	pop ecx
 
 	;unpack arguments
@@ -321,7 +320,8 @@ _traverse:
 	fistp dword [esp]
 	loop .unpack_loop_primitive
 
-	mov al,255
+	pop ecx
+	mov al, cl
 	shl	eax,8
 	pop	ecx
 	mov al,cl

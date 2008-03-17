@@ -307,6 +307,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\constants.h"
+				>
+			</File>
+			<File
+				RelativePath=".\constants.nh"
+				>
+			</File>
+			<File
 				RelativePath=".\objgen.h"
 				>
 			</File>
