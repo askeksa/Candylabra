@@ -169,9 +169,9 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		channelDeltas[i] = (channelDeltas[i] + offset) / beatSamples;
 	}
 
-	constantPool[6] = 1.0f;
 
 	memcpy(constantPool, constants, sizeof(float)*256);
+	constantPool[6] = 1.0f;
 	interpret(program);
 
 	
