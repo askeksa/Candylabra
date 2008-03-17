@@ -70,7 +70,7 @@ class MeshDisplay(Component):
         self.tree = tree
         self.exportTree()
         if tree is None:
-            stopMusic()
+            self.playbutton.passivate()
         #    print constants
         #    sys.stdout.flush()
 
@@ -109,7 +109,7 @@ class MeshDisplay(Component):
         global frame
         if self.tree and self.timebar and not self.badnode:
             if self.timebar.draggable.status != Draggable.DRAGGING and self.playbutton.active:
-                self.timebar.area_pos = getMusicPos()*1000
+                self.timebar.area_pos = max(0,min(getMusicLength(),getMusicPos()))*1000
             d3d.setView((0,0,0),(0,0,1),CAMERA_FAR_Z)
             self.setProjection()
 
