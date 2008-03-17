@@ -14,6 +14,9 @@ struct COMStruct {
 	LPDIRECT3DTEXTURE9			textures[NUM_TEXTURES];
 	LPDIRECT3DSURFACE9			surfaces[NUM_TEXTURES];
 	LPDIRECT3DSURFACE9			backbuffer;
+	LPDIRECT3DSURFACE9			depthbuffer;
+	LPDIRECT3DSURFACE9			newbacksurface;
+	LPDIRECT3DSURFACE9			newdepthbuffer;
 };
 
 extern "C" {
