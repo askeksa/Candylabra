@@ -24,7 +24,7 @@ def playMusic(pos):
     music_start_pos = pos
     #    global music_is_playing
     #    music_is_playing = True
-    pygame.mixer.music.play(0,pos*samples_per_beat / float(samples_per_second))
+    pygame.mixer.music.play(-1,pos*samples_per_beat / float(samples_per_second))
 
 def stopMusic():
     #global music_is_playing
