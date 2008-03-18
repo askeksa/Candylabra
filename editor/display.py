@@ -162,7 +162,7 @@ def tadd(p1,p2):
 def tsub(p1,p2):
     return (p1[0]-p2[0], p1[1]-p2[1])
 
-SPLINELENGTH = 100
+SPLINELENGTH = 10
 
 def drawSpline(x0,y0, x1,y1, color):
     xl = [evalSpline(x0, 0, x1, 0, i/float(SPLINELENGTH)) for i in range(SPLINELENGTH+1)]
