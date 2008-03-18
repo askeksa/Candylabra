@@ -42,8 +42,8 @@
 
 
 ;; intro constants
-%define MAX_VERTICES 1638400
-%define MAX_FACES 3276800
+%define MAX_VERTICES (1638400*2)
+%define MAX_FACES (3276800*2)
 %define MY_FVF (D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_DIFFUSE)
 %define VERTEX_SIZE ((3+3+1)*4)
 %define D3DVERTEX_SIZE ((3+3)*4)
