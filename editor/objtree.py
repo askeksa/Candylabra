@@ -656,14 +656,14 @@ def export(root, constmap = None):
     labelmap = {}
     if constmap is None:
         constmap = {
-            "time": 0,
-            "frame": 1,
-            "seed": 2,
-            "bgr": 3,
-            "bgg": 4,
-            "bgb": 5,
-            "fov": 6,
-            "paddy": 7,
+            float(0): 0,
+            "time": 1,
+            "frame": 2,
+            "seed": 3,
+            "bgb": 4,
+            "bgg": 5,
+            "bgr": 6,
+            "fov": 7,
             
             "glow1": 8,
             "glow2": 9,
