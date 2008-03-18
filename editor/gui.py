@@ -75,13 +75,16 @@ class InputManager(object):
         self.windowlisteners.insert(0, listener)
 
     def removeKeyListener(self, listener):
-        self.keylisteners.remove(listener)
+        if listener in self.keylisteners:
+            self.keylisteners.remove(listener)
 
     def removeMouseListener(self, listener):
-        self.mouselisteners.remove(listener)
+        if listener in self.mouselisteners:
+            self.mouselisteners.remove(listener)
 
     def removeWindowListener(self, listener):
-        self.windowlisteners.remove(listener)
+        if listener in self.windowlisteners:
+            self.windowlisteners.remove(listener)
 
     def peekMsgKind(self, d3d_events, kind):
         return d3d_events and d3d_events[0][0] == kind
