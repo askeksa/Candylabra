@@ -72,12 +72,12 @@ def export():
                 tree_file.write(''.join([chr(b) for b in instructions]))
                 tree_file.close()
                 consts_file = open(consts_name, 'wb')
-                last_exp = 0
+                #last_exp = 0
                 for c in constants:
                     frep = struct.pack('f', c)
-                    this_exp = ord(frep[3])
-                    frep = frep[0:3] + chr(this_exp-last_exp)
-                    last_exp = this_exp
+                    #this_exp = ord(frep[3])
+                    #frep = frep[0:3] + chr(this_exp-last_exp)
+                    #last_exp = this_exp
                     consts_file.write(frep)
                 consts_file.close()
             except IOError:
