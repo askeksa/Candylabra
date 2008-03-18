@@ -39,4 +39,4 @@ def getMusicPos():
 #    return music_is_playing
 
 def getMusicLength():
-    return 500
+    return 800
