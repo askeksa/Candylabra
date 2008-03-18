@@ -8,7 +8,6 @@ struct S {
 	float4 p : POSITION;	//p: pos
 	float3 p2 : TEXCOORD0;	//p2: pos
 	float3 n : TEXCOORD1;	//n: normal
-	
 	float4 c : COLOR;		//c: vertex color
 };
 
@@ -39,8 +38,7 @@ S f3(float4 p : POSITION, float3 n : NORMAL, float4 c : COLOR) {
 
 float4 f4(S x): COLOR {
 	x.p2.z *= w2.x;
-	float3 v = normalize(x.p2);
-	float i = 1+dot(x.n, v);
+	float i = 1+dot(x.n, normalize(x.p2));
 	return float4(((i*w2.y+w2.z)*x.c+pow(i, w2.w)*w3.x).rgb, x.c.a);
 }
 

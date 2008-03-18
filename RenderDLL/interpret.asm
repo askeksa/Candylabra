@@ -10,57 +10,8 @@ extern _num_vertices
 extern _num_faces
 extern _channelDeltas
 extern _channelCounts
-extern _numChannels
-
-section realdata data align=4
-_rand_scale: dd 0.000030517578125	;1/32768
-_rand_seed2: dd 0
-
-section rand code align=1
-_frandom@0:
-	mov eax, dword [_constantPool+8]
-	imul eax, 16307
-	add eax, byte 17
-	mov [_constantPool+8], eax
-	shr eax, 14
-	push eax
-	fild word [esp]
-	fmul dword [_rand_scale]
-	pop eax
-	ret
-
-;opcode types:
-;1: fanout
-;	children
-;   byte 0
-
-;2: repeat/call
-;	byte label
-;   byte repeats+1
-
-;3: primitive
-;   expr b,g,r
-
-;4: assign
-;   expr value
-;   byte var
-
-;5: conditional
-;   expr condition
-;   byte leftlabel
-;   byte rightlabel
-
-;6: rotate
-;   expr roll
-;   expr pitch
-;   expr yaw
-
-;7: scale
-;   expr z,y,x
-
-;8: translate
-;   expr z,y,x
-
+extern _frandom@0
+	
 ;parseParam
 ;esi: expression data
 ;ebx: constant pool
@@ -188,7 +139,6 @@ dd  0x437f0000	;255 Primitive color
 section jumptable bss align=4
 _jump_locations: resd 256
 
-
 section interpre code align=1
 _interpret@4:
 	pusha
@@ -235,6 +185,50 @@ _interpret@4:
 	popa
 	ret 4
 
+
+;opcode types:
+;1: fanout
+;	children
+;   byte 0
+
+;2: fix
+;	children
+;	byte 0
+
+;3: repeat/call
+;	byte label
+;   word repeats+1
+
+;4: primitive
+;   expr b,g,r,a
+
+;5: assign
+;   expr value
+;   byte var
+
+;6: local assign
+;   expr value
+;   byte var
+
+;7: conditional
+;   expr condition
+;   byte leftlabel
+;   byte rightlabel
+
+;8: nop
+
+;9: rotate
+;   expr roll
+;   expr pitch
+;   expr yaw
+
+;10: scale
+;   expr z,y,x
+
+;11: translate
+;   expr z,y,x
+
+
 ;;esi: program pointer
 section traverse code align=1
 _traverse:
@@ -250,9 +244,7 @@ _traverse:
 	;; fanout
 	;; ----------------
 	.fanout_loop:
-		;comcall dword [comhandle(matrix_stack)], Push
 		call _traverse
-		;comcall dword [comhandle(matrix_stack)], Pop
 		cmp byte [esi], byte 0
 		jne .fanout_loop
 	lodsb
@@ -425,6 +417,5 @@ _traverse:
 	push	eax
 	mov		eax, [eax]
 	call	[eax + edx*4]
-
 	call _traverse
 	ret

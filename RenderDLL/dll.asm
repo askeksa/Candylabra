@@ -13,6 +13,27 @@ extern __imp__D3DXWeldVertices@28
 extern __imp__D3DXComputeNormals@8
 extern _num_faces
 extern _num_vertices
+extern _constantPool
+
+global _rand_scale
+global _frandom@0
+
+section realdata data align=4
+_rand_scale: dd 0.000030517578125	;1/32768
+
+section rand code align=1
+_frandom@0:
+	mov eax, dword [_constantPool+8]
+	imul eax, 16307
+	add eax, byte 17
+	mov [_constantPool+8], eax
+	shr eax, 14
+	push eax
+	fild word [esp]
+	fmul dword [_rand_scale]
+	pop eax
+	ret
+
 
 global _dllinit@0
 

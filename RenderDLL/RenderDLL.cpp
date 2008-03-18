@@ -118,7 +118,6 @@ float constantPool[256];
 void pass(int pass, int src) {
 	COMHandles.device->SetTexture(0, COMHandles.textures[src]);
 	
-
 	COMHandles.effect->BeginPass(pass);
 	COMHandles.device->SetFVF(D3DFVF_XYZ);
 	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[8], 3);
@@ -175,14 +174,6 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 
 
 	memcpy(constantPool, constants, sizeof(float)*256);
-	/*
-	constantPool[6] = 1.0f;
-	constantPool[7] = 0.2f;
-	constantPool[8] = 0.5f;
-	constantPool[9] = 0.2f;
-	constantPool[10] = 10.0f;
-	constantPool[11] = 0.5f;
-	*/
 	constantPool[8] = 0.005f;		//glow
 	
 	constantPool[12] = 0.2f;
