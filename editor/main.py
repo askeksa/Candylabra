@@ -11,6 +11,7 @@ import math
 import sys
 import struct
 import traceback
+import types
 
 import tkFileDialog
 import tkSimpleDialog
@@ -52,10 +53,29 @@ def insert():
         field.insert(chosen_name)
 
 def export():
+    def varcompare(a,b):
+        if isinstance(a,types.FloatType):
+            if isinstance(b,types.FloatType):
+                return cmp(a,b)
+            return 1 
+        if isinstance(b,types.FloatType):
+            return -1
+        return 0
+
     if field.active:
         try:
             tree = field.active.buildTree(field.children, set())
             instructions,constants,constmap = ot.export(tree)
+
+            constvars = range(len(constmap))
+            for v,i in constmap.iteritems():
+                constvars[i] = v
+            constvars.sort(varcompare)
+            constmap = {}
+            for i,v in enumerate(constvars):
+                constmap[v] = i
+            instructions,constants,constmap = ot.export(tree, constmap)
+
             print instructions
             print constants
             sys.stdout.flush()
