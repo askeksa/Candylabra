@@ -646,7 +646,7 @@ def exportnode(node, out, labeled, labelmap, constmap, todo, seenlabels):
         seenlabels.remove(node)
 
 # return list of byte values and list of constants
-def export(root):
+def export(root, constmap = None):
     out = []
     visited = set()
     labeled = set()
@@ -654,29 +654,32 @@ def export(root):
     labeled.add(root)
     todo = []
     labelmap = {}
-    constmap = {}
-    constmap["time"] = 0
-    constmap["frame"] = 1
-    constmap["seed"] = 2
-    constmap["bgr"] = 3
-    constmap["bgg"] = 4
-    constmap["bgb"] = 5
-    constmap["fov"] = 6
-    constmap["paddy"] = 7
-
-    constmap["glow1"] = 8
-    constmap["glow2"] = 9
-    constmap["glow3"] = 10
-    constmap["glow4"] = 11
-
-    constmap["shad1"] = 12
-    constmap["shad2"] = 13
-    constmap["shad3"] = 14
-    constmap["shad4"] = 15
-    constmap["shad5"] = 16
-    constmap["shad6"] = 17
-    constmap["shad7"] = 18
-    constmap["shad8"] = 19
+    if constmap is None:
+        constmap = {
+            "time": 0,
+            "frame": 1,
+            "seed": 2,
+            "bgr": 3,
+            "bgg": 4,
+            "bgb": 5,
+            "fov": 6,
+            "paddy": 7,
+            
+            "glow1": 8,
+            "glow2": 9,
+            "glow3": 10,
+            "glow4": 11,
+            
+            "shad1": 12,
+            "shad2": 13,
+            "shad3": 14,
+            "shad4": 15,
+            "shad5": 16,
+            "shad6": 17,
+            "shad7": 18,
+            "shad8": 19
+        }
+        
     exportnode(root, out, labeled, labelmap, constmap, todo, set())
 
     while todo:
