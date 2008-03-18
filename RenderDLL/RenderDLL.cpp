@@ -218,7 +218,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetScissorRect(&scissorRect);
 	COMHandles.device->SetViewport(&newport);
 
-	DWORD color = (((int)(constantPool[3] * 255))<<16) + (((int)(constantPool[4] * 255))<<8) + ((int)(constantPool[5] * 255));
+	DWORD color = (((int)(constantPool[5] * 255))<<16) + (((int)(constantPool[4] * 255))<<8) + ((int)(constantPool[3] * 255));
 	COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, color, 1.0f, 0);
 	
 	COMHandles.effect->BeginPass(1);
