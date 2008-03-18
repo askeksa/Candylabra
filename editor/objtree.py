@@ -296,13 +296,23 @@ class Rotate(Transform):
         return 0x8040c0
 
     def export(self, out, labelmap, constmap, todo):
-        out += [OP_ROTATE]
+        return self.export_helper(out, constmap, 3)
+
+    def export_helper(self, out, constmap, index):
         axis_index = [1,2,0][self.axis]
         zero = getConstIndex(0.0, constmap)
-        out += [zero] * axis_index
+        if axis_index < index:
+            # New node
+            out += [zero] * (3 - index)
+            out += [OP_ROTATE]
+            index = 0
+        out += [zero] * (axis_index - index)
         self.exportDefinitions(out, constmap)
-        out += [zero] * (2 - axis_index)
-        return self.children
+        if len(self.children) == 1 and isinstance(self.children[0], Rotate) and False: # illegal
+            return self.children[0].export_helper(out, constmap, axis_index+1)
+        else:
+            out += [zero] * (2 - axis_index)
+            return self.children
 
 
 class Repeat(ObjectNode):
