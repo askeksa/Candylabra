@@ -55,14 +55,16 @@ def insert():
 def export():
     def varcompare(a,b):
         if isinstance(a,types.FloatType):
-            if a == 0.0:
-                return -1
             if isinstance(b,types.FloatType):
+                if a >= 0.0 and b < 0.0:
+                    return -1
+                if a < 0.0 and b >= 0.0:
+                    return 1
+                if a < 0.0 and b < 0.0:
+                    return cmp(b,a)
                 return cmp(a,b)
             return 1 
         if isinstance(b,types.FloatType):
-            if b == 0.0:
-                return 1
             return -1
         return 0
 
