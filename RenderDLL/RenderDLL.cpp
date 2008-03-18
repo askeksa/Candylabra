@@ -190,6 +190,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	constantPool[14] = 0.2f;
 	constantPool[15] = 4;
 	constantPool[16] = 0.5f;
+	constantPool[17] = 0.25f;
 	
 	interpret(program);
 	

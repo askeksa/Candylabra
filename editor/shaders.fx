@@ -17,14 +17,14 @@ S f1(float4 p : POSITION) {	//vs_pp
 		p,
 		p.xyz,
 		p.xyz,
-		float4(1,1,1,1),
+		p,
 	};
 	return x;
 }
 
 float4 f2(S x): COLOR {
 	float2 y=((x.n.xy*float2(1,-1)+1)/2).yx+float2(1.0f/1024,1.0f/1024);
-	return (tex2D(t, y)*2 + tex2D(t, y+w) + tex2D(t, y-w))/4;
+	return (tex2D(t, y)*2 + tex2D(t, y+w) + tex2D(t, y-w))*w3.y;
 }
 
 S f3(float4 p : POSITION, float3 n : NORMAL, float4 c : COLOR) {
