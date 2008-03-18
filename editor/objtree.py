@@ -709,3 +709,31 @@ def export(root, constmap = None):
 
     return out, constants, constmap
 
+def optimized_export(tree):
+    def varcompare(a,b):
+        if isinstance(a,types.FloatType):
+            if isinstance(b,types.FloatType):
+                if a >= 0.0 and b < 0.0:
+                    return -1
+                if a < 0.0 and b >= 0.0:
+                    return 1
+                if a < 0.0 and b < 0.0:
+                    return cmp(b,a)
+                return cmp(a,b)
+            return 1 
+        if isinstance(b,types.FloatType):
+            return -1
+        return 0
+
+    instructions,constants,constmap = export(tree)
+
+    constvars = range(len(constmap))
+    for v,i in constmap.iteritems():
+        constvars[i] = v
+    constvars.sort(varcompare)
+    constmap = {}
+    for i,v in enumerate(constvars):
+        constmap[v] = i
+    instructions,constants,constmap = export(tree, constmap)
+
+    return instructions,constants,constmap

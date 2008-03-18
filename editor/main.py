@@ -53,35 +53,10 @@ def insert():
         field.insert(chosen_name)
 
 def export():
-    def varcompare(a,b):
-        if isinstance(a,types.FloatType):
-            if isinstance(b,types.FloatType):
-                if a >= 0.0 and b < 0.0:
-                    return -1
-                if a < 0.0 and b >= 0.0:
-                    return 1
-                if a < 0.0 and b < 0.0:
-                    return cmp(b,a)
-                return cmp(a,b)
-            return 1 
-        if isinstance(b,types.FloatType):
-            return -1
-        return 0
-
     if field.active:
         try:
             tree = field.active.buildTree(field.children, set())
-            instructions,constants,constmap = ot.export(tree)
-
-            constvars = range(len(constmap))
-            for v,i in constmap.iteritems():
-                constvars[i] = v
-            constvars.sort(varcompare)
-            constmap = {}
-            for i,v in enumerate(constvars):
-                constmap[v] = i
-            instructions,constants,constmap = ot.export(tree, constmap)
-
+            instructions,constants,constmap = ot.optimized_export(tree)
             print instructions
             print constants
             sys.stdout.flush()
@@ -97,9 +72,12 @@ def export():
                 tree_file.write(''.join([chr(b) for b in instructions]))
                 tree_file.close()
                 consts_file = open(consts_name, 'wb')
+                last_exp = 0
                 for c in constants:
                     frep = struct.pack('f', c)
-                    #frep = chr(0)*2 + frep[2:4]
+                    this_exp = ord(frep[3])
+                    frep = frep[0:3] + chr(this_exp-last_exp)
+                    last_exp = this_exp
                     consts_file.write(frep)
                 consts_file.close()
             except IOError:
