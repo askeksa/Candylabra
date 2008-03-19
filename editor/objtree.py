@@ -58,7 +58,7 @@ class DefValue(object):
 
     def setExp(self, exp):
         if isinstance(exp, types.FloatType):
-            self.exp = "%.7f" % exp
+            self.exp = "%.20f" % exp
         else:
             self.exp = str(exp)
         self.compiled = None

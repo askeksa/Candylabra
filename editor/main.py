@@ -67,8 +67,12 @@ def export():
             conststring = {}
             for c,nodes in exporter.constnodes.iteritems():
                 if isinstance(c,types.FloatType):
-                    conststring[c] = ("%f (%d): " % (c, getprec(c))) + str([n.getName() + (" (%d,%d)" % node_to_brick[n].gridpos) for n in nodes])
+                    intrep = struct.unpack('I', struct.pack('f', c))[0]
+                    conststring[c] = ("%f (%08X): " % (c, intrep)) + str([n.getName() + (" (%d,%d)" % node_to_brick[n].gridpos) for n in nodes])
 
+            print
+            print
+            print
             for c in sorted(conststring.keys(), (lambda a,b : cmp(abs(a), abs(b)))):
                 print conststring[c]
             sys.stdout.flush()

@@ -20,13 +20,23 @@ CAMERA_ZOOM = 1.5
 
 frame = 0
 
-def roundtoprec(val,prec):
-    if val==0: return 0
-    (m,e) = math.frexp(math.fabs(val))
-    m = (int(m*(2**prec)+.5))/(2.**prec)
-    return math.ldexp(m, e) * val/math.fabs(val)
+def float2int(val):
+    return struct.unpack('I', struct.pack('f', val))[0]
 
-def getprec(val,minp=0,maxp=23):
+def int2float(val):
+    return struct.unpack('f', struct.pack('I', val))[0]
+
+def roundtoprec(val,prec):
+    intrepr = float2int(val)
+    intrepr = (intrepr + ((1 << (32-prec)) >> 1)) & (-1 << (32-prec))
+    return int2float(intrepr)
+
+    #if val==0: return 0
+    #(m,e) = math.frexp(math.fabs(val))
+    #m = (int(m*(2**prec)+.5))/(2.**prec)
+    #return math.ldexp(m, e) * val/math.fabs(val)
+
+def getprec(val,minp=0,maxp=32):
     if(minp==maxp):
         return minp
     if val==roundtoprec(val,(minp+maxp-1)/2):
