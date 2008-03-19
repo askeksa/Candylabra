@@ -245,13 +245,17 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		constantPool[8] *= 2;
 	}
 
-
 	CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.newbacksurface));
 	COMHandles.device->SetScissorRect(&scissorRect);
 	COMHandles.device->SetViewport(&newport);
 
 	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+	COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+	COMHandles.device->SetRenderState(D3DRS_BLENDFACTOR, 0xFFFFFFFF);
+	COMHandles.device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+	COMHandles.device->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_ADD);
+	COMHandles.device->SetRenderState(D3DRS_TEXTUREFACTOR, 0xFFFFFFFF);
 	pass(0, 1);
 
 	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
