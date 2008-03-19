@@ -472,6 +472,7 @@ class Window(object):
         self.quit = False
         self.manager = InputManager()
         self.error = None
+        self.pos = None
 
         root.window = self
         root.calculateMinMax()
@@ -530,5 +531,8 @@ class Window(object):
         if self.error:
             titlestring = "Error: " + self.error
         else:
-            titlestring = "%s - %.1f fps" % (self.title, fps)
+            if self.pos is not None:
+                titlestring = "%s - %.1f fps (%d,%d)" % ((self.title, fps) + self.pos)
+            else:
+                titlestring = "%s - %.1f fps" % (self.title, fps)
         d3d.setWindow(x,y,w,h, unicode(titlestring))

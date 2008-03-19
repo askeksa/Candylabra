@@ -302,7 +302,11 @@ class BrickField(Container):
 
         info.setScissorRect(oldrect)
 
+        self.getRoot().window.pos = self.getGridPos(self.current_pos)
+
     def getGridPos(self, pos):
+        if pos is None:
+            return None
         return tuple((pos[i]-self.pos[i])/Brick.SIZE[i] for i in range(2))
 
     def setRoot(self, root):
