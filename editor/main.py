@@ -56,9 +56,21 @@ def export():
     if field.active:
         try:
             tree = field.active.buildTree(field.children, set())
-            instructions,constants,constmap = ot.optimized_export(tree)
-            print instructions
-            print constants
+            exporter = ot.Exporter(tree)
+            instructions,constants,constmap = exporter.optimized_export()
+            #print instructions
+            #print constants
+            node_to_brick = {}
+            for b in field.children:
+                node_to_brick[b.node] = b
+
+            conststring = {}
+            for c,nodes in exporter.constnodes.iteritems():
+                if isinstance(c,types.FloatType):
+                    conststring[c] = ("%f (%d): " % (c, getprec(c))) + str([n.getName() + (" (%d,%d)" % node_to_brick[n].gridpos) for n in nodes])
+
+            for c in sorted(conststring.keys()):
+                print conststring[c]
             sys.stdout.flush()
 
             tree_name = tkFileDialog.asksaveasfilename(initialfile = "tree.dat")
