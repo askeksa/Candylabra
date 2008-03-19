@@ -78,6 +78,7 @@ class DefValue(object):
 
     def export(self, node, exporter):
         try:
+            exporter.node = node
             exporter.exportexp(self.exp)
         except Exception, e:
             raise ExportException(node, e.message)
@@ -300,7 +301,7 @@ class Rotate(Transform):
 
     def export_helper(self, exporter, index):
         axis_index = [1,2,0][self.axis]
-        zero = exporter.getConstIndex(0.0)
+        zero = exporter.getConstIndex(0.0, self)
         if axis_index < index:
             # New node
             exporter.out += [zero] * (3 - index)
@@ -414,7 +415,7 @@ class GlobalDefinition(DefinitionNode):
         return 0xa0a080
 
     def export(self, exporter):
-        var_index = exporter.getConstIndex(self.var)
+        var_index = exporter.getConstIndex(self.var, self)
         exporter.out += [OP_ASSIGN]
         self.exportDefinitions(exporter)
         exporter.out += [var_index]
@@ -426,7 +427,7 @@ class LocalDefinition(DefinitionNode):
         return 0xc09080
 
     def export(self, exporter):
-        var_index = exporter.getConstIndex(self.var)
+        var_index = exporter.getConstIndex(self.var, self)
         exporter.out += [OP_LOCALASSIGN]
         self.exportDefinitions(exporter)
         exporter.out += [var_index]
@@ -533,13 +534,18 @@ class Exporter(object):
             "shad7": 18,
             "shad8": 19
         }
+        self.constnodes = {}
         self.out = None
         self.labeled = None
         self.labelmap = None
         self.seenlabels = None
         self.todo = None
+        self.node = None
 
-    def getConstIndex(self, value):
+    def getConstIndex(self, value, node):
+        if value not in self.constnodes:
+            self.constnodes[value] = set()
+        self.constnodes[value].add(node)
         try:
             fval = float(value)
             frep = struct.pack('f', fval)
@@ -597,7 +603,7 @@ class Exporter(object):
                         tmp = lookahead()
                     except ValueError:
                         #negation modelled as 0-
-                        return operators['-'] + [self.getConstIndex(0.0)] + prim()
+                        return operators['-'] + [self.getConstIndex(0.0, self.node)] + prim()
         
                 if tmp == '(':          #function invokation
                     assert gettoken() == '('
@@ -612,7 +618,7 @@ class Exporter(object):
                         tok = float(tok)
                     elif tok == 'rand':
                         return [0xF1]
-                    return [self.getConstIndex(tok)]
+                    return [self.getConstIndex(tok, self.node)]
     
         def factor():
             instructions = prim()
