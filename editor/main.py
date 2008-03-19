@@ -84,6 +84,8 @@ def export():
                 tkMessageBox.showerror("File error", "Could not write files")
 
         except ot.ExportException, e:
+            traceback.print_exc()
+            sys.stderr.flush()
             tkMessageBox.showerror(title = "Export error", message = e.message)
 
 class TimeSlider(Scrollbar):

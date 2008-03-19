@@ -76,9 +76,9 @@ class DefValue(object):
     def getFreeVariables(self):
         return self.freevars
 
-    def export(self, node, out, constmap):
+    def export(self, node, exporter):
         try:
-            exportexp(self.exp, out, constmap)
+            exporter.exportexp(self.exp)
         except Exception, e:
             raise ExportException(node, e.message)
 
@@ -146,9 +146,9 @@ class ObjectNode(object):
     def export_nchildren(self):
         return 1
 
-    def exportDefinitions(self, out, constmap):
+    def exportDefinitions(self, exporter):
         for (name, d) in reversed(self.definitions):
-            d.export(self, out, constmap)
+            d.export(self, exporter)
 
     def setParamName(self, p_index, p_name):
         pass
@@ -167,10 +167,10 @@ class SaveTransform(ObjectNode):
     def export_nchildren(self):
         return len(self.children)
 
-    def export(self, out, labelmap, constmap, todo):
+    def export(self, exporter):
         if len(self.children) == 0:
             raise ExportException(self, "Fix node with no children")
-        out += [OP_SAVETRANS]
+        exporter.out += [OP_SAVETRANS]
         return self.children
 
     def variableChildren(self):
@@ -203,7 +203,7 @@ class Identity(Transform):
                           0,0,1,0,
                           0,0,0,1)
 
-    def export(self, out, labelmap, constmap, todo):
+    def export(self, exporter):
         return self.children
 
 
@@ -225,9 +225,9 @@ class Move(Transform):
     def brickColor(self):
         return 0x4040c0
 
-    def export(self, out, labelmap, constmap, todo):
-        out += [OP_TRANSLATE]
-        self.exportDefinitions(out, constmap)
+    def export(self, exporter):
+        exporter.out += [OP_TRANSLATE]
+        self.exportDefinitions(exporter)
         return self.children
 
 class Scale(Transform):
@@ -248,9 +248,9 @@ class Scale(Transform):
     def brickColor(self):
         return 0x4080c0
 
-    def export(self, out, labelmap, constmap, todo):
-        out += [OP_SCALE]
-        self.exportDefinitions(out, constmap)
+    def export(self, exporter):
+        exporter.out += [OP_SCALE]
+        self.exportDefinitions(exporter)
         return self.children
 
 class Rotate(Transform):
@@ -295,23 +295,23 @@ class Rotate(Transform):
     def brickColor(self):
         return 0x8040c0
 
-    def export(self, out, labelmap, constmap, todo):
-        return self.export_helper(out, constmap, 3)
+    def export(self, exporter):
+        return self.export_helper(exporter, 3)
 
-    def export_helper(self, out, constmap, index):
+    def export_helper(self, exporter, index):
         axis_index = [1,2,0][self.axis]
-        zero = getConstIndex(0.0, constmap)
+        zero = exporter.getConstIndex(0.0)
         if axis_index < index:
             # New node
-            out += [zero] * (3 - index)
-            out += [OP_ROTATE]
+            exporter.out += [zero] * (3 - index)
+            exporter.out += [OP_ROTATE]
             index = 0
-        out += [zero] * (axis_index - index)
-        self.exportDefinitions(out, constmap)
+        exporter.out += [zero] * (axis_index - index)
+        self.exportDefinitions(exporter)
         if len(self.children) == 1 and isinstance(self.children[0], Rotate) and False: # illegal
-            return self.children[0].export_helper(out, constmap, axis_index+1)
+            return self.children[0].export_helper(exporter, axis_index+1)
         else:
-            out += [zero] * (2 - axis_index)
+            exporter.out += [zero] * (2 - axis_index)
             return self.children
 
 
@@ -346,12 +346,12 @@ class Repeat(ObjectNode):
     def export_nchildren(self):
         return 0
 
-    def export(self, out, labelmap, constmap, todo):
-        todo.append((self.children, len(out)+1))
+    def export(self, exporter):
+        exporter.todo.append((self.children, len(exporter.out)+1))
         n_rep = self.n+1
         if (n_rep % 256) == 255 or (n_rep / 256) > 254:
             raise ExportException(self, "Illegal repeat count")
-        out += [OP_CALL, 0, (n_rep % 256), (n_rep / 256)]
+        exporter.out += [OP_CALL, 0, (n_rep % 256), (n_rep / 256)]
         return []
 
 
@@ -379,14 +379,14 @@ class Conditional(ObjectNode):
     def export_nchildren(self):
         return 0
 
-    def export(self, out, labelmap, constmap, todo):
+    def export(self, exporter):
         if len(self.children) != 2:
             raise ExportException(self, "Conditional must have two children")
-        out += [OP_CONDITIONAL]
-        self.exportDefinitions(out, constmap)
-        todo.append(([self.children[0]], len(out)))
-        todo.append(([self.children[1]], len(out)+1))
-        out += [0,0]
+        exporter.out += [OP_CONDITIONAL]
+        self.exportDefinitions(exporter)
+        exporter.todo.append(([self.children[0]], len(exporter.out)))
+        exporter.todo.append(([self.children[1]], len(exporter.out)+1))
+        exporter.out += [0,0]
         return []
 
 
@@ -413,11 +413,11 @@ class GlobalDefinition(DefinitionNode):
     def brickColor(self):
         return 0xa0a080
 
-    def export(self, out, labelmap, constmap, todo):
-        var_index = getConstIndex(self.var, constmap)
-        out += [OP_ASSIGN]
-        self.exportDefinitions(out, constmap)
-        out += [var_index]
+    def export(self, exporter):
+        var_index = exporter.getConstIndex(self.var)
+        exporter.out += [OP_ASSIGN]
+        self.exportDefinitions(exporter)
+        exporter.out += [var_index]
         return self.children
 
 
@@ -425,11 +425,11 @@ class LocalDefinition(DefinitionNode):
     def brickColor(self):
         return 0xc09080
 
-    def export(self, out, labelmap, constmap, todo):
-        var_index = getConstIndex(self.var, constmap)
-        out += [OP_LOCALASSIGN]
-        self.exportDefinitions(out, constmap)
-        out += [var_index]
+    def export(self, exporter):
+        var_index = exporter.getConstIndex(self.var)
+        exporter.out += [OP_LOCALASSIGN]
+        self.exportDefinitions(exporter)
+        exporter.out += [var_index]
         return self.children
 
 
@@ -493,128 +493,11 @@ class Primitive(ObjectNode):
     def export_nchildren(self):
         return 0
 
-    def export(self, out, labelmap, constmap, todo):
-        out += [OP_PRIM]
-        out += [self.index]
-        self.exportDefinitions(out, constmap)
+    def export(self, exporter):
+        exporter.out += [OP_PRIM]
+        exporter.out += [self.index]
+        self.exportDefinitions(exporter)
         return self.children
-
-
-def getConstIndex(value, constmap):
-    try:
-        fval = float(value)
-        frep = struct.pack('f', fval)
-        #frep = chr(0)*2 + frep[2:4]
-        value = struct.unpack('f', frep)[0]
-    except ValueError:
-        pass
-    
-    if value in constmap:
-        return constmap[value]
-    next_index = len(constmap)
-    constmap[value] = next_index
-    return next_index
-
-def newLabel(node, labelmap):
-    next_label = len(labelmap)
-    labelmap[node] = next_label
-    return next_label
-
-
-def exportexp(exp, out, constmap):
-    id_regexp = re.compile('[a-zA-Z_][0-9a-zA-Z_]*')
-    tokens_regexp = re.compile(
-        '\s+|({|}|\*|\/|%|#|\+|-|\^|\||\(|\))' # delimiters
-        )
-    operators = {'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], '^':[0xF5], '+': [0xF6], '-': [0xF7], '*': [0xF8], '/': [0xF9], '%': [0xFA], '|': [0xFB], '#': [0xFC]}
-
-    def is_id(s):
-        return id_regexp.match(s) != None
-
-    def gettoken():
-        if tokens:
-            return tokens.pop(0)
-        else:
-            return None
-
-    def lookahead():
-        if tokens:
-            return tokens[0]
-        else:
-            return None
-
-    def prim():
-        tok = gettoken()
-        if tok == '(':
-            instructions = expression()
-            assert gettoken() == ')'
-            return instructions     #parenthesized expression
-        else:
-            tmp = lookahead()
-            if tok == '-':
-                try:
-                    float(tmp)
-                    #hack to allow negative constants
-                    tok = '-' + gettoken()
-                    tmp = lookahead()
-                except ValueError:
-                    #negation modelled as 0-
-                    return operators['-'] + [getConstIndex(0.0, constmap)] + prim()
-    
-            if tmp == '(':          #function invokation
-                assert gettoken() == '('
-                e = expression()
-                assert gettoken() == ')'
-                return operators[tok] + e
-            else:
-                #variable reference or float constant
-                if not is_id(tok):
-                    if tok[0] == '.':
-                        tok = '0'+tok
-                    tok = float(tok)
-                elif tok == 'rand':
-                    return [0xF1]
-                return [getConstIndex(tok, constmap)]
-
-    def factor():
-        instructions = prim()
-        tmp = lookahead()
-        while (tmp in ['^','|', '#']):
-            gettoken()
-            right = prim()
-            instructions = operators[tmp] + right + instructions
-            tmp = lookahead()
-    
-        return instructions
-        
-    def term():
-        instructions = factor()
-        tmp = lookahead()
-        while (tmp in ['*', '/', '%']):
-            gettoken()
-            right = factor()
-            if tmp == '%':
-                instructions = operators[tmp] + right + instructions
-            else:
-                instructions = operators[tmp] + instructions + right
-            tmp = lookahead()
-    
-        return instructions
-            
-    def expression():
-        instructions = term()
-        tmp = lookahead()
-        while(tmp in ['+', '-']):
-            gettoken()
-            right = term()
-            instructions = operators[tmp] + instructions + right
-            tmp = lookahead()
-    
-        return instructions
-
-    tokens = filter(None, tokens_regexp.split(exp))
-    instructions = expression()
-    out += instructions
 
 
 class ExportException(Exception):
@@ -622,50 +505,11 @@ class ExportException(Exception):
         Exception.__init__(self, message)
         self.node = node
 
-def marklabels(node, visited, labeled):
-    if node in visited:
-        labeled.add(node)
-    else:
-        visited.add(node)
-        for c in node.children:
-            marklabels(c, visited, labeled)
 
-def exportnode(node, out, labeled, labelmap, constmap, todo, seenlabels):
-    if node in labelmap:
-        if node in seenlabels:
-            raise ExportException(node, "Loop without repeat")
-        out += [OP_CALL, labelmap[node], 0, 0]
-        return
-    if node in labeled:
-        seenlabels.add(node)
-        label = newLabel(node, labelmap)
-        out += [OP_LABEL]
-    visitchildren = node.export(out, labelmap, constmap, todo)
-    if len(visitchildren) != node.export_nchildren():
-        if len(visitchildren) == 0:
-            out += [OP_NOPLEAF]
-        if node.export_nchildren() == 0:
-            raise ExportException(node, "Primitive node with children")
-        if len(visitchildren) > 1:
-            out += [OP_FANOUT]
-    for c in visitchildren:
-        exportnode(c, out, labeled, labelmap, constmap, todo, seenlabels)
-    if len(visitchildren) > 1 or node.variableChildren():
-        out += [0]
-    if node in seenlabels:
-        seenlabels.remove(node)
-
-# return list of byte values and list of constants
-def export(root, constmap = None):
-    out = []
-    visited = set()
-    labeled = set()
-    marklabels(root, visited, labeled)
-    labeled.add(root)
-    todo = []
-    labelmap = {}
-    if constmap is None:
-        constmap = {
+class Exporter(object):
+    def __init__(self, tree):
+        self.tree = tree
+        self.constmap = {
             "time": 0,
             "frame": 1,
             "seed": 2,
@@ -689,51 +533,225 @@ def export(root, constmap = None):
             "shad7": 18,
             "shad8": 19
         }
+        self.out = None
+        self.labeled = None
+        self.labelmap = None
+        self.seenlabels = None
+        self.todo = None
+
+    def getConstIndex(self, value):
+        try:
+            fval = float(value)
+            frep = struct.pack('f', fval)
+            #frep = chr(0)*2 + frep[2:4]
+            value = struct.unpack('f', frep)[0]
+        except ValueError:
+            pass
         
-    exportnode(root, out, labeled, labelmap, constmap, todo, set())
+        if value in self.constmap:
+            return self.constmap[value]
+        next_index = len(self.constmap)
+        self.constmap[value] = next_index
+        return next_index
 
-    while todo:
-        nodes,ref_index = todo.pop()
-        dummy = Identity()
-        dummy.children = list(nodes)
-        labeled.add(dummy)
-        exportnode(dummy, out, labeled, labelmap, constmap, todo, set())
-        out[ref_index] = labelmap[dummy]
+    def newLabel(self, node):
+        next_label = len(self.labelmap)
+        self.labelmap[node] = next_label
+        return next_label
+
+    def exportexp(self, exp):
+        id_regexp = re.compile('[a-zA-Z_][0-9a-zA-Z_]*')
+        tokens_regexp = re.compile(
+            '\s+|({|}|\*|\/|%|#|\+|-|\^|\||\(|\))' # delimiters
+            )
+        operators = {'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], '^':[0xF5], '+': [0xF6], '-': [0xF7], '*': [0xF8], '/': [0xF9], '%': [0xFA], '|': [0xFB], '#': [0xFC]}
+    
+        def is_id(s):
+            return id_regexp.match(s) != None
+    
+        def gettoken():
+            if tokens:
+                return tokens.pop(0)
+            else:
+                return None
+    
+        def lookahead():
+            if tokens:
+                return tokens[0]
+            else:
+                return None
+    
+        def prim():
+            tok = gettoken()
+            if tok == '(':
+                instructions = expression()
+                assert gettoken() == ')'
+                return instructions     #parenthesized expression
+            else:
+                tmp = lookahead()
+                if tok == '-':
+                    try:
+                        float(tmp)
+                        #hack to allow negative constants
+                        tok = '-' + gettoken()
+                        tmp = lookahead()
+                    except ValueError:
+                        #negation modelled as 0-
+                        return operators['-'] + [self.getConstIndex(0.0)] + prim()
         
-    out += [OP_LABEL, OP_END]
+                if tmp == '(':          #function invokation
+                    assert gettoken() == '('
+                    e = expression()
+                    assert gettoken() == ')'
+                    return operators[tok] + e
+                else:
+                    #variable reference or float constant
+                    if not is_id(tok):
+                        if tok[0] == '.':
+                            tok = '0'+tok
+                        tok = float(tok)
+                    elif tok == 'rand':
+                        return [0xF1]
+                    return [self.getConstIndex(tok)]
+    
+        def factor():
+            instructions = prim()
+            tmp = lookahead()
+            while (tmp in ['^','|', '#']):
+                gettoken()
+                right = prim()
+                instructions = operators[tmp] + right + instructions
+                tmp = lookahead()
+        
+            return instructions
+            
+        def term():
+            instructions = factor()
+            tmp = lookahead()
+            while (tmp in ['*', '/', '%']):
+                gettoken()
+                right = factor()
+                if tmp == '%':
+                    instructions = operators[tmp] + right + instructions
+                else:
+                    instructions = operators[tmp] + instructions + right
+                tmp = lookahead()
+        
+            return instructions
+                
+        def expression():
+            instructions = term()
+            tmp = lookahead()
+            while(tmp in ['+', '-']):
+                gettoken()
+                right = term()
+                instructions = operators[tmp] + instructions + right
+                tmp = lookahead()
+        
+            return instructions
+    
+        tokens = filter(None, tokens_regexp.split(exp))
+        instructions = expression()
+        self.out += instructions
 
-    constants = [0.0] * len(constmap)
-    for val,index in constmap.iteritems():
-        if isinstance(val, types.FloatType):
-            constants[index] = val
+    def marklabels(self, node):
+        if node in self.visited:
+            self.labeled.add(node)
+        else:
+            self.visited.add(node)
+            for c in node.children:
+                self.marklabels(c)
+    
+    def exportnode(self, node):
+        if node in self.labelmap:
+            if node in self.seenlabels:
+                raise ExportException(node, "Loop without repeat")
+            self.out += [OP_CALL, self.labelmap[node], 0, 0]
+            return
+        if node in self.labeled:
+            self.seenlabels.add(node)
+            label = self.newLabel(node)
+            self.out += [OP_LABEL]
+        visitchildren = node.export(self)
+        if len(visitchildren) != node.export_nchildren():
+            if len(visitchildren) == 0:
+                self.out += [OP_NOPLEAF]
+            if node.export_nchildren() == 0:
+                raise ExportException(node, "Primitive node with children")
+            if len(visitchildren) > 1:
+                self.out += [OP_FANOUT]
+        for c in visitchildren:
+            self.exportnode(c)
+        if len(visitchildren) > 1 or node.variableChildren():
+            self.out += [0]
+        if node in self.seenlabels:
+            self.seenlabels.remove(node)
+    
+    # return list of byte values and list of constants
+    def export(self):
+        self.out = []
+        self.visited = set()
+        self.labeled = set()
+        self.marklabels(self.tree)
+        self.labeled.add(self.tree)
+        self.todo = []
+        self.labelmap = {}
 
-    return out, constants, constmap
+        self.seenlabels = set()
+        self.exportnode(self.tree)
+    
+        while self.todo:
+            nodes,ref_index = self.todo.pop()
+            dummy = Identity()
+            dummy.children = list(nodes)
+            self.labeled.add(dummy)
+            self.seenlabels = set()
+            self.exportnode(dummy)
+            self.out[ref_index] = self.labelmap[dummy]
+            
+        self.out += [OP_LABEL, OP_END]
+    
+        constants = [0.0] * len(self.constmap)
+        for val,index in self.constmap.iteritems():
+            if isinstance(val, types.FloatType):
+                constants[index] = val
+    
+        return self.out, constants, self.constmap
+    
+    def optimized_export(self):
+        def varcompare(a,b):
+            if isinstance(a,types.FloatType):
+                if isinstance(b,types.FloatType):
+                    if a >= 0.0 and b < 0.0:
+                        return -1
+                    if a < 0.0 and b >= 0.0:
+                        return 1
+                    if a < 0.0 and b < 0.0:
+                        return cmp(b,a)
+                    return cmp(a,b)
+                return 1 
+            if isinstance(b,types.FloatType):
+                return -1
+            return 0
+    
+        instructions,constants,constmap = self.export()
+    
+        constvars = range(len(constmap))
+        for v,i in constmap.iteritems():
+            constvars[i] = v
+        constvars.sort(varcompare)
+        self.constmap = {}
+        for i,v in enumerate(constvars):
+            self.constmap[v] = i
+        instructions,constants,constmap = self.export()
+    
+        return instructions,constants,constmap
+
+
+def export(tree):
+    exporter = Exporter(tree)
+    return exporter.export()
 
 def optimized_export(tree):
-    def varcompare(a,b):
-        if isinstance(a,types.FloatType):
-            if isinstance(b,types.FloatType):
-                if a >= 0.0 and b < 0.0:
-                    return -1
-                if a < 0.0 and b >= 0.0:
-                    return 1
-                if a < 0.0 and b < 0.0:
-                    return cmp(b,a)
-                return cmp(a,b)
-            return 1 
-        if isinstance(b,types.FloatType):
-            return -1
-        return 0
-
-    instructions,constants,constmap = export(tree)
-
-    constvars = range(len(constmap))
-    for v,i in constmap.iteritems():
-        constvars[i] = v
-    constvars.sort(varcompare)
-    constmap = {}
-    for i,v in enumerate(constvars):
-        constmap[v] = i
-    instructions,constants,constmap = export(tree, constmap)
-
-    return instructions,constants,constmap
+    exporter = Exporter(tree)
+    return exporter.optimized_export()
