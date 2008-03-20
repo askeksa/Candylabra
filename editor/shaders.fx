@@ -45,7 +45,7 @@ float4 f4(S x): COLOR {
 float4 f5(S x): COLOR {
 	float2 y=((x.n.xy*float2(1,-1)+1)/2).yx+float2(1.0f/1024,1.0f/1024);
 	float4 c = tex2D(t, y);
-	return c*c.a*10;
+	return c*c.a*2;
 }
 
 technique

@@ -139,6 +139,9 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
 
 	COMHandles.device->GetScissorRect(&scissorRect);
+	D3DSURFACE_DESC backbufferdesc;
+	COMHandles.backbuffer->GetDesc(&backbufferdesc);
+
 	COMHandles.device->GetViewport(&viewport);
 	
 	D3DSURFACE_DESC desc;
@@ -191,24 +194,14 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		0, 1
 	};
 
-	
+	int width = scissorRect.right - scissorRect.left;
+	int height = scissorRect.bottom - scissorRect.top;
 	{//projection matrix
-		float width = scissorRect.right - scissorRect.left;
-		float height = scissorRect.bottom - scissorRect.top;
-		
-		float compsize = width;
-		float centerx = scissorRect.left + width/2;
-		float centery = scissorRect.top + height/2;
 		float CAMERA_NEAR_Z = 0.125f;
 		float CAMERA_FAR_Z = 1024.0f;
-		float CAMERA_ZOOM = constantPool[6];
-
-		float factor = CAMERA_NEAR_Z / CAMERA_ZOOM / compsize;
-		float l = -centerx * factor;
-		float r = (viewport.Width-centerx) * factor;
-		float t = centery * factor;
-		float b = (centery-viewport.Height) * factor;
-		D3DXMatrixPerspectiveOffCenterLH(&proj, l, r, b, t, CAMERA_NEAR_Z, CAMERA_FAR_Z);
+		float aspect = width / (float)height;
+		float factor = height / backbufferdesc.Height;
+		D3DXMatrixPerspectiveFovLH(&proj, constantPool[6], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
 		COMHandles.device->SetTransform(D3DTS_PROJECTION, &proj);
 	}
 	
@@ -276,6 +269,18 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetViewport(&viewport);
 
 	COMHandles.device->SetTexture(0, 0);
+
+
+	int border_offset = (width - height * 16.0f / 9.0f) / 2;
+	if(border_offset > 0) {
+		D3DRECT hborders[2] = {
+			{border_offset, 0, border_offset+1, height},
+			{width - border_offset-1, 0, width - border_offset, height},
+		};
+		COMHandles.device->Clear(2, hborders, D3DCLEAR_TARGET, 0xFF0000, 1.0f, 0);
+	}
+	
+	
 
 	return 0;
 }
