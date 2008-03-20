@@ -236,14 +236,19 @@ if __name__ == "__main__":
     hseq.addChild(scrollfield)
     hseq.addChild(scrollbarv)
     edit_seq = Sequence(ORIENTATION_VERTICAL)
-    edit_seq.addChild(timepane)
+    #edit_seq.addChild(timepane)
     edit_seq.addChild(hseq)
-    vseq.addChild(display)
+
+    disp_seq = Sequence(ORIENTATION_VERTICAL)
+    disp_seq.addChild(display)
+    disp_seq.addChild(timepane)
+    
+    vseq.addChild(disp_seq)
     vseq.addChild(adjuster)
     vseq.addChild(edit_seq)
     vseq.addChild(valuebar)
 
-    root = EditorRoot(display)
+    root = EditorRoot(disp_seq)
     root.addChild(vseq)
 
     window = Window(u"ObjectEditTool", root)
