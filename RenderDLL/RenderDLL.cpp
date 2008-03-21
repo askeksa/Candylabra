@@ -234,6 +234,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
 	COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+	COMHandles.device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
 	COMHandles.device->SetRenderState(D3DRS_BLENDFACTOR, 0xFFFFFFFF);
 	COMHandles.device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
 	COMHandles.device->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_ADD);
