@@ -18,7 +18,7 @@ CAMERA_NEAR_Z = 0.125
 CAMERA_FAR_Z = 1024.0
 CAMERA_ZOOM = 1.5
 
-frame = 0
+#frame = 0
 
 def float2int(val):
     return struct.unpack('I', struct.pack('f', val))[0]
@@ -137,8 +137,8 @@ class MeshDisplay(Component):
             #self.exportTree()
             #self.setBinding("time", time.clock()-self.reftime)
             self.setBinding("time", max(0,self.timebar.area_pos/1000.))
-            self.setBinding("frame", frame)
-            frame += 1
+            #self.setBinding("frame", frame)
+            #frame += 1
             
             #self.tree.collectMeshes(tmlist, self.bindings, self.basematrix)
             #for transform, mesh, color in tmlist:
