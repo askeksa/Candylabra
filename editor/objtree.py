@@ -512,27 +512,23 @@ class Exporter(object):
         self.tree = tree
         self.constmap = {
             "time": 0,
-            "frame": 1,
-            "seed": 2,
-            "bgb": 3,
-            "bgg": 4,
-            "bgr": 5,
-            "fov": 6,
-            "paddy": 7,
+            "seed": 1,
+            "fov": 2,
+            "trans": 3,
             
-            "glow1": 8,
-            "glow2": 9,
-            "glow3": 10,
-            "glow4": 11,
+            "glow1": 4,
+            "glow2": 5,
+            "glow3": 6,
+            "glow4": 7,
             
-            "shad1": 12,
-            "shad2": 13,
-            "shad3": 14,
-            "shad4": 15,
-            "shad5": 16,
-            "shad6": 17,
-            "shad7": 18,
-            "shad8": 19
+            "shad1": 8,
+            "shad2": 9,
+            "shad3": 10,
+            "shad4": 11,
+            "shad5": 12,
+            "shad6": 13,
+            "shad7": 14,
+            "shad8": 15
         }
         self.constnodes = {}
         self.out = None

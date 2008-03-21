@@ -46,7 +46,6 @@ extern "C" {
 	D3DXMATRIXA16 proj;
 	void __stdcall dllinit();
 	void __stdcall dlldraw();
-	extern float constantPool[];
 
 	void __stdcall loadMeshDataFromFile() {
 	}
@@ -120,7 +119,7 @@ void pass(int pass, int src) {
 	
 	COMHandles.effect->BeginPass(pass);
 	COMHandles.device->SetFVF(D3DFVF_XYZ);
-	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[8], 3);
+	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
 	COMHandles.device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, ppquad, 3*sizeof(float));
 	COMHandles.effect->EndPass();
 }
@@ -146,7 +145,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	
 	D3DSURFACE_DESC desc;
 	COMHandles.backbuffer->GetDesc(&desc);
-	
+	float oldtime = constants[0];
 	int totalSamples = numRows*noteSamples*16;
 	int beatSamples = noteSamples * 4;
 	int sample = ((int) (constants[0] * beatSamples)) % totalSamples;
@@ -177,15 +176,15 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 
 
 	memcpy(constantPool, constants, sizeof(float)*256);
-	constantPool[8] = 0.005f;		//glow
+	constantPool[4] = 0.005f;		//glow
 	
-	constantPool[12] = 0.2f;
-	constantPool[13] = 0.5f;
-	constantPool[14] = 0.2f;
-	constantPool[15] = 4;
-	constantPool[16] = 0.5f;
-	constantPool[17] = 0.25f;
-	
+	constantPool[8] = 0.2f;
+	constantPool[9] = 0.5f;
+	constantPool[10] = 0.2f;
+	constantPool[11] = 4;
+	constantPool[12] = 0.5f;
+	constantPool[13] = 0.25f;
+	constantPool[3] = 0;
 	interpret(program);
 	
 
@@ -201,7 +200,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		float CAMERA_FAR_Z = 1024.0f;
 		float aspect = width / (float)height;
 		float factor = height / backbufferdesc.Height;
-		D3DXMatrixPerspectiveFovLH(&proj, constantPool[6], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
+		D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
 		COMHandles.device->SetTransform(D3DTS_PROJECTION, &proj);
 	}
 	
@@ -211,16 +210,32 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetScissorRect(&scissorRect);
 	COMHandles.device->SetViewport(&newport);
 
-	DWORD color = (((int)(constantPool[5] * 255))<<16) + (((int)(constantPool[4] * 255))<<8) + ((int)(constantPool[3] * 255));
-	COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, color, 1.0f, 0);
+	COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0);
 	
 	COMHandles.effect->BeginPass(1);
 	COMHandles.device->SetFVF(MY_FVF);
 	COMHandles.device->SetIndices(COMHandles.composite_index);
 	COMHandles.device->SetStreamSource(0, COMHandles.composite_vertex, 0, sizeof(vertex));
 	COMHandles.device->SetVertexShaderConstantF(0, (float*)&proj, 4);
-	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[8], 3);
+	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
 	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
+	COMHandles.effect->EndPass();
+
+	constantPool[0] = oldtime;
+	constantPool[3] = 1;
+	interpret(program);
+	COMHandles.effect->BeginPass(3);
+	COMHandles.device->SetFVF(MY_FVF);
+	COMHandles.device->SetIndices(COMHandles.composite_index);
+	COMHandles.device->SetStreamSource(0, COMHandles.composite_vertex, 0, sizeof(vertex));
+	COMHandles.device->SetVertexShaderConstantF(0, (float*)&proj, 4);
+	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
+	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
+	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	COMHandles.device->SetRenderState(D3DRS_ZENABLE, TRUE);
 	COMHandles.effect->EndPass();
 
 	COMHandles.device->SetVertexShader(NULL);
@@ -236,7 +251,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 		pass(0, 1);
 		COMHandles.device->SetRenderTarget(0, COMHandles.surfaces[1]);
 		pass(0, 0);
-		constantPool[8] *= 2;
+		constantPool[4] *= 2;
 	}
 
 	CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.newbacksurface));

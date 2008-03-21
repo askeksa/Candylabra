@@ -23,10 +23,10 @@ _rand_scale: dd 0.000030517578125	;1/32768
 
 section rand code align=1
 _frandom@0:
-	mov eax, dword [_constantPool+8]
+	mov eax, dword [_constantPool+4]
 	imul eax, 16307
 	add eax, byte 17
-	mov [_constantPool+8], eax
+	mov [_constantPool+4], eax
 	shr eax, 14
 	push eax
 	fild word [esp]

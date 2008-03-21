@@ -67,4 +67,10 @@ technique
 		VertexShader = compile vs_2_0 f1();
 		PixelShader = compile ps_2_0 f5();
 	}
+	
+	pass
+	{
+		VertexShader = compile vs_2_0 f3();
+		PixelShader = null;
+	}
 }
