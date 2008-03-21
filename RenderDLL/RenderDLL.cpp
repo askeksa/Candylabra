@@ -232,6 +232,12 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
 	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+	COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+	COMHandles.device->SetRenderState(D3DRS_BLENDFACTOR, 0xFFFFFFFF);
+	COMHandles.device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+	COMHandles.device->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_ADD);
+	COMHandles.device->SetRenderState(D3DRS_TEXTUREFACTOR, 0xFFFFFFFF);
 	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
 	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
