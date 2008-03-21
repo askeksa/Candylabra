@@ -230,6 +230,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 
 	COMHandles.device->SetRenderTarget(0, COMHandles.surfaces[1]);
 	pass(2, 0);
+
 	for(int i = 0; i < 4; i++) {
 		COMHandles.device->SetRenderTarget(0, COMHandles.surfaces[0]);
 		pass(0, 1);
