@@ -178,12 +178,6 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	memcpy(constantPool, constants, sizeof(float)*256);
 	constantPool[4] = 0.005f;		//glow
 	
-	constantPool[8] = 0.2f;
-	constantPool[9] = 0.5f;
-	constantPool[10] = 0.2f;
-	constantPool[11] = 4;
-	constantPool[12] = 0.5f;
-	constantPool[13] = 0.25f;
 	constantPool[3] = 0;
 	interpret(program);
 	
@@ -232,8 +226,6 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
 	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	//COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
-	//COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
 	COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 	
