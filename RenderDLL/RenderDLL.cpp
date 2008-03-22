@@ -222,7 +222,7 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.effect->EndPass();
 
 	constantPool[0] = oldtime;
-	constantPool[3] = 1;
+	constantPool[3] = -1;
 	interpret(program);
 	COMHandles.effect->BeginPass(3);
 	COMHandles.device->SetFVF(MY_FVF);
@@ -232,8 +232,11 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
 	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
-	COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+	//COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+	//COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+	COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	
 	COMHandles.device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
 	COMHandles.device->SetRenderState(D3DRS_BLENDFACTOR, 0xFFFFFFFF);
 	COMHandles.device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
@@ -242,7 +245,6 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
 	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	COMHandles.device->SetRenderState(D3DRS_ZENABLE, TRUE);
 	COMHandles.effect->EndPass();
 
 	COMHandles.device->SetVertexShader(NULL);
