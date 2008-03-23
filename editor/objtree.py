@@ -514,7 +514,7 @@ class Exporter(object):
             "time": 0,
             "seed": 1,
             "fov": 2,
-            "trans": 3,
+            "pass": 3,
             
             "glow1": 4,
             "glow2": 5,
@@ -566,7 +566,7 @@ class Exporter(object):
         tokens_regexp = re.compile(
             '\s+|({|}|\*|\/|%|#|\+|-|\^|\||\(|\))' # delimiters
             )
-        operators = {'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], '^':[0xF5], '+': [0xF6], '-': [0xF7], '*': [0xF8], '/': [0xF9], '%': [0xFA], '|': [0xFB], '#': [0xFC]}
+        operators = {'sin': [0xF2], 'clamp':[0xF3], '^':[0xF4], '+': [0xF5], '-': [0xF6], '*': [0xF7], '/': [0xF8], '%': [0xF9], '|': [0xFA], '#': [0xFB]}
     
         def is_id(s):
             return id_regexp.match(s) != None
