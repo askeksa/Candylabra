@@ -54,12 +54,7 @@ _parseParam:
 	fldz
 .dont_clamp
 	ret	
-	.not_clamp:
-	dec eax
-	jne .not_round
-		frndint
-	ret
-.not_round
+.not_clamp:
 	;;binary operations
 	;load second argument
 	push eax
@@ -272,7 +267,6 @@ _traverse:
 	;; ----------------
 	;; repeat/call
 	;; ----------------
-	xor eax, eax
 	lodsb
 
 	push esi
@@ -297,6 +291,7 @@ _traverse:
 	;; primitive
 	;; ----------------
 	lodsb
+	;xor eax, eax	;primitive type
 	push eax
 	
 	push byte 3

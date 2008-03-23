@@ -145,7 +145,6 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	
 	D3DSURFACE_DESC desc;
 	COMHandles.backbuffer->GetDesc(&desc);
-	float oldtime = constants[0];
 	int totalSamples = numRows*noteSamples*16;
 	int beatSamples = noteSamples * 4;
 	int sample = ((int) (constants[0] * beatSamples)) % totalSamples;
@@ -176,11 +175,9 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 
 
 	memcpy(constantPool, constants, sizeof(float)*256);
-	constantPool[4] = 0.005f;		//glow
 	
-	constantPool[3] = 0;
+	constantPool[3] = 1;
 	interpret(program);
-	
 
 	D3DVIEWPORT9 newport = {scissorRect.left, scissorRect.top,
 		scissorRect.right-scissorRect.left, scissorRect.bottom-scissorRect.top,
@@ -213,9 +210,11 @@ RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, f
 	COMHandles.device->SetVertexShaderConstantF(0, (float*)&proj, 4);
 	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
 	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
+	constantPool[3] = 0;
+	interpret(program);
+	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
 	COMHandles.effect->EndPass();
 
-	constantPool[0] = oldtime;
 	constantPool[3] = -1;
 	interpret(program);
 	COMHandles.effect->BeginPass(3);
