@@ -30,6 +30,7 @@ def setfilename(n):
 def save():
     if filename is not None:
         field.save(filename)
+        tkMessageBox.showerror("Saved (no error)", "File saved: "+filename)        
     else:
         saveas()
 
