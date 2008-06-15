@@ -11,14 +11,15 @@ fjernelse af eksplicit kant når implicit opstår
 tegn kanter øverst
 inverter selection
 copy
-fornuftig save/load håndtering
++fornuftig save/load håndtering
++syntax error on extra text in expression
 
 +negation
 floor
 +globale transformationer og checkpoint
 +lokale assignments
 
-kamera
+-kamera
 musik-integrering
-splines
+-splines
 subrutiner

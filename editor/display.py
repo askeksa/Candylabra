@@ -13,6 +13,7 @@ import time
 import pickle
 from ctypes import *
 import struct
+import types
 
 CAMERA_NEAR_Z = 0.125
 CAMERA_FAR_Z = 1024.0
@@ -186,14 +187,26 @@ class Brick(TextBevel):
     HEIGHT = 20
     SIZE = (WIDTH, HEIGHT)
 
-    def __init__(self, node, field, gridpos):
+    def __init__(self, node, field, gridpos, enc = None):
         TextBevel.__init__(self)
         self.node = node
         self.field = field
         self.gridpos = gridpos
         self.color = node.brickColor()
         self.size = Brick.SIZE
-        self.extra_node_children = []
+        if enc is not None:
+            self.extra_node_children = enc
+        else:
+            self.extra_node_children = []
+
+    def __getstate__(self):
+        return (self.node, self.gridpos, self.extra_node_children)
+
+    def __setstate__(self, state):
+        if isinstance(state, types.TupleType):
+            self.node, self.gridpos, self.extra_node_children = state
+        else:
+            self.__dict__ = state
 
     def render(self, info):
         self.text = self.node.getName()
@@ -341,9 +354,9 @@ class BrickField(Container):
             node = brick.node
 
             def valuefunc(param, value):
-                if param in node.options:
+                if param in node.getOptions():
                     return node.option(param, value)
-                p_index = [d[0] for d in node.definitions].index(param)
+                p_index = node.getParameters().index(param)
                 if value is not None:
                     valuestr = str(value)
                     eq_pos = valuestr.find("=")
@@ -352,12 +365,12 @@ class BrickField(Container):
                         value = valuestr[eq_pos+1:]
                         node.setParamName(p_index, p_name)
                     try:
-                        node.definitions[p_index][1].setExp(value)
+                        node.definitions[p_index].setExp(value)
                     except SyntaxError:
                         pass
-                return node.definitions[p_index][1].exp
+                return node.definitions[p_index].exp
                 
-            for op in node.options + [p for p,d in node.definitions]:
+            for op in node.getOptions() + node.getParameters():
                 vbutton = ValueAdjuster(op, valuefunc, self)
                 self.valuebar.addChild(vbutton)
                 any_va = True
@@ -500,18 +513,8 @@ class BrickField(Container):
     def save(self, filename):
         try:
             f = open(filename, 'w')
-            for c in self.children:
-                c.parent = None
-                c.field = None
-                c.font = None
-                for v,d in c.node.definitions:
-                    d.compiled = None
-                    d.freevars = None
             pickle.dump(self.children, f)
             f.close()
-            for c in self.children:
-                c.parent = self
-                c.field = self
         except IOError:
             tkMessageBox.showerror("File error", "Could not write to file")
 
@@ -521,22 +524,28 @@ class BrickField(Container):
             newbricks = pickle.load(f)
             f.close()
             for c in newbricks:
-                c.field = self
-                c.gridpos = tadd(c.gridpos, offset)
+                c.__init__(c.node, self, tadd(c.gridpos, offset), c.extra_node_children)
+
                 # HACKs to improve loading compatibility
-                if isinstance(c.node, ot.Primitive):
-                    c.node.options = ["kind"]
                 if isinstance(c.node, ot.Identity) and not "label" in c.node.__dict__:
                     c.node.label = ""
                 if isinstance(c.node, ot.DefinitionNode) and not isinstance(c.node, ot.LocalDefinition):
                     globaldef = ot.GlobalDefinition(c.node.var)
                     globaldef.definitions = c.node.definitions
                     c.node = globaldef
+                for i,d in enumerate(c.node.definitions):
+                    if isinstance(d, types.TupleType):
+                        c.node.definitions[i] = d[1]
                 self.addChild(c)
         except IOError:
             tkMessageBox.showerror("File error", "Could not read file")
 
     def load(self, filename):
+        self.selected = set()
+        self.setActive(None)
+        self.status = BrickField.IDLE
+        self.current_pos = None
+        self.setRoot(None)
         for c in list(self.children):
             self.removeChild(c, update = False)
         self._load(filename, (0,0))
