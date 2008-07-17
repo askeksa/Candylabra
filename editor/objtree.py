@@ -302,7 +302,6 @@ class DefinitionNode(ObjectNode):
     def __init__(self, var):
         self.var = var
         ObjectNode.__init__(self)
-        self.definitions = [DefValue(0.0)]
 
     def getParameters(self):
         return [self.var]
