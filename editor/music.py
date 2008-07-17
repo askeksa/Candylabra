@@ -16,7 +16,7 @@ music_start_pos = 0
 def initMusic():
     pygame.mixer.init(samples_per_second, -16, 2, 4096)
     #pygame.mixer.music.load("j:\Shared\cs2.1.mp3")
-    pygame.mixer.music.load("test.ogg")
+    #pygame.mixer.music.load("test.ogg")
     #pygame.mixer.music.load("G:\musik\mod\mobyle.mod")
 
 def playMusic(pos):
