@@ -57,6 +57,7 @@ extern "C" {
 	int channelCounts[256*128];
 	unsigned char* notes;
 	MemoryFile* mf;
+
 	void __stdcall init2() {
 		mf = new MemoryFile("sync");
 		int* ptr = (int*)mf->getPtr();
@@ -124,15 +125,31 @@ void pass(int pass, int src) {
 	COMHandles.effect->EndPass();
 }
 
+char dummy[] =
+	"time/seed/fov/pass/"
+	"glow1/glow2/glow3/glow4/"
+	"shad1/shad2/shad3/shad4/"
+	"misc1/misc2/misc3/misc4/";
 
+RENDERDLL_API int __stdcall getparams(char *buf)
+{
+	strcpy(buf, dummy);
+	return 16;
+}
 
-RENDERDLL_API int __stdcall renderobj(LPDIRECT3DDEVICE9 device, char* program, float* constants) {
+RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device)
+{
 	if(!inited) {
 		COMHandles.device = device;
 		init2();
 		dllinit();
 		inited = true;
 	}
+	return 0;
+}
+
+RENDERDLL_API int __stdcall renderobj(char* program, float* constants) {
+	if (!inited) return 0;
 
 	//set state
 	COMHandles.device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
