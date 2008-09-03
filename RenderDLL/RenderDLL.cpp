@@ -59,7 +59,6 @@ extern "C" {
 		int i = 0;
 		int n = 0;
 
-		paramvals[0] = 0.0f;
 		paramvals[1] = 0.0f;
 		paramvals[2] = 1.0f;
 		paramvals[3] = 0.0f;
@@ -232,7 +231,7 @@ RENDERDLL_API int __stdcall renderobj(char* program, float* constants) {
 
 
 	memcpy(constantPool, constants, sizeof(float)*256);
-	memcpy(constantPool, paramvals, sizeof(float)*nparams);
+	memcpy(&constantPool[1], &paramvals[1], sizeof(float)*(nparams-1));
 	
 	constantPool[3] = 1;
 	interpret(program);
