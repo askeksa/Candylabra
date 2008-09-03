@@ -50,6 +50,51 @@ extern "C" {
 	void __stdcall loadMeshDataFromFile() {
 	}
 
+	char parambuf[1000];
+	float paramvals[100];
+	int nparams;
+
+	void initparams()
+	{
+		int i = 0;
+		int n = 0;
+
+		paramvals[0] = 0.0f;
+		paramvals[1] = 0.0f;
+		paramvals[2] = 1.0f;
+		paramvals[3] = 0.0f;
+		i += sprintf(&parambuf[i], "time/seed/fov/pass/");
+		n += 4;
+
+		D3DXEFFECT_DESC desc;
+		COMHandles.effect->GetDesc(&desc);
+		for (int p = 0 ; p < desc.Parameters ; p++)
+		{
+			D3DXPARAMETER_DESC pdesc;
+			D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
+			COMHandles.effect->GetParameterDesc(param, &pdesc);
+			switch(pdesc.Class)
+			{
+			case D3DXPC_SCALAR:
+				COMHandles.effect->GetValue(param, &paramvals[n], D3DX_DEFAULT);
+				i += sprintf(&parambuf[i], "%s/", pdesc.Name);
+				n++;
+				break;
+			case D3DXPC_VECTOR:
+				COMHandles.effect->GetValue(param, &paramvals[n], D3DX_DEFAULT);
+				for (int c = 1 ; c <= pdesc.Columns ; c++)
+				{
+					i += sprintf(&parambuf[i], "%s%d/", pdesc.Name, c);
+					n++;
+				}
+				break;
+			default:
+				break;
+			}
+		}
+		nparams = n;
+	}
+
 	int noteSamples;
 	int numChannels;
 	int numRows;
@@ -71,6 +116,7 @@ extern "C" {
 		if(D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, 0, NULL, &COMHandles.effect, &errors) != D3D_OK) {
 			MessageBox(0, (char*)errors->GetBufferPointer(), 0, 0);
 		}
+		initparams();
 
 		for(int i = 0; i < 2; i++) {
 			CHECK(COMHandles.device->CreateTexture(TEXTURE_WIDTH, TEXTURE_HEIGHT, 1, 
@@ -125,16 +171,10 @@ void pass(int pass, int src) {
 	COMHandles.effect->EndPass();
 }
 
-char dummy[] =
-	"time/seed/fov/pass/"
-	"glow1/glow2/glow3/glow4/"
-	"shad1/shad2/shad3/shad4/"
-	"misc1/misc2/misc3/misc4/";
-
 RENDERDLL_API int __stdcall getparams(char *buf)
 {
-	strcpy(buf, dummy);
-	return 16;
+	strcpy(buf, parambuf);
+	return nparams;
 }
 
 RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device)
@@ -192,6 +232,7 @@ RENDERDLL_API int __stdcall renderobj(char* program, float* constants) {
 
 
 	memcpy(constantPool, constants, sizeof(float)*256);
+	memcpy(constantPool, paramvals, sizeof(float)*nparams);
 	
 	constantPool[3] = 1;
 	interpret(program);
