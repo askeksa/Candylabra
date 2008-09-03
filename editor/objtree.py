@@ -31,7 +31,26 @@ OP_TRANSLATE = 0x0b
 OP_LABEL = 0xff
 OP_END = 0xfe
 
-
+predefined_variables = [
+    "time",
+    "seed",
+    "fov" ,
+    "pass",
+    
+    "glow1",
+    "glow2",
+    "glow3",
+    "glow4",
+    
+    "shad1",
+    "shad2",
+    "shad3",
+    "shad4",
+    "shad5",
+    "shad6",
+    "shad7",
+    "shad8"
+]
 
 
 def makeMatrix(*data):
@@ -322,7 +341,10 @@ class DefinitionNode(ObjectNode):
 
 class GlobalDefinition(DefinitionNode):
     def brickColor(self):
-        return 0xa0a080
+        if self.var in predefined_variables:
+            return 0xe0e090
+        else:
+            return 0xa0a080
 
     def export(self, exporter):
         var_index = exporter.getConstIndex(self.var, self)
@@ -392,26 +414,9 @@ class ExportException(Exception):
 class Exporter(object):
     def __init__(self, tree):
         self.tree = tree
-        self.constmap = {
-            "time": 0,
-            "seed": 1,
-            "fov": 2,
-            "pass": 3,
-            
-            "glow1": 4,
-            "glow2": 5,
-            "glow3": 6,
-            "glow4": 7,
-            
-            "shad1": 8,
-            "shad2": 9,
-            "shad3": 10,
-            "shad4": 11,
-            "shad5": 12,
-            "shad6": 13,
-            "shad7": 14,
-            "shad8": 15
-        }
+        self.constmap = {}
+        for (i,var) in enumerate(predefined_variables):
+            self.constmap[var] = i
         self.constnodes = {}
         self.out = None
         self.labeled = None
