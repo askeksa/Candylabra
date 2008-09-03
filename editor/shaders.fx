@@ -1,6 +1,6 @@
 sampler t;
 float4 glow : register(c0);
-float4 shad : register(c1);
+float4 shad : register(c1) = float4(1,1,1,1);
 float4 misc : register(c2);
 float4x4 proj : register(c0);
 
