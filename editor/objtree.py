@@ -31,26 +31,12 @@ OP_TRANSLATE = 0x0b
 OP_LABEL = 0xff
 OP_END = 0xfe
 
-predefined_variables = [
-    "time",
-    "seed",
-    "fov" ,
-    "pass",
-    
-    "glow1",
-    "glow2",
-    "glow3",
-    "glow4",
-    
-    "shad1",
-    "shad2",
-    "shad3",
-    "shad4",
-    "shad5",
-    "shad6",
-    "shad7",
-    "shad8"
-]
+
+predefined_variables = []
+
+def set_predefined_variables(pvars):
+    global predefined_variables
+    predefined_variables = pvars
 
 
 def makeMatrix(*data):

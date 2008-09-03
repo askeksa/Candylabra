@@ -1,7 +1,7 @@
 sampler t;
-float4 w : register(c0);
-float4 w2 : register(c1);
-float4 w3 : register(c2);
+float4 glow : register(c0);
+float4 shad : register(c1);
+float4 misc : register(c2);
 float4x4 proj : register(c0);
 
 struct S {
@@ -23,7 +23,7 @@ S f1(float4 p : POSITION) {	//vs_pp
 
 float4 f2(S x): COLOR {
 	float2 y=((x.n.xy*float2(1,-1)+1)/2).yx+float2(1.0f/1024,1.0f/1024);
-	return (tex2D(t, y)*2 + tex2D(t, y+w) + tex2D(t, y-w))*w3.y;
+	return (tex2D(t, y)*2 + tex2D(t, y+glow) + tex2D(t, y-glow))*misc.y;
 }
 
 S f3(float4 p : POSITION, float3 n : NORMAL, float4 c : COLOR) {
@@ -37,9 +37,9 @@ S f3(float4 p : POSITION, float3 n : NORMAL, float4 c : COLOR) {
 }
 
 float4 f4(S x): COLOR {
-	x.p2.z *= w2.x;
+	x.p2.z *= shad.x;
 	float i = 1+dot(x.n, normalize(x.p2));
-	return float4(((i*w2.y+w2.z)*x.c+pow(i, w2.w)*w3.x).rgb, x.c.a);
+	return float4(((i*shad.y+shad.z)*x.c+pow(i, shad.w)*misc.x).rgb, x.c.a);
 }
 
 float4 f5(S x): COLOR {

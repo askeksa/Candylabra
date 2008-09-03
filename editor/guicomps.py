@@ -55,10 +55,12 @@ class Bevel(Component):
         self.pressed = False
         self.minsize = (6,6)
         self.maxsize = (Component.MAXSIZE,Component.MAXSIZE)
-        self.color = Bevel.DEFAULT_COLOR
+
+    def getColor(self):
+        return Bevel.DEFAULT_COLOR
 
     def render(self, info):
-        color = self.color
+        color = self.getColor()
         if self.lit:
             color = weighColor(color, 0.75) + weighColor(0xffffff, 0.25)
         lcolor = weighColor(color, 0.5) + weighColor(0xffffff, 0.5)
@@ -107,6 +109,9 @@ class Button(TextBevel):
         self.minsize = (80,20)
         self.maxsize = (80,20)
         self.status = Button.IDLE
+
+    def getColor(self):
+        return self.color
 
     def setIdle(self, event, manager):
         self.status = Button.IDLE

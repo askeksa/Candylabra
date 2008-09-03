@@ -78,6 +78,12 @@ class MeshDisplay(Component):
         # self.reftime = 0
 
     def setTree(self, tree):
+        windll.RenderDLL.init(c_void_p(d3d.getDevice()))
+
+        buf = create_string_buffer(1000)
+        nparams = windll.RenderDLL.getparams(buf)
+        ot.set_predefined_variables(buf.raw.split("/", nparams)[0:nparams])
+
         self.tree = tree
         self.exportTree()
         if tree is None:
@@ -150,7 +156,7 @@ class MeshDisplay(Component):
             d3d.setTransform()
             d3d.setMaterial(0xff000000, 0xffffffff, 0, 0, 10)
 
-            windll.RenderDLL.renderobj(c_void_p(d3d.getDevice()), self.exported_program, self.exported_constants)
+            windll.RenderDLL.renderobj(self.exported_program, self.exported_constants)
 
             info.setScissorRect(oldrect)
 
@@ -192,12 +198,14 @@ class Brick(TextBevel):
         self.node = node
         self.field = field
         self.gridpos = gridpos
-        self.color = node.brickColor()
         self.size = Brick.SIZE
         if enc is not None:
             self.extra_node_children = enc
         else:
             self.extra_node_children = []
+
+    def getColor(self):
+        return self.node.brickColor()
 
     def __getstate__(self):
         return (self.node, self.gridpos, self.extra_node_children)
@@ -562,10 +570,13 @@ class CreateButton(TextBevel):
         TextBevel.__init__(self, label)
         self.creator = creator
         self.field = field
-        self.color = creator().brickColor()
         self.hover = False
+        self.color = creator().brickColor()
         if hotkey:
             self.addHotkey(ord(hotkey), (lambda event, manager : self.click()))
+
+    def getColor(self):
+        return self.color
 
     def updateMinMax(self):
         self.minsize = Brick.SIZE

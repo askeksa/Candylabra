@@ -4,6 +4,7 @@ import sys
 import d3d
 import time
 from d3dc import WM,CREATE,RS
+from ctypes import windll,c_void_p
 
 ORIENTATION_HORIZONTAL = 0
 ORIENTATION_VERTICAL = 1
