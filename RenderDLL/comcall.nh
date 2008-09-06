@@ -93,15 +93,7 @@ cc_Unlock						equ 12
 ;;Com handles
 ch_d3dd					equ 0
 ch_matrix_stack			equ 4
-ch_composite_index		equ 8
-ch_composite_vertex		equ 12
-ch_effect				equ 16
-ch_random_texture		equ 20
-ch_texture0				equ 24
-ch_texture1				equ 28
-ch_surface0				equ 36
-ch_surface1				equ 40
-ch_backbuffer			equ 48
+ch_effect				equ 8
 
 	extern  _COMHandles
 

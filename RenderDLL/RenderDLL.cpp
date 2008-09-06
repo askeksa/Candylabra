@@ -44,12 +44,8 @@ void check(char *n, int r) {
 
 extern "C" {
 	D3DXMATRIXA16 proj;
-	void __stdcall dllinit();
-	void __stdcall dlldraw();
 
-	void __stdcall loadMeshDataFromFile() {
-	}
-
+	float constantPool[256];
 	char parambuf[1000];
 	float paramvals[100];
 	int nparams;
@@ -67,7 +63,7 @@ extern "C" {
 
 		D3DXEFFECT_DESC desc;
 		COMHandles.effect->GetDesc(&desc);
-		for (int p = 0 ; p < desc.Parameters ; p++)
+		for (unsigned int p = 0 ; p < desc.Parameters ; p++)
 		{
 			D3DXPARAMETER_DESC pdesc;
 			D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
@@ -81,7 +77,7 @@ extern "C" {
 				break;
 			case D3DXPC_VECTOR:
 				COMHandles.effect->GetValue(param, &paramvals[n], D3DX_DEFAULT);
-				for (int c = 1 ; c <= pdesc.Columns ; c++)
+				for (unsigned int c = 1 ; c <= pdesc.Columns ; c++)
 				{
 					i += sprintf(&parambuf[i], "%s%d/", pdesc.Name, c);
 					n++;
@@ -110,251 +106,191 @@ extern "C" {
 		numRows = *ptr++;
 		notes = (unsigned char*)ptr;
 
-
 		LPD3DXBUFFER errors;
 		if(D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, 0, NULL, &COMHandles.effect, &errors) != D3D_OK) {
 			MessageBox(0, (char*)errors->GetBufferPointer(), 0, 0);
 		}
 		initparams();
 
-		for(int i = 0; i < 2; i++) {
-			CHECK(COMHandles.device->CreateTexture(TEXTURE_WIDTH, TEXTURE_HEIGHT, 1, 
-				D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &COMHandles.textures[i], NULL));
-			CHECK(COMHandles.textures[i]->GetSurfaceLevel(0, &COMHandles.surfaces[i]));
-		}
-		D3DMULTISAMPLE_TYPE multisampleType = D3DMULTISAMPLE_NONE;
-		DWORD multisampleQuality = 0;
-		CHECK(COMHandles.device->CreateRenderTarget(2048, 2048, D3DFMT_A8R8G8B8, multisampleType, multisampleQuality, FALSE, &COMHandles.newbacksurface, NULL));
-		CHECK(COMHandles.device->CreateDepthStencilSurface(2048, 2048, D3DFMT_D24X8, multisampleType, multisampleQuality, TRUE, &COMHandles.newdepthbuffer, NULL));
-		
+		CHECK(D3DXCreateMatrixStack(0, &COMHandles.matrix_stack));
+
+		CHECK(D3DXCreateBox(COMHandles.device, 1.0f, 1.0f, 1.0f, &COMHandles.boxmesh, NULL));
+
 		CHECK(COMHandles.device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &COMHandles.backbuffer));
 		CHECK(COMHandles.device->GetDepthStencilSurface(&COMHandles.depthbuffer));
-		COMHandles.device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-		COMHandles.device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-		COMHandles.device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-		COMHandles.device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	}
-};
-
-bool inited = false;
-
-extern "C" {
-	struct vertex {
-		D3DXVECTOR3 pos;
-		D3DXVECTOR3 normal;
-		DWORD color;
-	};
-
-extern int num_vertices;
-extern int num_faces;
-
-
-float ppquad[] ={
-	-1.0f,  1.0f, 0.0f, 
-	1.0f,  1.0f, 0.0f, 
-	-1.0f, -1.0f, 0.0f, 
-	1.0f, -1.0f, 0.0f, 
-};
-
-RECT scissorRect;
-D3DVIEWPORT9 viewport;
-float constantPool[256];
-
-void pass(int pass, int src) {
-	COMHandles.device->SetTexture(0, COMHandles.textures[src]);
-	
-	COMHandles.effect->BeginPass(pass);
-	COMHandles.device->SetFVF(D3DFVF_XYZ);
-	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
-	COMHandles.device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, ppquad, 3*sizeof(float));
-	COMHandles.effect->EndPass();
-}
-
-RENDERDLL_API int __stdcall getparams(char *buf)
-{
-	strcpy(buf, parambuf);
-	return nparams;
-}
-
-RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device)
-{
-	if(!inited) {
-		COMHandles.device = device;
-		init2();
-		dllinit();
-		inited = true;
-	}
-	return 0;
-}
-
-RENDERDLL_API int __stdcall renderobj(char* program, float* constants) {
-	if (!inited) return 0;
-
-	//set state
-	COMHandles.device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
-
-	COMHandles.device->GetScissorRect(&scissorRect);
-	D3DSURFACE_DESC backbufferdesc;
-	COMHandles.backbuffer->GetDesc(&backbufferdesc);
-
-	COMHandles.device->GetViewport(&viewport);
-	
-	D3DSURFACE_DESC desc;
-	COMHandles.backbuffer->GetDesc(&desc);
-	int totalSamples = numRows*noteSamples*16;
-	int beatSamples = noteSamples * 4;
-	int sample = ((int) (constants[0] * beatSamples)) % totalSamples;
-	int row = sample / noteSamples;
-	int offset = sample % noteSamples;
-
-	for(int i = 0; i < numChannels*256; i++) {
-		channelDeltas[i] = 44100*10;
-		channelCounts[i] = 0;
 	}
 
-	for(int i = 0; i <= row; i++) {
-		for(int j = 0; j < numChannels*128; j++) {
-			channelDeltas[j] += noteSamples;
-		}
-		for(int j = 0; j < numChannels; j++) {
-			int n = notes[j*numRows*16+i] & 0x7F;
-			if(n != 0 && n != 0x7F) {
-				channelDeltas[j*128+n] = 0;
-				channelCounts[j*128+n]++;
+	void __stdcall drawprimitive(float r, float g, float b, float a, int ptype)
+	{
+		int n = 4;
+		D3DXEFFECT_DESC desc;
+		COMHandles.effect->GetDesc(&desc);
+		for (unsigned int p = 0 ; p < desc.Parameters ; p++)
+		{
+			D3DXPARAMETER_DESC pdesc;
+			D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
+			COMHandles.effect->GetParameterDesc(param, &pdesc);
+			switch(pdesc.Class)
+			{
+			case D3DXPC_SCALAR:
+				COMHandles.effect->SetRawValue(param, &constantPool[n], 0, sizeof(float));
+				n++;
+				break;
+			case D3DXPC_VECTOR:
+				COMHandles.effect->SetRawValue(param, &constantPool[n], 0, pdesc.Columns * sizeof(float));
+				n += pdesc.Columns;
+				break;
+			default:
+				break;
 			}
 		}
+
+		COMHandles.matrix_stack->Push();
+		COMHandles.matrix_stack->MultMatrix(&proj);
+		COMHandles.effect->SetMatrixTranspose("proj", COMHandles.matrix_stack->GetTop());
+		COMHandles.matrix_stack->Pop();
+
+		COMHandles.effect->SetRawValue("color", &r, 0, 16);
+		COMHandles.effect->CommitChanges();
+
+		COMHandles.boxmesh->DrawSubset(0);
 	}
 
-	for(int i = 0; i < numChannels*128; i++) {
-		channelDeltas[i] = (channelDeltas[i] + offset) / beatSamples;
+	bool inited = false;
+
+	RECT scissorRect;
+	D3DVIEWPORT9 viewport;
+	D3DVIEWPORT9 display_viewport;
+	int width, height;
+	char *program;
+
+	void pass(int effectpass, int treepass) {
+		COMHandles.effect->BeginPass(effectpass);
+		constantPool[3] = (float)treepass;
+		interpret(program);
+		COMHandles.effect->EndPass();
 	}
 
-
-	memcpy(constantPool, constants, sizeof(float)*256);
-	memcpy(&constantPool[1], &paramvals[1], sizeof(float)*(nparams-1));
-	
-	constantPool[3] = 1;
-	interpret(program);
-
-	D3DVIEWPORT9 newport = {scissorRect.left, scissorRect.top,
-		scissorRect.right-scissorRect.left, scissorRect.bottom-scissorRect.top,
-		0, 1
-	};
-
-	int width = scissorRect.right - scissorRect.left;
-	int height = scissorRect.bottom - scissorRect.top;
-	{//projection matrix
-		float CAMERA_NEAR_Z = 0.125f;
-		float CAMERA_FAR_Z = 1024.0f;
-		float aspect = width / (float)height;
-		float factor = height / backbufferdesc.Height;
-		D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
-		COMHandles.device->SetTransform(D3DTS_PROJECTION, &proj);
-	}
-	
-	COMHandles.effect->Begin(0, 0);
-	CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.newdepthbuffer));
-	CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.newbacksurface));
-	COMHandles.device->SetScissorRect(&scissorRect);
-	COMHandles.device->SetViewport(&newport);
-
-	COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0);
-	
-	COMHandles.effect->BeginPass(1);
-	COMHandles.device->SetFVF(MY_FVF);
-	COMHandles.device->SetIndices(COMHandles.composite_index);
-	COMHandles.device->SetStreamSource(0, COMHandles.composite_vertex, 0, sizeof(vertex));
-	COMHandles.device->SetVertexShaderConstantF(0, (float*)&proj, 4);
-	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
-	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
-	constantPool[3] = 0;
-	interpret(program);
-	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
-	COMHandles.effect->EndPass();
-
-	constantPool[3] = -1;
-	interpret(program);
-	COMHandles.effect->BeginPass(3);
-	COMHandles.device->SetFVF(MY_FVF);
-	COMHandles.device->SetIndices(COMHandles.composite_index);
-	COMHandles.device->SetStreamSource(0, COMHandles.composite_vertex, 0, sizeof(vertex));
-	COMHandles.device->SetVertexShaderConstantF(0, (float*)&proj, 4);
-	COMHandles.device->SetPixelShaderConstantF(0, &constantPool[4], 3);
-	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	
-	COMHandles.device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
-	COMHandles.device->SetRenderState(D3DRS_BLENDFACTOR, 0xFFFFFFFF);
-	COMHandles.device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-	COMHandles.device->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_ADD);
-	COMHandles.device->SetRenderState(D3DRS_TEXTUREFACTOR, 0xFFFFFFFF);
-	COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, num_vertices, 0, num_faces);
-	COMHandles.device->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	COMHandles.effect->EndPass();
-
-	COMHandles.device->SetVertexShader(NULL);
-	COMHandles.device->SetPixelShader(NULL);
-	
-	CHECK(COMHandles.device->StretchRect(COMHandles.newbacksurface, &scissorRect, COMHandles.surfaces[0], NULL, D3DTEXF_LINEAR));
-
-	COMHandles.device->SetRenderTarget(0, COMHandles.surfaces[1]);
-	pass(2, 0);
-
-	for(int i = 0; i < 4; i++) {
-		COMHandles.device->SetRenderTarget(0, COMHandles.surfaces[0]);
-		pass(0, 1);
-		COMHandles.device->SetRenderTarget(0, COMHandles.surfaces[1]);
-		pass(0, 0);
-		constantPool[4] *= 2;
+	RENDERDLL_API int __stdcall getparams(char *buf)
+	{
+		strcpy(buf, parambuf);
+		return nparams;
 	}
 
-	CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.newbacksurface));
-	COMHandles.device->SetScissorRect(&scissorRect);
-	COMHandles.device->SetViewport(&newport);
+	RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device)
+	{
+		if(!inited) {
+			COMHandles.device = device;
+			init2();
+			inited = true;
+		}
+		return 0;
+	}
 
-	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	COMHandles.device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
-	COMHandles.device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-	COMHandles.device->SetRenderState(D3DRS_BLENDFACTOR, 0xFFFFFFFF);
-	COMHandles.device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-	COMHandles.device->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_ADD);
-	COMHandles.device->SetRenderState(D3DRS_TEXTUREFACTOR, 0xFFFFFFFF);
-	pass(0, 1);
+	void updatemusic()
+	{
+		int totalSamples = numRows*noteSamples*16;
+		int beatSamples = noteSamples * 4;
+		int sample = ((int) (constantPool[0] * beatSamples)) % totalSamples;
+		int row = sample / noteSamples;
+		int offset = sample % noteSamples;
 
-	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	CHECK(COMHandles.device->StretchRect(COMHandles.newbacksurface, &scissorRect, COMHandles.backbuffer, &scissorRect, D3DTEXF_POINT));
+		for(int i = 0; i < numChannels*256; i++) {
+			channelDeltas[i] = 44100*10;
+			channelCounts[i] = 0;
+		}
 
-	COMHandles.effect->End();
+		for(int i = 0; i <= row; i++) {
+			for(int j = 0; j < numChannels*128; j++) {
+				channelDeltas[j] += noteSamples;
+			}
+			for(int j = 0; j < numChannels; j++) {
+				int n = notes[j*numRows*16+i] & 0x7F;
+				if(n != 0 && n != 0x7F) {
+					channelDeltas[j*128+n] = 0;
+					channelCounts[j*128+n]++;
+				}
+			}
+		}
 
-	//restore state
-	COMHandles.device->SetVertexShader(NULL);
-	COMHandles.device->SetPixelShader(NULL);
-	COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		for(int i = 0; i < numChannels*128; i++) {
+			channelDeltas[i] = (channelDeltas[i] + offset) / beatSamples;
+		}
+	}
 
-	CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.backbuffer));
-	CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.depthbuffer));
+	void view_enter()
+	{
+		COMHandles.device->GetScissorRect(&scissorRect);
+		D3DSURFACE_DESC backbufferdesc;
+		COMHandles.backbuffer->GetDesc(&backbufferdesc);
+		COMHandles.device->GetViewport(&viewport);
 
-
-	COMHandles.device->SetScissorRect(&scissorRect);
-	COMHandles.device->SetViewport(&viewport);
-
-	COMHandles.device->SetTexture(0, 0);
-
-
-	int border_offset = (width - height * 16.0f / 9.0f) / 2;
-	if(border_offset > 0) {
-		D3DRECT hborders[2] = {
-			{border_offset, 0, border_offset+1, height},
-			{width - border_offset-1, 0, width - border_offset, height},
+		D3DVIEWPORT9 newport = {scissorRect.left, scissorRect.top,
+			scissorRect.right-scissorRect.left, scissorRect.bottom-scissorRect.top,
+			0, 1
 		};
-		COMHandles.device->Clear(2, hborders, D3DCLEAR_TARGET, 0xFF0000, 1.0f, 0);
-	}
-	
-	
+		display_viewport = newport;
 
-	return 0;
-}
+		width = scissorRect.right - scissorRect.left;
+		height = scissorRect.bottom - scissorRect.top;
+		{//projection matrix
+			float CAMERA_NEAR_Z = 0.125f;
+			float CAMERA_FAR_Z = 1024.0f;
+			float aspect = width / (float)height;
+			D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
+		}
+	}
+
+	void view_display()
+	{
+		COMHandles.device->SetScissorRect(&scissorRect);
+		COMHandles.device->SetViewport(&display_viewport);
+	}
+
+	void view_restore()
+	{
+		COMHandles.device->SetScissorRect(&scissorRect);
+		COMHandles.device->SetViewport(&viewport);
+	}
+
+	RENDERDLL_API int __stdcall renderobj(char* prog, float* constants) {
+		if (!inited) return 0;
+
+		program = prog;
+		memcpy(constantPool, constants, sizeof(float)*256);
+		memcpy(&constantPool[1], &paramvals[1], sizeof(float)*(nparams-1));
+		
+		updatemusic();
+		view_enter();
+
+		//set state
+		COMHandles.device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
+		view_display();
+
+		COMHandles.effect->Begin(0, 0);
+		COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0);
+		pass(0,0);
+		COMHandles.effect->End();
+
+		//restore state
+		COMHandles.device->SetVertexShader(NULL);
+		COMHandles.device->SetPixelShader(NULL);
+		COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.backbuffer));
+		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.depthbuffer));
+		COMHandles.device->SetTexture(0, 0);
+
+		view_restore();
+
+		int border_offset = (int)((width - height * 16.0f / 9.0f) / 2);
+		if(border_offset > 0) {
+			D3DRECT hborders[2] = {
+				{border_offset, 0, border_offset+1, height},
+				{width - border_offset-1, 0, width - border_offset, height},
+			};
+			COMHandles.device->Clear(2, hborders, D3DCLEAR_TARGET, 0xFF0000, 1.0f, 0);
+		}
+
+		return 0;
+	}
 };

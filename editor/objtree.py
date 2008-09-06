@@ -360,7 +360,7 @@ class Primitive(ObjectNode):
         self.index = index
 
     def getParameters(self):
-        return ["a","r","g","b"]
+        return ["r","g","b","a"]
 
     def getOptions(self):
         return ["kind"]
