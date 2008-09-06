@@ -2,16 +2,12 @@
 %include "constants.nh"
 
 global _interpret@4
-extern _uploadMesh@0
 extern _constantPool
-extern _composite_iptr
-extern _composite_vptr
-extern _num_vertices
-extern _num_faces
 extern _channelDeltas
 extern _channelCounts
 extern _frandom@0
-	
+extern _drawprimitive@20
+
 ;parseParam
 ;esi: expression data
 ;ebx: constant pool
@@ -141,28 +137,10 @@ _interpret@4:
 	;; COMHandles.matrix_stack->LoadIdentity();
 	comcall [comhandle(matrix_stack)], LoadIdentity
 	
-	;; Lock composite buffers
-	;; COMHandles.composite_index->Lock(0, 0, (void**)&composite_iptr, 0);
-	push byte D3DLOCK_DISCARD
-	push _composite_iptr
-	push byte 0
-	push byte 0
-	comcall [comhandle(composite_index)], Lock
-	
-	;; COMHandles.composite_vertex->Lock(0, 0, (void**)&composite_vptr, 0);
-	push byte D3DLOCK_DISCARD
-	push _composite_vptr
-	push byte 0
-	push byte 0
-	comcall [comhandle(composite_vertex)], Lock
-	
-	
 	mov ebx, _constantPool
 	mov esi, dword [esp+9*4]
 	;fill jumptable
 	xor edx, edx
-	mov dword [_num_vertices], edx
-	mov dword [_num_faces], edx
 	mov al, byte 0xFF
 	mov edi, esi
 	.fill_table:
@@ -174,9 +152,7 @@ _interpret@4:
 	
 	mov esi, dword [esp+9*4]
 	call _traverse
-	
-	comcall [comhandle(composite_index)], Unlock
-	comcall [comhandle(composite_vertex)], Unlock
+
 	popa
 	ret 4
 
@@ -294,7 +270,7 @@ _traverse:
 	;xor eax, eax	;primitive type
 	push eax
 	
-	push byte 3
+	push byte 1
 	pop edx
 	push byte 4
 	pop ecx
@@ -304,26 +280,12 @@ _traverse:
 	call _parseParam
 	push eax
 	fmul dword [_param_scales+edx*4]
-	fistp dword [esp]
+	fstp dword [esp]
 	loop .unpack_loop_primitive
 
-	pop ecx
-	mov al, cl
-	shl	eax,8
-	pop	ecx
-	mov al,cl
-	shl	eax,8
-	pop	ecx
-	mov al,cl
-	shl	eax,8
-	pop	ecx
-	mov al,cl
-	mov	ebp,eax
-
-	pop eax
-	call _uploadMesh@0		;TODO: is jmp better?
+	call _drawprimitive@20
 	ret
-	
+
 .not_primitive:
 	dec eax
 	jnz .not_assign

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="RenderDLL"
 	ProjectGUID="{06303C31-671B-4BBD-AFFE-8E7028FE9229}"
 	RootNamespace="RenderDLL"
@@ -261,28 +261,6 @@
 			<File
 				RelativePath=".\MemoryFile.h"
 				>
-			</File>
-			<File
-				RelativePath=".\mesh.asm"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="nasmw  -f win32 -Xvc $(InputDir)\$(InputFileName) -o $(OutDir)\$(InputName).obj&#x0D;&#x0A;"
-						Outputs="$(OutDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="nasmw -dDEBUG -f win32 -Xvc $(InputDir)\$(InputFileName) -o $(OutDir)\$(InputName).obj&#x0D;&#x0A;"
-						Outputs="$(OutDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\RenderDLL.cpp"
