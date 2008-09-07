@@ -90,6 +90,32 @@ extern "C" {
 		nparams = n;
 	}
 
+	void uploadparams()
+	{
+		int n = 4;
+		D3DXEFFECT_DESC desc;
+		COMHandles.effect->GetDesc(&desc);
+		for (unsigned int p = 0 ; p < desc.Parameters ; p++)
+		{
+			D3DXPARAMETER_DESC pdesc;
+			D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
+			COMHandles.effect->GetParameterDesc(param, &pdesc);
+			switch(pdesc.Class)
+			{
+			case D3DXPC_SCALAR:
+				COMHandles.effect->SetRawValue(param, &constantPool[n], 0, sizeof(float));
+				n++;
+				break;
+			case D3DXPC_VECTOR:
+				COMHandles.effect->SetRawValue(param, &constantPool[n], 0, pdesc.Columns * sizeof(float));
+				n += pdesc.Columns;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
 	int noteSamples;
 	int numChannels;
 	int numRows;
@@ -122,38 +148,22 @@ extern "C" {
 
 	void __stdcall drawprimitive(float r, float g, float b, float a, int ptype)
 	{
-		int n = 4;
-		D3DXEFFECT_DESC desc;
-		COMHandles.effect->GetDesc(&desc);
-		for (unsigned int p = 0 ; p < desc.Parameters ; p++)
-		{
-			D3DXPARAMETER_DESC pdesc;
-			D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
-			COMHandles.effect->GetParameterDesc(param, &pdesc);
-			switch(pdesc.Class)
-			{
-			case D3DXPC_SCALAR:
-				COMHandles.effect->SetRawValue(param, &constantPool[n], 0, sizeof(float));
-				n++;
-				break;
-			case D3DXPC_VECTOR:
-				COMHandles.effect->SetRawValue(param, &constantPool[n], 0, pdesc.Columns * sizeof(float));
-				n += pdesc.Columns;
-				break;
-			default:
-				break;
-			}
-		}
+		uploadparams();
 
-		COMHandles.matrix_stack->Push();
-		COMHandles.matrix_stack->MultMatrix(&proj);
-		COMHandles.effect->SetMatrixTranspose("proj", COMHandles.matrix_stack->GetTop());
-		COMHandles.matrix_stack->Pop();
+		COMHandles.effect->SetMatrixTranspose("m", COMHandles.matrix_stack->GetTop());
 
 		COMHandles.effect->SetRawValue("color", &r, 0, 16);
 		COMHandles.effect->CommitChanges();
 
 		COMHandles.boxmesh->DrawSubset(0);
+	}
+
+	void __stdcall placecamera()
+	{
+		COMHandles.matrix_stack->Push();
+		COMHandles.matrix_stack->MultMatrix(&proj);
+		COMHandles.effect->SetMatrixTranspose("vp", COMHandles.matrix_stack->GetTop());
+		COMHandles.matrix_stack->Pop();
 	}
 
 	bool inited = false;
@@ -264,11 +274,12 @@ extern "C" {
 		view_enter();
 
 		//set state
-		COMHandles.device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
+		//COMHandles.device->SetRenderState(D3DRS_ALPHATESTENABLE, false);
 		view_display();
 
 		COMHandles.effect->Begin(0, 0);
 		COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0);
+		COMHandles.effect->SetMatrixTranspose("vp", &proj);
 		pass(0,0);
 		COMHandles.effect->End();
 
