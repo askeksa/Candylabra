@@ -9,6 +9,8 @@
 #include "MemoryFile.h"
 #include "objgen.h"
 #include "comcall.h"
+#include "render.h"
+#include "main.h"
 
 using namespace std;
 
@@ -140,10 +142,10 @@ extern "C" {
 
 		CHECK(D3DXCreateMatrixStack(0, &COMHandles.matrix_stack));
 
-		CHECK(D3DXCreateBox(COMHandles.device, 1.0f, 1.0f, 1.0f, &COMHandles.boxmesh, NULL));
-
 		CHECK(COMHandles.device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &COMHandles.backbuffer));
 		CHECK(COMHandles.device->GetDepthStencilSurface(&COMHandles.depthbuffer));
+
+		render_init();
 	}
 
 	bool inited = false;
@@ -253,7 +255,7 @@ extern "C" {
 		updatemusic();
 		view_enter();
 
-		render();
+		render_main();
 
 		//restore state
 		COMHandles.device->SetVertexShader(NULL);
