@@ -263,6 +263,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\render.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RenderDLL.cpp"
 				>
 			</File>
@@ -293,7 +297,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\main.h"
+				>
+			</File>
+			<File
 				RelativePath=".\objgen.h"
+				>
+			</File>
+			<File
+				RelativePath=".\render.h"
 				>
 			</File>
 			<File
