@@ -7,6 +7,7 @@ extern _channelDeltas
 extern _channelCounts
 extern _frandom@0
 extern _drawprimitive@20
+extern _placecamera@0
 
 ;parseParam
 ;esi: expression data
@@ -287,6 +288,16 @@ _traverse:
 	ret
 
 .not_primitive:
+	dec eax
+	jnz .not_camera
+
+	;; ----------------
+	;; camera
+	;; ----------------
+	call _placecamera@0
+	ret
+	
+.not_camera:
 	dec eax
 	jnz .not_assign
 

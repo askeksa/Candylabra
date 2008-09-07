@@ -184,9 +184,7 @@ if __name__ == "__main__":
     buttonpane.weight = 0.001
 
     button_box = CreateButton("Box", (lambda : ot.Primitive(0)), field, 'B')
-    button_sphere = CreateButton("Sphere", (lambda : ot.Primitive(1)), field, 'S')
-    button_cylinder = CreateButton("Cylinder", (lambda : ot.Primitive(2)), field, 'C')
-    button_smoothbox = CreateButton("smOothbox", (lambda : ot.Primitive(3)), field, 'O')
+    button_camera = CreateButton("Camera", (lambda : ot.Camera()), field, 'C')
     button_identity = CreateButton("", ot.Identity, field, 'I')
     button_fix = CreateButton("Fix", ot.SaveTransform, field, 'F')
     button_move = CreateButton("Move", ot.Move, field, 'M')
@@ -210,9 +208,7 @@ if __name__ == "__main__":
     button_export = Button(export, "export", color = FBCOL)
 
     buttonpane.addChild(button_box)
-    buttonpane.addChild(button_sphere)
-    buttonpane.addChild(button_cylinder)
-    buttonpane.addChild(button_smoothbox)
+    buttonpane.addChild(button_camera)
     buttonpane.addChild(button_identity)
     buttonpane.addChild(button_fix)
     buttonpane.addChild(button_move)

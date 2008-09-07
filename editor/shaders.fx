@@ -1,7 +1,6 @@
 sampler t;
-float4x4 proj;
+float4x4 m,vp;
 float4 color = float4(1,1,1,1);
-float nstr = 1;
 
 struct S {
 	float4 p : POSITION;	//p: pos
@@ -10,16 +9,17 @@ struct S {
 };
 
 S v1(float4 p : POSITION, float3 n : NORMAL) {
+	float4 tp = mul(m,p);
 	S x = {
-		mul(proj, p),
+		mul(vp, tp),
 		p.xyz,
-		n,
+		mul(m,float4(n,0)).xyz
 	};
 	return x;
 }
 
 float4 p1(S x): COLOR {
-	return color * nstr;//lerp(1.0,float4(x.n,1),nstr);
+	return color;
 }
 
 technique

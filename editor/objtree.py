@@ -21,13 +21,14 @@ OP_FANOUT = 0x01
 OP_SAVETRANS = 0x2
 OP_CALL = 0x03
 OP_PRIM = 0x04
-OP_ASSIGN = 0x05
-OP_LOCALASSIGN = 0x06
-OP_CONDITIONAL = 0x07
-OP_NOPLEAF = 0x08
-OP_ROTATE = 0x09
-OP_SCALE = 0x0a
-OP_TRANSLATE = 0x0b
+OP_CAMERA = 0x05
+OP_ASSIGN = 0x06
+OP_LOCALASSIGN = 0x07
+OP_CONDITIONAL = 0x08
+OP_NOPLEAF = 0x09
+OP_ROTATE = 0x0a
+OP_SCALE = 0x0b
+OP_TRANSLATE = 0x0c
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -388,6 +389,24 @@ class Primitive(ObjectNode):
         exporter.out += [OP_PRIM]
         exporter.out += [self.index]
         self.exportDefinitions(exporter)
+        return self.children
+
+
+class Camera(ObjectNode):
+    def __init__(self):
+        ObjectNode.__init__(self)
+
+    def getName(self):
+        return "Camera"
+
+    def brickColor(self):
+        return 0xe0e020
+
+    def export_nchildren(self):
+        return 0
+
+    def export(self, exporter):
+        exporter.out += [OP_CAMERA]
         return self.children
 
 
