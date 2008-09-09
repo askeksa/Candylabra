@@ -19,7 +19,7 @@ static void checkcompile(char *statement, int error) {
 		char buff[2048];
 		sprintf(buff, "%s\nfailed with error %s\n%s", statement, DXGetErrorString(error), errors->GetBufferPointer());
 		MessageBox(0, buff, 0, 0);
-		exit(1);
+		ExitProcess(1);
 	}
 }
 #define CHECKC(s) checkcompile(#s, s)

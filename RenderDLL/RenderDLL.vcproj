@@ -255,6 +255,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\Marching.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\MemoryFile.cpp"
 				>
 			</File>
@@ -298,6 +302,10 @@
 			</File>
 			<File
 				RelativePath=".\main.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Marching.h"
 				>
 			</File>
 			<File

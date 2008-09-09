@@ -9,9 +9,17 @@ struct COMStruct {
 	LPDIRECT3DDEVICE9			device;
 	LPD3DXMATRIXSTACK			matrix_stack;
 	LPD3DXEFFECT				effect;
-	LPD3DXMESH					boxmesh;
+	LPD3DXEFFECTCOMPILER		effectcompiler;
+	LPD3DXBUFFER				tshaderbuffer;
+	LPD3DXTEXTURESHADER			tshader;
 	LPDIRECT3DSURFACE9			backbuffer;
 	LPDIRECT3DSURFACE9			depthbuffer;
+	LPD3DXRenderToEnvMap		render_to_envmap;
+	LPDIRECT3DVOLUMETEXTURE9	randomtex;
+	LPDIRECT3DVOLUMETEXTURE9	textures[N_OBJECTS]; // Object shape textures
+	LPDIRECT3DVOLUMETEXTURE9	dtextures[N_OBJECTS]; // Detail textures
+	LPD3DXMESH					meshes[N_OBJECTS];
+	LPDIRECT3DCUBETEXTURE9		cubetex[N_LIGHTS];
 };
 
 extern "C" {
