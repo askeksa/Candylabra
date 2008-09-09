@@ -90,32 +90,40 @@ void render_main()
 {
 	view_display();
 
-	COMHandles.effect->Begin(0, 0);
-	COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0);
-	COMHandles.effect->SetMatrixTranspose("vp", &proj);
+	CHECK(COMHandles.effect->Begin(0, 0));
+	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0));
+	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
 	pass(0,0);
-	COMHandles.effect->End();
+	CHECK(COMHandles.effect->End());
 }
 
 extern "C" {
 
-	void __stdcall drawprimitive(float r, float g, float b, float a, int ptype)
+	void __stdcall drawprimitive(float r, float g, float b, float a, int index)
 	{
 		uploadparams();
 
-		COMHandles.effect->SetMatrixTranspose("m", COMHandles.matrix_stack->GetTop());
+		CHECK(COMHandles.effect->SetMatrixTranspose("m", COMHandles.matrix_stack->GetTop()));
 
-		COMHandles.effect->SetRawValue("color", &r, 0, 16);
-		COMHandles.effect->CommitChanges();
+		CHECK(COMHandles.effect->SetRawValue("color", &r, 0, 16));
+		CHECK(COMHandles.effect->CommitChanges());
 
-		if (COMHandles.meshes[ptype] != NULL) COMHandles.meshes[ptype]->DrawSubset(0);
+		if (COMHandles.meshes[index] != NULL) CHECK(COMHandles.meshes[index]->DrawSubset(0));
+	}
+
+	void __stdcall placelight(float r, float g, float b, float a, int index)
+	{
+		D3DXMATRIX *top = COMHandles.matrix_stack->GetTop();
+		CHECK(COMHandles.effect->SetRawValue("lightpos[0]", &top[12], index*16, 12));
+		CHECK(COMHandles.effect->SetRawValue("lightcol[0]", &r, index*16, 16));
+		CHECK(COMHandles.effect->CommitChanges());
 	}
 
 	void __stdcall placecamera()
 	{
 		COMHandles.matrix_stack->Push();
 		COMHandles.matrix_stack->MultMatrix(&proj);
-		COMHandles.effect->SetMatrixTranspose("vp", COMHandles.matrix_stack->GetTop());
+		CHECK(COMHandles.effect->SetMatrixTranspose("vp", COMHandles.matrix_stack->GetTop()));
 		COMHandles.matrix_stack->Pop();
 	}
 

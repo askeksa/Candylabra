@@ -70,6 +70,7 @@ extern "C" {
 			D3DXPARAMETER_DESC pdesc;
 			D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
 			COMHandles.effect->GetParameterDesc(param, &pdesc);
+			if (pdesc.Elements >= 1) continue;
 			switch(pdesc.Class)
 			{
 			case D3DXPC_SCALAR:
@@ -102,6 +103,7 @@ extern "C" {
 			D3DXPARAMETER_DESC pdesc;
 			D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
 			COMHandles.effect->GetParameterDesc(param, &pdesc);
+			if (pdesc.Elements >= 1) continue;
 			switch(pdesc.Class)
 			{
 			case D3DXPC_SCALAR:

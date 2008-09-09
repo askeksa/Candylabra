@@ -183,7 +183,8 @@ if __name__ == "__main__":
     buttonpane = Sequence(ORIENTATION_VERTICAL)
     buttonpane.weight = 0.001
 
-    button_box = CreateButton("Box", (lambda : ot.Primitive(0)), field, 'B')
+    button_item = CreateButton("Object", (lambda : ot.Item(0)), field, 'O')
+    button_light = CreateButton("Light", (lambda : ot.Light(0)), field, 'L')
     button_camera = CreateButton("Camera", (lambda : ot.Camera()), field, 'C')
     button_identity = CreateButton("", ot.Identity, field, 'I')
     button_fix = CreateButton("Fix", ot.SaveTransform, field, 'F')
@@ -193,7 +194,7 @@ if __name__ == "__main__":
     button_roty = CreateButton("rotate Y", (lambda : ot.Rotate(ot.Rotate.AXIS_Y)), field, 'Y')
     button_rotz = CreateButton("rotate Z", (lambda : ot.Rotate(ot.Rotate.AXIS_Z)), field, 'Z')
     button_repeat = CreateButton("Repeat", (lambda : ot.Repeat(4)), field, 'R')
-    button_cond = CreateButton("conditionaL", (lambda : ot.Conditional()), field, 'L')
+    button_cond = CreateButton("coNditional", (lambda : ot.Conditional()), field, 'N')
     button_globaldef = CreateButton("Globaldef", (lambda : ot.GlobalDefinition("v")), field, 'G')
     button_localdef = CreateButton("localDef", (lambda : ot.LocalDefinition("v")), field, 'D')
 
@@ -207,7 +208,8 @@ if __name__ == "__main__":
     button_saveas = Button(saveas, "save as", color = FBCOL)
     button_export = Button(export, "export", color = FBCOL)
 
-    buttonpane.addChild(button_box)
+    buttonpane.addChild(button_item)
+    buttonpane.addChild(button_light)
     buttonpane.addChild(button_camera)
     buttonpane.addChild(button_identity)
     buttonpane.addChild(button_fix)
@@ -249,7 +251,7 @@ if __name__ == "__main__":
     root.addChild(vseq)
 
     window = Window(u"ObjectEditTool", root)
-    quit = 100
+    quit = 10
     while quit > 0:
         try:
             window.mainloop()

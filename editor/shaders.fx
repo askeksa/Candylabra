@@ -1,5 +1,15 @@
+#define ITERATIONS 10
+#define GRADIENT (1.0/64)
+#define SHADOW_SAMPLES 5
+#define N_LIGHTS 2
+
+float4x4 m,vp,facep;
+float3 campos;
+
+float3 lightpos[N_LIGHTS];
+float4 lightcol[N_LIGHTS];
+
 sampler t;
-float4x4 m,vp;
 float4 color = float4(1,1,1,1);
 
 struct S {
@@ -32,7 +42,7 @@ S v1(float4 p : POSITION, float3 n : NORMAL) {
 }
 
 float4 p1(S x): COLOR {
-	return color;
+	return color*(lightcol[0]+lightcol[1]);
 }
 
 technique
