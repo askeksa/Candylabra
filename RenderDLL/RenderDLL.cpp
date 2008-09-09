@@ -128,7 +128,7 @@ extern "C" {
 	unsigned char* notes;
 	MemoryFile* mf;
 
-	void __stdcall init2() {
+	void __stdcall init3() {
 		mf = new MemoryFile("sync");
 		int* ptr = (int*)mf->getPtr();
 		noteSamples = *ptr++;
@@ -136,10 +136,11 @@ extern "C" {
 		numRows = *ptr++;
 		notes = (unsigned char*)ptr;
 
-		LPD3DXBUFFER errors;
-		if(D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, 0, NULL, &COMHandles.effect, &errors) != D3D_OK) {
-			MessageBox(0, (char*)errors->GetBufferPointer(), 0, 0);
-		}
+		CHECKC(D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS));
+	}
+
+	void __stdcall init2() {
+		init3();
 		initparams();
 
 		CHECK(D3DXCreateMatrixStack(0, &COMHandles.matrix_stack));
@@ -181,6 +182,17 @@ extern "C" {
 		return 0;
 	}
 
+	RENDERDLL_API int __stdcall reinit()
+	{
+		delete mf;
+		COMHandles.effect->Release();
+
+		init3();
+		render_reinit();
+
+		return 0;
+	}
+
 	void updatemusic()
 	{
 		int totalSamples = numRows*noteSamples*16;
@@ -214,10 +226,10 @@ extern "C" {
 
 	void view_enter()
 	{
-		COMHandles.device->GetScissorRect(&scissorRect);
+		CHECK(COMHandles.device->GetScissorRect(&scissorRect));
 		D3DSURFACE_DESC backbufferdesc;
-		COMHandles.backbuffer->GetDesc(&backbufferdesc);
-		COMHandles.device->GetViewport(&viewport);
+		CHECK(COMHandles.backbuffer->GetDesc(&backbufferdesc));
+		CHECK(COMHandles.device->GetViewport(&viewport));
 
 		D3DVIEWPORT9 newport = {scissorRect.left, scissorRect.top,
 			scissorRect.right-scissorRect.left, scissorRect.bottom-scissorRect.top,
@@ -237,14 +249,18 @@ extern "C" {
 
 	void view_display()
 	{
-		COMHandles.device->SetScissorRect(&scissorRect);
-		COMHandles.device->SetViewport(&display_viewport);
+		CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.backbuffer));
+		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.depthbuffer));
+		CHECK(COMHandles.device->SetScissorRect(&scissorRect));
+		CHECK(COMHandles.device->SetViewport(&display_viewport));
 	}
 
 	void view_restore()
 	{
-		COMHandles.device->SetScissorRect(&scissorRect);
-		COMHandles.device->SetViewport(&viewport);
+		CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.backbuffer));
+		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.depthbuffer));
+		CHECK(COMHandles.device->SetScissorRect(&scissorRect));
+		CHECK(COMHandles.device->SetViewport(&viewport));
 	}
 
 	RENDERDLL_API int __stdcall renderobj(char* prog, float* constants) {

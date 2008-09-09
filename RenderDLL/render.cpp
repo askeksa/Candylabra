@@ -64,15 +64,8 @@ void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun)
 
 }
 
-void render_init()
+static void init_effect_and_stuff()
 {
-	for (int i = 0 ; i < N_LIGHTS ; i++)
-	{
-		CHECK(COMHandles.device->CreateCubeTexture(CUBESIZE, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &COMHandles.cubetex[i], 0));
-	}
-	CHECK(D3DXCreateRenderToEnvMap(COMHandles.device, CUBESIZE, 1, D3DFMT_R32F, TRUE, D3DFMT_D16, &COMHandles.render_to_envmap));
-
-	CHECKC(D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, D3DXSHADER_OPTIMIZATION_LEVEL3, NULL, &COMHandles.effect, ERRORS));
 	CHECKC(D3DXCreateEffectCompilerFromFile("shaders.fx", NULL, NULL, D3DXSHADER_OPTIMIZATION_LEVEL3, &COMHandles.effectcompiler, ERRORS));
 
 	maketexture(&COMHandles.randomtex, 32, "r");
@@ -86,14 +79,91 @@ void render_init()
 	}
 }
 
+void render_init()
+{
+	for (int i = 0 ; i < N_LIGHTS ; i++)
+	{
+		CHECK(COMHandles.device->CreateCubeTexture(CUBESIZE, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &COMHandles.cubetex[i], 0));
+	}
+	CHECK(COMHandles.device->CreateDepthStencilSurface(CUBESIZE, CUBESIZE, D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, TRUE, &COMHandles.cubedepth, NULL));
+
+	init_effect_and_stuff();
+}
+
+void render_reinit()
+{
+	COMHandles.effectcompiler->Release();
+	COMHandles.randomtex->Release();
+	for (int i = 0 ; i < N_OBJECTS ; i++)
+	{
+		if (COMHandles.meshes[i]) COMHandles.meshes[i]->Release();
+		if (COMHandles.textures[i]) COMHandles.textures[i]->Release();
+		if (COMHandles.dtextures[i]) COMHandles.dtextures[i]->Release();
+	}
+
+	init_effect_and_stuff();
+}
+
+D3DXMATRIX p[6] = {
+	D3DXMATRIX(
+	0,0,1,1,
+	0,1,0,0,
+	-1,0,0,0,
+	0,0,-1,0
+	),
+	D3DXMATRIX(
+	0,0,-1,-1,
+	0,1,0,0,
+	1,0,0,0,
+	0,0,-1,0
+	),
+	D3DXMATRIX(
+	1,0,0,0,
+	0,0,1,1,
+	0,-1,0,0,
+	0,0,-1,0
+	),
+	D3DXMATRIX(
+	1,0,0,0,
+	0,0,-1,-1,
+	0,1,0,0,
+	0,0,-1,0
+	),
+	D3DXMATRIX(
+	1,0,0,0,
+	0,1,0,0,
+	0,0,1,1,
+	0,0,-1,0
+	),
+	D3DXMATRIX(
+	-1,0,0,0,
+	0,1,0,0,
+	0,0,-1,-1,
+	0,0,-1,0
+	),
+};
+
 void render_main()
 {
-	view_display();
-
 	CHECK(COMHandles.effect->Begin(0, 0));
+
+	for (int i = 0 ; i < N_LIGHTS ; i++)
+	{
+		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.cubedepth));
+		for (int f = 0 ; f < 6 ; f++) {
+			IDirect3DSurface9 *face;
+			CHECK(COMHandles.cubetex[i]->GetCubeMapSurface((D3DCUBEMAP_FACES)f, 0, &face));
+			CHECK(COMHandles.device->SetRenderTarget(0, face));
+			CHECK(COMHandles.device->Clear(0,0, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0,1,0));
+			CHECK(COMHandles.effect->SetMatrixTranspose("facep", &p[f]));
+			pass(0,0);
+		}
+	}
+
+	view_display();
 	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0));
 	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
-	pass(0,0);
+	pass(1,0);
 	CHECK(COMHandles.effect->End());
 }
 

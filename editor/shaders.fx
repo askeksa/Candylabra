@@ -31,7 +31,7 @@ float4 r(float3 p : POSITION, float s : PSIZE) : COLOR0
 }
 
 
-S v1(float4 p : POSITION, float3 n : NORMAL) {
+S v(float4 p : POSITION, float3 n : NORMAL) {
 	float4 tp = mul(m,p);
 	S x = {
 		mul(vp, tp),
@@ -41,15 +41,44 @@ S v1(float4 p : POSITION, float3 n : NORMAL) {
 	return x;
 }
 
-float4 p1(S x): COLOR {
+float4 p(S x): COLOR {
 	return color*(lightcol[0]+lightcol[1]);
 }
 
-technique
-{
-	pass
-	{
-		VertexShader = compile vs_2_0 v1();
-		PixelShader = compile ps_2_0 p1();
+float4 dummyp(S s) : COLOR0 {
+	return 0;
+}
+
+struct cube_s {
+	float4 p : POSITION;
+	float3 v : TEXCOORD0;
+};
+
+cube_s cube_v(float4 p : POSITION) {
+	cube_s s;
+	p = mul(m,p);
+	s.p = mul(facep, float4((p.xyz-lightpos[0])*100,1));
+	s.v = p.xyz-lightpos[0];
+	return s;
+}
+
+float4 cube_p(cube_s s) : COLOR0 {
+	return length(s.v);
+}
+
+technique {
+	pass {
+		VertexShader = compile vs_3_0 cube_v();
+		PixelShader = compile ps_3_0 cube_p();
+	}
+
+	pass {
+		VertexShader = compile vs_3_0 v();
+		PixelShader = compile ps_3_0 p();
+	}
+
+	pass {
+		VertexShader = compile vs_3_0 v();
+		PixelShader = compile ps_3_0 dummyp();
 	}
 }

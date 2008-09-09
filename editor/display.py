@@ -421,6 +421,8 @@ class BrickField(Container):
                         self.setActive(b)
                         self.selected = set([b])
                     if event.double:
+                        if self.root == b:
+                            windll.RenderDLL.reinit()
                         self.setRoot(b)
                         #self.display.reftime = time.clock()
                         #playMusic(0)
