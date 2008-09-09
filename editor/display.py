@@ -205,6 +205,8 @@ class Brick(TextBevel):
             self.extra_node_children = []
 
     def getColor(self):
+        if self.field.display.badnode == self.node:
+            return 0xff0000
         return self.node.brickColor()
 
     def __getstate__(self):
@@ -223,13 +225,7 @@ class Brick(TextBevel):
                     self.field.current_pos and
                     self.field.getGridPos(self.field.current_pos) == self.gridpos)
         self.pressed = (self == self.field.active or self in self.field.selected)
-        if self.field.display.badnode == self.node:
-            realcolor = self.color
-            self.color = 0xff0000
-            TextBevel.render(self, info)
-            self.color = realcolor
-        else:
-            TextBevel.render(self, info)
+        TextBevel.render(self, info)
 
     def below(self, other):
         return (self.gridpos[0] == other.gridpos[0] and 
