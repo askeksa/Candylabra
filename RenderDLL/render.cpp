@@ -169,14 +169,33 @@ void render_main()
 
 extern "C" {
 
+	void setposition(char *name, int index)
+	{
+		D3DXMATRIX invview;
+		D3DXMatrixInverse(&invview, 0, COMHandles.matrix_stack->GetTop());
+		float pos[3] = { invview._41, invview._42, invview._43 };
+		CHECK(COMHandles.effect->SetRawValue(name, pos, index*16, 12));
+	}
+
 	void __stdcall drawprimitive(float r, float g, float b, float a, int index)
 	{
 		uploadparams();
 
 		CHECK(COMHandles.effect->SetMatrixTranspose("m", COMHandles.matrix_stack->GetTop()));
+		setposition("campos", 0);
 
 		CHECK(COMHandles.effect->SetRawValue("color", &r, 0, 16));
 		CHECK(COMHandles.effect->CommitChanges());
+
+		CHECK(COMHandles.effect->SetTexture("_randomtex", COMHandles.randomtex));
+		CHECK(COMHandles.effect->SetTexture("_tex", COMHandles.textures[index]));
+		CHECK(COMHandles.effect->SetTexture("_detailtex", COMHandles.dtextures[index]));
+		for (int i = 0 ; i < N_LIGHTS ; i++)
+		{
+			char var[20];
+			sprintf(var, "_cubetex%d", i);
+			CHECK(COMHandles.effect->SetTexture(var, COMHandles.cubetex[i]));
+		}
 
 		if (COMHandles.meshes[index] != NULL) CHECK(COMHandles.meshes[index]->DrawSubset(0));
 	}
@@ -184,7 +203,7 @@ extern "C" {
 	void __stdcall placelight(float r, float g, float b, float a, int index)
 	{
 		D3DXMATRIX *top = COMHandles.matrix_stack->GetTop();
-		CHECK(COMHandles.effect->SetRawValue("lightpos[0]", &top[12], index*16, 12));
+		setposition("lightpos[0]", index);
 		CHECK(COMHandles.effect->SetRawValue("lightcol[0]", &r, index*16, 16));
 		CHECK(COMHandles.effect->CommitChanges());
 	}

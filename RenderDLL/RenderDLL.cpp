@@ -137,17 +137,16 @@ extern "C" {
 		notes = (unsigned char*)ptr;
 
 		CHECKC(D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS));
+		initparams();
 	}
 
 	void __stdcall init2() {
-		init3();
-		initparams();
-
 		CHECK(D3DXCreateMatrixStack(0, &COMHandles.matrix_stack));
 
 		CHECK(COMHandles.device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &COMHandles.backbuffer));
 		CHECK(COMHandles.device->GetDepthStencilSurface(&COMHandles.depthbuffer));
 
+		init3();
 		render_init();
 	}
 

@@ -16,6 +16,7 @@ import parser
 import re
 import types
 import struct
+from ctypes import create_string_buffer,windll
 
 OP_FANOUT = 0x01
 OP_SAVETRANS = 0x2
@@ -36,9 +37,11 @@ OP_END = 0xfe
 
 predefined_variables = []
 
-def set_predefined_variables(pvars):
+def update_predefined_variables():
     global predefined_variables
-    predefined_variables = pvars
+    buf = create_string_buffer(1000)
+    nparams = windll.RenderDLL.getparams(buf)
+    predefined_variables = buf.raw.split("/", nparams)[0:nparams]
 
 
 def makeMatrix(*data):
