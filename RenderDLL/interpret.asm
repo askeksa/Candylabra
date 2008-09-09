@@ -7,6 +7,7 @@ extern _channelDeltas
 extern _channelCounts
 extern _frandom@0
 extern _drawprimitive@20
+extern _placelight@20
 extern _placecamera@0
 
 ;parseParam
@@ -268,8 +269,7 @@ _traverse:
 	;; primitive
 	;; ----------------
 	lodsb
-	;xor eax, eax	;primitive type
-	push eax
+	push eax		;primitive index
 	
 	push byte 1
 	pop edx
@@ -288,6 +288,31 @@ _traverse:
 	ret
 
 .not_primitive:
+	dec eax
+	jnz .not_light
+	;; ----------------
+	;; light
+	;; ----------------
+	lodsb
+	push eax		;light index
+	
+	push byte 1
+	pop edx
+	push byte 4
+	pop ecx
+
+	;unpack arguments
+.unpack_loop_light:
+	call _parseParam
+	push eax
+	fmul dword [_param_scales+edx*4]
+	fstp dword [esp]
+	loop .unpack_loop_light
+
+	call _placelight@20
+	ret
+	
+.not_light:
 	dec eax
 	jnz .not_camera
 

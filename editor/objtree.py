@@ -21,14 +21,15 @@ OP_FANOUT = 0x01
 OP_SAVETRANS = 0x2
 OP_CALL = 0x03
 OP_PRIM = 0x04
-OP_CAMERA = 0x05
-OP_ASSIGN = 0x06
-OP_LOCALASSIGN = 0x07
-OP_CONDITIONAL = 0x08
-OP_NOPLEAF = 0x09
-OP_ROTATE = 0x0a
-OP_SCALE = 0x0b
-OP_TRANSLATE = 0x0c
+OP_LIGHT = 0x05
+OP_CAMERA = 0x06
+OP_ASSIGN = 0x07
+OP_LOCALASSIGN = 0x08
+OP_CONDITIONAL = 0x09
+OP_NOPLEAF = 0x0a
+OP_ROTATE = 0x0b
+OP_SCALE = 0x0c
+OP_TRANSLATE = 0x0d
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -353,18 +354,17 @@ class LocalDefinition(DefinitionNode):
         return self.children
 
 
-class Primitive(ObjectNode):
-    NAMES = ["box","sphere","cylinder","smoothbox"]
-
-    def __init__(self, index):
+class PrimitiveNode(ObjectNode):
+    def __init__(self, index, max_index):
         ObjectNode.__init__(self)
         self.index = index
+        self.max_index = max_index
 
     def getParameters(self):
         return ["r","g","b","a"]
 
     def getOptions(self):
-        return ["kind"]
+        return ["index"]
 
     def getDefault(self):
         return 0.5
@@ -372,12 +372,9 @@ class Primitive(ObjectNode):
     def option(self, op, value):
         if value:
             intval = int(value)
-            if intval >= 0 and intval < len(Primitive.NAMES):
+            if intval >= 0 and intval <= self.max_index:
                 self.index = intval
         return self.index
-
-    def getName(self):
-        return Primitive.NAMES[self.index]
 
     def brickColor(self):
         return 0xe0e020
@@ -385,8 +382,34 @@ class Primitive(ObjectNode):
     def export_nchildren(self):
         return 0
 
+
+class Item(PrimitiveNode):
+    MAX_INDEX = 4
+
+    def __init__(self, index):
+        PrimitiveNode.__init__(self, index, Item.MAX_INDEX)
+
+    def getName(self):
+        return "Object %d" % (self.index)
+
     def export(self, exporter):
         exporter.out += [OP_PRIM]
+        exporter.out += [self.index]
+        self.exportDefinitions(exporter)
+        return self.children
+
+
+class Light(PrimitiveNode):
+    MAX_INDEX = 1
+
+    def __init__(self, index):
+        PrimitiveNode.__init__(self, index, Light.MAX_INDEX)
+
+    def getName(self):
+        return "Light %d" % (self.index)
+
+    def export(self, exporter):
+        exporter.out += [OP_LIGHT]
         exporter.out += [self.index]
         self.exportDefinitions(exporter)
         return self.children
