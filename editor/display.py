@@ -80,9 +80,7 @@ class MeshDisplay(Component):
     def setTree(self, tree):
         windll.RenderDLL.init(c_void_p(d3d.getDevice()))
 
-        buf = create_string_buffer(1000)
-        nparams = windll.RenderDLL.getparams(buf)
-        ot.set_predefined_variables(buf.raw.split("/", nparams)[0:nparams])
+        ot.update_predefined_variables()
 
         self.tree = tree
         self.exportTree()
@@ -423,6 +421,7 @@ class BrickField(Container):
                     if event.double:
                         if self.root == b:
                             windll.RenderDLL.reinit()
+                            ot.update_predefined_variables()
                         self.setRoot(b)
                         #self.display.reftime = time.clock()
                         #playMusic(0)
