@@ -14,7 +14,7 @@ struct COMStruct {
 	LPD3DXTEXTURESHADER			tshader;
 	LPDIRECT3DSURFACE9			backbuffer;
 	LPDIRECT3DSURFACE9			depthbuffer;
-	LPD3DXRenderToEnvMap		render_to_envmap;
+	LPDIRECT3DSURFACE9			cubedepth;
 	LPDIRECT3DVOLUMETEXTURE9	randomtex;
 	LPDIRECT3DVOLUMETEXTURE9	textures[N_OBJECTS]; // Object shape textures
 	LPDIRECT3DVOLUMETEXTURE9	dtextures[N_OBJECTS]; // Detail textures
