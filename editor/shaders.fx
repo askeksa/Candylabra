@@ -100,7 +100,7 @@ float4 p(S s) : COLOR0 {
 		float3 refl = normalize(reflect(lightv, normal));
 		float spec = pow(dot(refl,normalize(cam)), 20.0);
 		float light = saturate(-dot(normalize(lightv),normal));
-		float atten = 0.03f/sqrt(length(lightv));
+		float atten = 1.0f/sqrt(length(lightv));
 		float fog = 1;//exp(length(cam)*-0.05);
 
 		float pshadow = 0;
@@ -111,6 +111,7 @@ float4 p(S s) : COLOR0 {
 			pshadow += shadow(lightv + normalize(dir)*0.005) / SHADOW_SAMPLES;
 			a += 1;
 		}
+		pshadow = 1;
 
 		float vl = 0;
 		float3 lstep = cam/ITERATIONS;
@@ -120,7 +121,7 @@ float4 p(S s) : COLOR0 {
 			lcoord += lstep;
 		}
 
-		color += lightcol[l] * light;//(((0.01+pshadow*(light + spec))*atten)*fog + vl*length(cam)*0.02);
+		color += lightcol[l] * (((0.01+pshadow*(light + spec))*atten)*fog + vl*length(cam)*lightcol[l].a);
 	}
 	return color/sqrt(length(color.rgb));
 }
@@ -134,11 +135,11 @@ struct cube_s {
 	float3 v : TEXCOORD0;
 };
 
-cube_s cube_v(float4 p : POSITION) {
+cube_s cube_v(float4 p : POSITION, uniform int index) {
 	cube_s s;
 	p = mul(m,p);
-	s.p = mul(facep, float4(p.xyz-lightpos[0],1));
-	s.v = p.xyz-lightpos[0];
+	s.p = mul(facep, float4(p.xyz-lightpos[index],1));
+	s.v = p.xyz-lightpos[index];
 	return s;
 }
 
@@ -148,7 +149,12 @@ float4 cube_p(cube_s s) : COLOR0 {
 
 technique {
 	pass {
-		VertexShader = compile vs_3_0 cube_v();
+		VertexShader = compile vs_3_0 cube_v(0);
+		PixelShader = compile ps_3_0 cube_p();
+	}
+
+	pass {
+		VertexShader = compile vs_3_0 cube_v(1);
 		PixelShader = compile ps_3_0 cube_p();
 	}
 
