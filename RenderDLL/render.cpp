@@ -147,6 +147,11 @@ void render_main()
 {
 	CHECK(COMHandles.effect->Begin(0, 0));
 
+	view_display();
+	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0));
+	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
+	pass(3,0);
+
 	for (int i = 0 ; i < N_LIGHTS ; i++)
 	{
 		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.cubedepth));
@@ -156,14 +161,14 @@ void render_main()
 			CHECK(COMHandles.device->SetRenderTarget(0, face));
 			CHECK(COMHandles.device->Clear(0,0, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0,1,0));
 			CHECK(COMHandles.effect->SetMatrixTranspose("facep", &p[f]));
-			pass(0,0);
+			pass(i,0);
 		}
 	}
 
 	view_display();
-	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0));
 	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
-	pass(1,0);
+	pass(2,0);
+
 	CHECK(COMHandles.effect->End());
 }
 
