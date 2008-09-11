@@ -3,7 +3,7 @@
 import sys
 import d3d
 import time
-from d3dc import WM,CREATE,RS
+from d3dc import WM,CREATE,RS,STYLE
 from ctypes import windll,c_void_p
 
 ORIENTATION_HORIZONTAL = 0
@@ -526,6 +526,11 @@ class Window(object):
 
     def setError(self, error):
         self.error = error
+
+    def maximize(self):
+        (x,y,w,h),c,d,s,wnd = d3d.getWindow()
+        d3d.setWindow(0,0,10000,10000, unicode(""), (s | STYLE.MAXIMIZE))
+        self.manager.manageInputEvents([(WM.SIZEMOVE,0)])
 
     def updateTitle(self, fps):
         (x,y,w,h),c,d,s,wnd = d3d.getWindow()

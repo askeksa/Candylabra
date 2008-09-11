@@ -147,27 +147,33 @@ void render_main()
 {
 	CHECK(COMHandles.effect->Begin(0, 0));
 
-	view_display();
-	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_TARGET, 0, 1.0f, 0));
-	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
-	pass(3,0);
-
+	CHECK(COMHandles.effect->SetTexture("_randomtex", COMHandles.randomtex));
 	for (int i = 0 ; i < N_LIGHTS ; i++)
 	{
-		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.cubedepth));
+		char var[20];
+		sprintf(var, "_cubetex%d", i);
+		CHECK(COMHandles.effect->SetTexture(var, COMHandles.cubetex[i]));
+	}
+
+	CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.cubedepth));
+	for (int i = 0 ; i < N_LIGHTS ; i++)
+	{
 		for (int f = 0 ; f < 6 ; f++) {
 			IDirect3DSurface9 *face;
 			CHECK(COMHandles.cubetex[i]->GetCubeMapSurface((D3DCUBEMAP_FACES)f, 0, &face));
 			CHECK(COMHandles.device->SetRenderTarget(0, face));
-			CHECK(COMHandles.device->Clear(0,0, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0,1,0));
+			CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0, 1.0f, 0));
 			CHECK(COMHandles.effect->SetMatrixTranspose("facep", &p[f]));
 			pass(i,0);
 		}
 	}
 
 	view_display();
+	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0, 1.0f, 0));
 	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
-	pass(2,0);
+	pass(3,1);
+	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
+	pass(2,1);
 
 	CHECK(COMHandles.effect->End());
 }
@@ -177,7 +183,7 @@ extern "C" {
 	void setposition(char *name, int index)
 	{
 		D3DXMATRIX invview;
-		D3DXMatrixInverse(&invview, 0, COMHandles.matrix_stack->GetTop());
+		D3DXMatrixInverse(&invview, NULL, COMHandles.matrix_stack->GetTop());
 		float pos[3] = { invview._41, invview._42, invview._43 };
 		CHECK(COMHandles.effect->SetRawValue(name, pos, index*16, 12));
 	}
@@ -192,15 +198,8 @@ extern "C" {
 		CHECK(COMHandles.effect->SetRawValue("color", &r, 0, 16));
 		CHECK(COMHandles.effect->CommitChanges());
 
-		CHECK(COMHandles.effect->SetTexture("_randomtex", COMHandles.randomtex));
 		CHECK(COMHandles.effect->SetTexture("_tex", COMHandles.textures[index]));
 		CHECK(COMHandles.effect->SetTexture("_detailtex", COMHandles.dtextures[index]));
-		for (int i = 0 ; i < N_LIGHTS ; i++)
-		{
-			char var[20];
-			sprintf(var, "_cubetex%d", i);
-			CHECK(COMHandles.effect->SetTexture(var, COMHandles.cubetex[i]));
-		}
 
 		if (COMHandles.meshes[index] != NULL) CHECK(COMHandles.meshes[index]->DrawSubset(0));
 	}
@@ -208,8 +207,8 @@ extern "C" {
 	void __stdcall placelight(float r, float g, float b, float a, int index)
 	{
 		D3DXMATRIX *top = COMHandles.matrix_stack->GetTop();
-		setposition("lightpos[0]", index);
-		CHECK(COMHandles.effect->SetRawValue("lightcol[0]", &r, index*16, 16));
+		setposition("lightpos", index);
+		CHECK(COMHandles.effect->SetRawValue("lightcol", &r, index*16, 16));
 		CHECK(COMHandles.effect->CommitChanges());
 	}
 
