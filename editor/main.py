@@ -251,6 +251,13 @@ if __name__ == "__main__":
     root.addChild(vseq)
 
     window = Window(u"ObjectEditTool", root)
+    window.maximize()
+
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+        setfilename(filename)
+        field.load(filename)
+
     quit = 10
     while quit > 0:
         try:

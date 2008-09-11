@@ -52,8 +52,8 @@ float4 t1(float3 p : POSITION, float s : PSIZE) : COLOR0
 }
 
 
-float shadow(float3 v) {
-	return saturate((texCUBE(cubetex[0], v).r - length(v))*100+1);
+float shadow(int index, float3 v) {
+	return saturate((texCUBE(cubetex[index], v).r - length(v))*10+1);
 }
 
 float random(float3 v) {
@@ -93,37 +93,39 @@ float4 p(S s) : COLOR0 {
 	//return 0.3-nl*0.2;
 	normal = normalize(mul(m,float4(normal,0)));
 
-	float4 color = 0;
+	float3 color = 0;
 	for (int l = 0 ; l < N_LIGHTS ; l++)
 	{
 		float3 lightv = s.v - lightpos[l];
 		float3 refl = normalize(reflect(lightv, normal));
 		float spec = pow(dot(refl,normalize(cam)), 20.0);
 		float light = saturate(-dot(normalize(lightv),normal));
-		float atten = 1.0f/sqrt(length(lightv));
-		float fog = 1;//exp(length(cam)*-0.05);
+		float atten = 1.0;///sqrt(length(lightv));
+		float fog = 1.0;//exp(length(cam)*-0.05);
 
 		float pshadow = 0;
 		float a = random(lightv)*17;
 		for (int j = 0 ; j < SHADOW_SAMPLES ; j++)
 		{
 			float3 dir = float3(sin(a*3),sin(a*5),sin(a*7));
-			pshadow += shadow(lightv + normalize(dir)*0.005) / SHADOW_SAMPLES;
+			pshadow += shadow(l, lightv + normalize(dir)*0.01);
 			a += 1;
 		}
-		pshadow = 1;
+		pshadow /= SHADOW_SAMPLES;
+		//pshadow = 1;
 
 		float vl = 0;
 		float3 lstep = cam/ITERATIONS;
 		float3 lcoord = lightv+random(lightv)*lstep;
 		for (int i = 0 ; i < ITERATIONS ; i++) {
-			vl += shadow(lcoord)/length(lcoord);
+			vl += shadow(l, lcoord)/length(lcoord);
 			lcoord += lstep;
 		}
+		vl = 0;
 
-		color += lightcol[l] * (((0.01+pshadow*(light + spec))*atten)*fog + vl*length(cam)*lightcol[l].a);
+		color += lightcol[l].rgb * (((0.01+pshadow*(light + spec))*atten)*fog + vl*length(cam)*lightcol[l].a);
 	}
-	return color/sqrt(length(color.rgb));
+	return float4(color/sqrt(length(color)),1);
 }
 
 float4 dummyp(S s) : COLOR0 {
