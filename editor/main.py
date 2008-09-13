@@ -120,7 +120,7 @@ class TimeSlider(Scrollbar):
         #if self.music_was_playing:
         #    playMusic(self.area_pos/1000.)
         display.playbutton.repeatAction()
-        
+
 class PlayButton(Button):
     active = False
     display = None

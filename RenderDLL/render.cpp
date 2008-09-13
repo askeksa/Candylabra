@@ -182,9 +182,8 @@ extern "C" {
 
 	void setposition(char *name, int index)
 	{
-		D3DXMATRIX invview;
-		D3DXMatrixInverse(&invview, NULL, COMHandles.matrix_stack->GetTop());
-		float pos[3] = { invview._41, invview._42, invview._43 };
+		D3DXMATRIX *trans = COMHandles.matrix_stack->GetTop();
+		float pos[3] = { trans->_41, trans->_42, trans->_43 };
 		CHECK(COMHandles.effect->SetRawValue(name, pos, index*16, 12));
 	}
 
@@ -193,28 +192,31 @@ extern "C" {
 		uploadparams();
 
 		CHECK(COMHandles.effect->SetMatrixTranspose("m", COMHandles.matrix_stack->GetTop()));
-		setposition("campos", 0);
-
 		CHECK(COMHandles.effect->SetRawValue("color", &r, 0, 16));
-		CHECK(COMHandles.effect->CommitChanges());
 
 		CHECK(COMHandles.effect->SetTexture("_tex", COMHandles.textures[index]));
 		CHECK(COMHandles.effect->SetTexture("_detailtex", COMHandles.dtextures[index]));
+		CHECK(COMHandles.effect->CommitChanges());
 
 		if (COMHandles.meshes[index] != NULL) CHECK(COMHandles.meshes[index]->DrawSubset(0));
 	}
 
 	void __stdcall placelight(float r, float g, float b, float a, int index)
 	{
-		D3DXMATRIX *top = COMHandles.matrix_stack->GetTop();
 		setposition("lightpos", index);
+
 		CHECK(COMHandles.effect->SetRawValue("lightcol", &r, index*16, 16));
 		CHECK(COMHandles.effect->CommitChanges());
 	}
 
 	void __stdcall placecamera()
 	{
+		setposition("campos", 0);
+
+		setfov();
+
 		COMHandles.matrix_stack->Push();
+		D3DXMatrixInverse(COMHandles.matrix_stack->GetTop(), NULL, COMHandles.matrix_stack->GetTop());
 		COMHandles.matrix_stack->MultMatrix(&proj);
 		CHECK(COMHandles.effect->SetMatrixTranspose("vp", COMHandles.matrix_stack->GetTop()));
 		COMHandles.matrix_stack->Pop();

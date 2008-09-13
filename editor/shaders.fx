@@ -4,7 +4,7 @@
 #define N_LIGHTS 2
 
 float4x4 m,vp,facep;
-float3 campos;
+float3 campos[1];
 
 float3 lightpos[N_LIGHTS];
 float4 lightcol[N_LIGHTS];
@@ -12,6 +12,11 @@ float4 color = float4(1,1,1,1);
 
 float detailfac = 1;
 float detailstr = 1;
+float gradient = 0.01;
+float spread = 0.01;
+float shadowedge = 2.0;
+float ambient = 0.1;
+float volfac = 0.1;
 
 texture _tex;
 texture _detailtex;
@@ -37,23 +42,28 @@ float4 r(float3 p : POSITION, float s : PSIZE) : COLOR0
 float4 t0(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
 	float3 r = p-0.5;
-	return noise(normalize(r)*2) + noise(p*7) - 2.0 + dot(r,r)*20;
+	return noise(normalize(r)*2) + noise(p*7)*0.5 - 2.0 + dot(r,r)*20;
 }
 
 float4 dt0(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
-	return 0.5 + 0.5 * noise(sin(p*2*3.1415926535)*float3(7,1,7));
+	return 0.5 + 0.5 * noise(sin(p*2*3.1415926535)*float3(3,5,7));
 }
 
 float4 t1(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
 	float3 r = p-0.5;
-	return noise(normalize(r)*2)*0.2 + 0.05/length(r) - 0.4;
+	return noise(normalize(r)*2)*0.2 + 0.1/length(r) - 0.4;
+}
+
+float4 dt1(float3 p : POSITION, float s : PSIZE) : COLOR0
+{
+	return 0.5 + 0.5 * noise(sin(p*2*3.1415926535)*float3(3,5,7));
 }
 
 
 float shadow(int index, float3 v) {
-	return saturate((texCUBE(cubetex[index], v).r - length(v))*10+1);
+	return saturate((texCUBE(cubetex[index], v).r - length(v))*shadowedge+1);
 }
 
 float random(float3 v) {
@@ -80,13 +90,17 @@ float objtex(float3 p)
 
 float grad(float3 p, float3 g)
 {
-	return objtex(p-g*GRADIENT)-objtex(p+g*GRADIENT);
+	return objtex(p-g*gradient)-objtex(p+g*gradient);
 }
 
 float4 p(S s) : COLOR0 {
 	//return tex3D(tex,s.t);
 
-	float3 cam = campos-s.v;
+	//return float4(lightpos[0],1);
+	//return float4((s.v-lightpos[0])*0.01+0.5,1);
+	//return campos[0].x + saturate(texCUBE(cubetex[0], s.v-lightpos[0]).r*0.04);
+
+	float3 cam = campos[0]-s.v;
 	float3 texcoord = s.t;
 	float3 normal = float3(grad(texcoord,float3(1,0,0)),grad(texcoord,float3(0,1,0)),grad(texcoord,float3(0,0,1)));
 	float nl = length(normal);
@@ -108,7 +122,7 @@ float4 p(S s) : COLOR0 {
 		for (int j = 0 ; j < SHADOW_SAMPLES ; j++)
 		{
 			float3 dir = float3(sin(a*3),sin(a*5),sin(a*7));
-			pshadow += shadow(l, lightv + normalize(dir)*0.01);
+			pshadow += shadow(l, lightv + normalize(dir)*spread);
 			a += 1;
 		}
 		pshadow /= SHADOW_SAMPLES;
@@ -121,9 +135,9 @@ float4 p(S s) : COLOR0 {
 			vl += shadow(l, lcoord)/length(lcoord);
 			lcoord += lstep;
 		}
-		vl = 0;
+		//vl = 0;
 
-		color += lightcol[l].rgb * (((0.01+pshadow*(light + spec))*atten)*fog + vl*length(cam)*lightcol[l].a);
+		color += lightcol[l].rgb * (((ambient+pshadow*(light + spec))*atten)*fog + volfac*vl*length(cam)*lightcol[l].a);
 	}
 	return float4(color/sqrt(length(color)),1);
 }
