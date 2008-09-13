@@ -34,5 +34,6 @@ extern "C" {
 	void uploadparams();
 	void pass(int effectpass, int treepass);
 	void view_display();
+	void setfov();
 	extern D3DXMATRIXA16 proj;
 }

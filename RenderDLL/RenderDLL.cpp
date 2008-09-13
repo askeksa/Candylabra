@@ -165,6 +165,18 @@ extern "C" {
 		COMHandles.effect->EndPass();
 	}
 
+	void setfov()
+	{
+		width = scissorRect.right - scissorRect.left;
+		height = scissorRect.bottom - scissorRect.top;
+		{//projection matrix
+			float CAMERA_NEAR_Z = 0.125f;
+			float CAMERA_FAR_Z = 1024.0f;
+			float aspect = width / (float)height;
+			D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
+		}
+	}
+
 	RENDERDLL_API int __stdcall getparams(char *buf)
 	{
 		strcpy(buf, parambuf);
@@ -236,14 +248,6 @@ extern "C" {
 		};
 		display_viewport = newport;
 
-		width = scissorRect.right - scissorRect.left;
-		height = scissorRect.bottom - scissorRect.top;
-		{//projection matrix
-			float CAMERA_NEAR_Z = 0.125f;
-			float CAMERA_FAR_Z = 1024.0f;
-			float aspect = width / (float)height;
-			D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
-		}
 	}
 
 	void view_display()
