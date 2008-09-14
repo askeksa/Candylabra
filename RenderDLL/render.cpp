@@ -18,6 +18,8 @@ bool maketexture(IDirect3DVolumeTexture9 **texp, int size, char *fun)
 	CHECK(D3DXCreateTextureShader((const DWORD *)COMHandles.tshaderbuffer->GetBufferPointer(), &COMHandles.tshader));
 	CHECK(COMHandles.device->CreateVolumeTexture(size,size,size,1, 0, D3DFMT_L8, D3DPOOL_MANAGED, texp, 0));
 	CHECK(D3DXFillVolumeTextureTX(*texp, COMHandles.tshader));
+	COMHandles.tshaderbuffer->Release();
+	COMHandles.tshader->Release();
 	return true;
 }
 
@@ -48,14 +50,18 @@ void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun)
 	}
 	CHECK((*meshp)->UnlockIndexBuffer());
 
+	ID3DXMesh *tempmesh;
+
 	CHECK(D3DXWeldVertices((*meshp), 0, NULL, NULL, (DWORD *)marching_vertices, NULL, NULL));
 	//printf("Welded to %d vertices\n", (*meshp)->GetNumVertices());
 
-	CHECK(D3DXSimplifyMesh((*meshp), (DWORD *)marching_vertices, NULL, NULL, 100000, D3DXMESHSIMP_VERTEX, meshp));
+	CHECK(D3DXSimplifyMesh((*meshp), (DWORD *)marching_vertices, NULL, NULL, 100000, D3DXMESHSIMP_VERTEX, &tempmesh));
+	(*meshp)->Release();
 	//printf("Simplified to %d vertices\n", (*meshp)->GetNumVertices());
 
-	CHECK((*meshp)->GenerateAdjacency(0.0f, (DWORD *)marching_vertices));
-	CHECK((*meshp)->Optimize(D3DXMESHOPT_COMPACT | D3DXMESHOPT_VERTEXCACHE | D3DXMESH_MANAGED, (DWORD *)marching_vertices, NULL, NULL, NULL, meshp));
+	CHECK(tempmesh->GenerateAdjacency(0.0f, (DWORD *)marching_vertices));
+	CHECK(tempmesh->Optimize(D3DXMESHOPT_COMPACT | D3DXMESHOPT_VERTEXCACHE | D3DXMESH_MANAGED, (DWORD *)marching_vertices, NULL, NULL, NULL, meshp));
+	tempmesh->Release();
 	//printf("Optimized to %d vertices\n", (*meshp)->GetNumVertices());
 
 	//char buff[512];

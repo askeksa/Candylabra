@@ -52,6 +52,9 @@ extern "C" {
 	float paramvals[100];
 	int nparams;
 
+	bool inited = false;
+	bool effect_valid = false;
+
 	void initparams()
 	{
 		int i = 0;
@@ -128,7 +131,15 @@ extern "C" {
 	unsigned char* notes;
 	MemoryFile* mf;
 
-	void __stdcall init3() {
+	bool __stdcall init3() {
+		if (D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS) != D3D_OK)
+		{
+			MessageBox(0, (char *)errors->GetBufferPointer(), 0, 0);
+			effect_valid = false;
+			return false;
+		}
+		effect_valid = true;
+
 		mf = new MemoryFile("sync");
 		int* ptr = (int*)mf->getPtr();
 		noteSamples = *ptr++;
@@ -136,8 +147,8 @@ extern "C" {
 		numRows = *ptr++;
 		notes = (unsigned char*)ptr;
 
-		CHECKC(D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS));
 		initparams();
+		return true;
 	}
 
 	void __stdcall init2() {
@@ -149,8 +160,6 @@ extern "C" {
 		init3();
 		render_init();
 	}
-
-	bool inited = false;
 
 	RECT scissorRect;
 	D3DVIEWPORT9 viewport;
@@ -195,13 +204,19 @@ extern "C" {
 
 	RENDERDLL_API int __stdcall reinit()
 	{
-		delete mf;
-		COMHandles.effect->Release();
+		if (effect_valid)
+		{
+			delete mf;
+			COMHandles.effect->Release();
+		}
 
-		init3();
+		if (!init3())
+		{
+			return 0;
+		}
+
 		render_reinit();
-
-		return 0;
+		return 1;
 	}
 
 	void updatemusic()
@@ -267,7 +282,7 @@ extern "C" {
 	}
 
 	RENDERDLL_API int __stdcall renderobj(char* prog, float* constants) {
-		if (!inited) return 0;
+		if (!inited || !effect_valid) return 0;
 
 		program = prog;
 		memcpy(constantPool, constants, sizeof(float)*256);
