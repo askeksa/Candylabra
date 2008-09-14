@@ -16,7 +16,8 @@ float gradient = 0.01;
 float spread = 0.01;
 float shadowedge = 2.0;
 float ambient = 0.1;
-float volfac = 0.1;
+float lpow = -1.0;
+float randomfac = 1;
 
 texture _tex;
 texture _detailtex;
@@ -67,7 +68,7 @@ float shadow(int index, float3 v) {
 }
 
 float random(float3 v) {
-	return tex3D(randomtex, v*2373).r;
+	return tex3D(randomtex, v*2373).r*randomfac;
 }
 
 
@@ -107,15 +108,16 @@ float4 p(S s) : COLOR0 {
 	//return 0.3-nl*0.2;
 	normal = normalize(mul(m,float4(normal,0)));
 
-	float3 color = 0;
+	float3 result = 0;
 	for (int l = 0 ; l < N_LIGHTS ; l++)
 	{
 		float3 lightv = s.v - lightpos[l];
 		float3 refl = normalize(reflect(lightv, normal));
 		float spec = pow(dot(refl,normalize(cam)), 20.0);
 		float light = saturate(-dot(normalize(lightv),normal));
-		float atten = 1.0;///sqrt(length(lightv));
-		float fog = 1.0;//exp(length(cam)*-0.05);
+		float atten = 10.0/length(lightv);
+		float fog = exp(length(cam)*-0.03);
+		float3 col = color.rgb * (1 + color.a * (tex3D(detailtex,texcoord*detailfac)-0.5));
 
 		float pshadow = 0;
 		float a = random(lightv)*17;
@@ -132,14 +134,16 @@ float4 p(S s) : COLOR0 {
 		float3 lstep = cam/ITERATIONS;
 		float3 lcoord = lightv+random(lightv)*lstep;
 		for (int i = 0 ; i < ITERATIONS ; i++) {
-			vl += shadow(l, lcoord)/length(lcoord);
+			vl += shadow(l, lcoord) * pow(length(lcoord),lpow);
 			lcoord += lstep;
 		}
+		vl /= ITERATIONS;
 		//vl = 0;
 
-		color += lightcol[l].rgb * (((ambient+pshadow*(light + spec))*atten)*fog + volfac*vl*length(cam)*lightcol[l].a);
+		float3 lc = lightcol[l].rgb;
+		result += lc * (((ambient+pshadow*(light * col + spec))*atten)*fog + vl*length(cam)*lightcol[l].a);
 	}
-	return float4(color/sqrt(length(color)),1);
+	return float4(result/sqrt(length(result)),1);
 }
 
 float4 dummyp(S s) : COLOR0 {
