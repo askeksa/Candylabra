@@ -1,7 +1,7 @@
 #define TEX_BITS 6
 #define TEX_SIZE (1 << TEX_BITS)
 
-typedef unsigned char celltype;
+typedef unsigned short celltype;
 
 int __stdcall marching_cubes(const celltype *tex, float *out);
 

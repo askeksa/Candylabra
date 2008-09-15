@@ -18,6 +18,7 @@ float shadowedge = 2.0;
 float ambient = 0.1;
 float lpow = -1.0;
 float randomfac = 1;
+float specexp = 20;
 
 texture _tex;
 texture _detailtex;
@@ -53,8 +54,9 @@ float4 dt0(float3 p : POSITION, float s : PSIZE) : COLOR0
 
 float4 t1(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
-	float3 r = p-0.5;
-	return noise(normalize(r)*2)*0.2 + 0.1/length(r) - 0.4;
+	float3 r = (p-0.5)*2;
+	return 1.2 + noise(p*15)*0.05 - length(r) - 0.025/length(r.xy)
+	 - 0.025/length(r.xz) - 0.025/length(r.zy);
 }
 
 float4 dt1(float3 p : POSITION, float s : PSIZE) : COLOR0
@@ -95,6 +97,7 @@ float grad(float3 p, float3 g)
 }
 
 float4 p(S s) : COLOR0 {
+	//return random(s.v);
 	//return tex3D(tex,s.t);
 
 	//return float4(lightpos[0],1);
@@ -113,10 +116,10 @@ float4 p(S s) : COLOR0 {
 	{
 		float3 lightv = s.v - lightpos[l];
 		float3 refl = normalize(reflect(lightv, normal));
-		float spec = pow(dot(refl,normalize(cam)), 20.0);
+		float spec = saturate(1-nl*20)*pow(dot(refl,normalize(cam)), specexp);
 		float light = saturate(-dot(normalize(lightv),normal));
 		float atten = 10.0/length(lightv);
-		float fog = exp(length(cam)*-0.03);
+		float fog = exp(length(cam)*-0.02);
 		float3 col = color.rgb * (1 + color.a * (tex3D(detailtex,texcoord*detailfac)-0.5));
 
 		float pshadow = 0;

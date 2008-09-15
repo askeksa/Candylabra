@@ -95,7 +95,7 @@ class TextBevel(Bevel):
             self.font = d3d.Font(fontname, fontsize)
         text = (unicode(self.text),) + self.pos + self.size + (0xff000000, FONT.CENTER | FONT.VCENTER)
         d3d.drawTexts(self.font, [text])
-    
+
 
 class Button(TextBevel):
     IDLE = 0
