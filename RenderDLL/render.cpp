@@ -16,7 +16,7 @@ bool maketexture(IDirect3DVolumeTexture9 **texp, int size, char *fun)
 		return false;
 	}
 	CHECK(D3DXCreateTextureShader((const DWORD *)COMHandles.tshaderbuffer->GetBufferPointer(), &COMHandles.tshader));
-	CHECK(COMHandles.device->CreateVolumeTexture(size,size,size,1, 0, D3DFMT_L8, D3DPOOL_MANAGED, texp, 0));
+	CHECK(COMHandles.device->CreateVolumeTexture(size,size,size,1, 0, D3DFMT_L16, D3DPOOL_MANAGED, texp, 0));
 	CHECK(D3DXFillVolumeTextureTX(*texp, COMHandles.tshader));
 	COMHandles.tshaderbuffer->Release();
 	COMHandles.tshader->Release();
@@ -31,13 +31,19 @@ void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun)
 
 	D3DLOCKED_BOX box;
 	CHECK((*texp)->LockBox(0, &box, NULL, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK));
-	assert(box.RowPitch == TEX_SIZE);
-	assert(box.SlicePitch == TEX_SIZE * TEX_SIZE);
+	assert(box.RowPitch == TEX_SIZE * sizeof(celltype));
+	assert(box.SlicePitch == TEX_SIZE * TEX_SIZE * sizeof(celltype));
 	int nv = marching_cubes((celltype *)box.pBits, marching_vertices);
 	CHECK((*texp)->UnlockBox(0));
 	//printf("Generated %d vertices\n", nv);
 
-	CHECK(D3DXCreateMeshFVF(nv/3, nv, D3DXMESH_32BIT | D3DXMESH_SYSTEMMEM, D3DFVF_XYZ, COMHandles.device, meshp));
+	if (D3DXCreateMeshFVF(nv/3, nv, D3DXMESH_32BIT | D3DXMESH_SYSTEMMEM, D3DFVF_XYZ, COMHandles.device, meshp) != D3D_OK)
+	{
+		MessageBox(0, "Mesh creation failed", 0, 0);
+		*meshp = NULL;
+		return;
+	}
+
 	float *vbuffer;
 	CHECK((*meshp)->LockVertexBuffer(0, (void **)&vbuffer));
 	memcpy(vbuffer, marching_vertices, nv*3*sizeof(float));

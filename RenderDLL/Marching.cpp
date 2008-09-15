@@ -27,7 +27,7 @@ const int mask2 = 0x4DCE89;
 // (i1,i2,i3) run counterclockwise as seen from outside the tetrahedron
 inline static void tetrahedron(const celltype *tex) {
 	int mask = mask1;
-	if(tex[indices[0]]&0x80)
+	if(tex[indices[0]]&0x8000)
 		mask = mask2;
 
 	int c = 0;
@@ -38,8 +38,8 @@ inline static void tetrahedron(const celltype *tex) {
 		mask>>=2;
 
 		//vertex
-		int v1 = tex[i1]*2-255;
-		int v2 = tex[i2]*2-255;
+		int v1 = tex[i1]*2-65535;
+		int v2 = tex[i2]*2-65535;
 		if((v1 ^ v2) < 0) {
 			for(int j = 0; j < 3; j++) {
 				float d = (v2-v1)<<(TEX_BITS);
