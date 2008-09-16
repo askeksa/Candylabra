@@ -64,6 +64,12 @@ float4 dt1(float3 p : POSITION, float s : PSIZE) : COLOR0
 	return 0.5 + 0.5 * noise(sin(p*2*3.1415926535)*float3(3,5,7));
 }
 
+float4 t2(float3 p : POSITION, float s : PSIZE) : COLOR0
+{
+	float3 r = (p-0.5)*2;
+	float w = length(r)-0.3;
+	return 0.6-10*w*w + noise(normalize(r)*2)*0.4;
+}
 
 float shadow(int index, float3 v) {
 	return saturate((texCUBE(cubetex[index], v).r - length(v))*shadowedge+1);
@@ -146,6 +152,7 @@ float4 p(S s) : COLOR0 {
 		float3 lc = lightcol[l].rgb;
 		result += lc * (((ambient+pshadow*(light * col + spec))*atten)*fog + vl*length(cam)*lightcol[l].a);
 	}
+	return float4(sqrt(result),1);
 	return float4(result/sqrt(length(result)),1);
 }
 
