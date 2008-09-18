@@ -387,7 +387,7 @@ class PrimitiveNode(ObjectNode):
 
 
 class Item(PrimitiveNode):
-    MAX_INDEX = 4
+    MAX_INDEX = 41
 
     def __init__(self, index):
         PrimitiveNode.__init__(self, index, Item.MAX_INDEX)

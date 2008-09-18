@@ -34,6 +34,7 @@ samplerCUBE cubetex[N_LIGHTS] = {
 	sampler_state { Texture = <_cubetex1>; },
 };
 
+float objectsizes[5] = { 20000, 10000, 0, 0, 0 };
 
 float4 r(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
