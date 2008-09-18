@@ -4,6 +4,8 @@
 #include "Marching.h"
 #include <assert.h>
 
+float objectsizes[N_OBJECTS];
+
 bool maketexture(IDirect3DVolumeTexture9 **texp, int size, char *fun)
 {
 	HRESULT compile_error = COMHandles.effectcompiler->CompileShader(fun, "tx_1_0", D3DXSHADER_OPTIMIZATION_LEVEL3, &COMHandles.tshaderbuffer, ERRORS, NULL);
@@ -25,7 +27,7 @@ bool maketexture(IDirect3DVolumeTexture9 **texp, int size, char *fun)
 
 float marching_vertices[30000000];
 
-void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun)
+void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun, int nvertices)
 {
 	if (!maketexture(texp, TEX_SIZE, fun)) return;
 
@@ -35,7 +37,7 @@ void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun)
 	assert(box.SlicePitch == TEX_SIZE * TEX_SIZE * sizeof(celltype));
 	int nv = marching_cubes((celltype *)box.pBits, marching_vertices);
 	CHECK((*texp)->UnlockBox(0));
-	//printf("Generated %d vertices\n", nv);
+	printf("Generated %d vertices\n", nv);
 
 	if (D3DXCreateMeshFVF(nv/3, nv, D3DXMESH_32BIT | D3DXMESH_SYSTEMMEM, D3DFVF_XYZ, COMHandles.device, meshp) != D3D_OK)
 	{
@@ -59,17 +61,23 @@ void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun)
 	ID3DXMesh *tempmesh;
 
 	CHECK(D3DXWeldVertices((*meshp), 0, NULL, NULL, (DWORD *)marching_vertices, NULL, NULL));
-	//printf("Welded to %d vertices\n", (*meshp)->GetNumVertices());
+	printf("Welded to %d vertices\n", (*meshp)->GetNumVertices());
 
-	CHECK(D3DXSimplifyMesh((*meshp), (DWORD *)marching_vertices, NULL, NULL, 100000, D3DXMESHSIMP_VERTEX, &tempmesh));
-	(*meshp)->Release();
-	//printf("Simplified to %d vertices\n", (*meshp)->GetNumVertices());
+	if (nvertices > 0)
+	{
+		CHECK(D3DXSimplifyMesh((*meshp), (DWORD *)marching_vertices, NULL, NULL, nvertices, D3DXMESHSIMP_VERTEX, &tempmesh));
+		(*meshp)->Release();
+		printf("Simplified to %d vertices\n", tempmesh->GetNumVertices());
+	} else {
+		tempmesh = *meshp;
+	}
 
 	CHECK(tempmesh->GenerateAdjacency(0.0f, (DWORD *)marching_vertices));
 	CHECK(tempmesh->Optimize(D3DXMESHOPT_COMPACT | D3DXMESHOPT_VERTEXCACHE | D3DXMESH_MANAGED, (DWORD *)marching_vertices, NULL, NULL, NULL, meshp));
 	tempmesh->Release();
-	//printf("Optimized to %d vertices\n", (*meshp)->GetNumVertices());
+	printf("Optimized to %d vertices\n", (*meshp)->GetNumVertices());
 
+	fflush(stdout);
 	//char buff[512];
 	//sprintf(buff, "Created mesh %d with %d vertices\n", (meshp-&COMHandles.meshes[0]), (*meshp)->GetNumVertices());
 	//MessageBox(0, buff, 0, 0);
@@ -78,6 +86,9 @@ void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun)
 
 static void init_effect_and_stuff()
 {
+	memset(objectsizes, 0, N_OBJECTS*sizeof(float));
+	CHECK(COMHandles.effect->GetValue("objectsizes", objectsizes, D3DX_DEFAULT));
+
 	CHECKC(D3DXCreateEffectCompilerFromFile("shaders.fx", NULL, NULL, D3DXSHADER_OPTIMIZATION_LEVEL3, &COMHandles.effectcompiler, ERRORS));
 
 	maketexture(&COMHandles.randomtex, 32, "r");
@@ -85,7 +96,7 @@ static void init_effect_and_stuff()
 	char t[4] = "dt0";
 	for (int i = 0 ; i < N_OBJECTS ; i++)
 	{
-		makemesh(&COMHandles.textures[i], &COMHandles.meshes[i], &t[1]);
+		makemesh(&COMHandles.textures[i], &COMHandles.meshes[i], &t[1], (int)objectsizes[i]);
 		maketexture(&COMHandles.dtextures[i], TEX_SIZE, &t[0]);
 		t[2]++;
 	}

@@ -81,6 +81,7 @@ extern "C" {
 				i += sprintf(&parambuf[i], "%s/", pdesc.Name);
 				n++;
 				break;
+				/*
 			case D3DXPC_VECTOR:
 				COMHandles.effect->GetValue(param, &paramvals[n], D3DX_DEFAULT);
 				for (unsigned int c = 1 ; c <= pdesc.Columns ; c++)
@@ -89,6 +90,7 @@ extern "C" {
 					n++;
 				}
 				break;
+				*/
 			default:
 				break;
 			}
@@ -113,10 +115,12 @@ extern "C" {
 				COMHandles.effect->SetRawValue(param, &constantPool[n], 0, sizeof(float));
 				n++;
 				break;
+				/*
 			case D3DXPC_VECTOR:
 				COMHandles.effect->SetRawValue(param, &constantPool[n], 0, pdesc.Columns * sizeof(float));
 				n += pdesc.Columns;
 				break;
+				*/
 			default:
 				break;
 			}
