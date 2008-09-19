@@ -34,7 +34,7 @@ samplerCUBE cubetex[N_LIGHTS] = {
 	sampler_state { Texture = <_cubetex1>; },
 };
 
-float objectsizes[5] = { 20000, 10000, 0, 0, 0 };
+float objectsizes[5] = { 20000, 10000, 0, 100, 0 };
 
 float4 r(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
@@ -69,7 +69,23 @@ float4 t2(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
 	float3 r = (p-0.5)*2;
 	float w = length(r)-0.3;
-	return 0.6-10*w*w + noise(normalize(r)*2)*0.4;
+	return 0.4+10*w*w + noise(normalize(r)*2)*0.4;
+}
+
+float4 dt2(float3 p : POSITION, float s : PSIZE) : COLOR0
+{
+	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
+}
+
+float4 t3(float3 p : POSITION, float s : PSIZE) : COLOR0
+{
+	float3 r = p-0.5;
+	return 0.9 - (noise(p*3)*0.15 + length(r));
+}
+
+float4 dt3(float3 p : POSITION, float s : PSIZE) : COLOR0
+{
+	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
 }
 
 float shadow(int index, float3 v) {
