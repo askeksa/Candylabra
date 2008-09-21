@@ -44,27 +44,31 @@ float4 r(float3 p : POSITION, float s : PSIZE) : COLOR0
 
 float4 t0(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
-	float3 r = p-0.5;
-	return noise(normalize(r)*2) + noise(p*7)*0.5 - 2.0 + dot(r,r)*20;
+	float3 r = (p-0.5)*2;
+	return 0.5 + (0.5 - length(r));
 }
 
 float4 dt0(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
-	return 0.5 + 0.5 * noise(sin(p*2*3.1415926535)*float3(3,5,7));
+	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
 }
 
 float4 t1(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
+/*	float3 r = p-0.5;
+	return noise(normalize(r)*2) + noise(p*7)*0.5 - 2.0 + dot(r,r)*20; */
+	
 	float3 r = (p-0.5)*2;
-	return 1.2 + noise(p*15)*0.05 - length(r) - 0.025/length(r.xy)
-	 - 0.025/length(r.xz) - 0.025/length(r.zy);
+	return 1 - (1.2 + noise(p*15)*0.05 - length(r) - 0.025/length(r.xy)
+	 - 0.025/length(r.xz) - 0.025/length(r.zy));
 }
 
 float4 dt1(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
-	return 0.5 + 0.5 * noise(sin(p*2*3.1415926535)*float3(3,5,7));
+	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
 }
 
+/* tunnel object */
 float4 t2(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
 	float3 r = (p-0.5)*2;
@@ -77,6 +81,7 @@ float4 dt2(float3 p : POSITION, float s : PSIZE) : COLOR0
 	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
 }
 
+/* low-poly rocks in tunnel */
 float4 t3(float3 p : POSITION, float s : PSIZE) : COLOR0
 {
 	float3 r = p-0.5;
