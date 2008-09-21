@@ -186,16 +186,16 @@ void render_main()
 			CHECK(COMHandles.cubetex[i]->GetCubeMapSurface((D3DCUBEMAP_FACES)f, 0, &face));
 			CHECK(COMHandles.device->SetRenderTarget(0, face));
 			CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0, 1.0f, 0));
-			CHECK(COMHandles.effect->SetMatrixTranspose("facep", &p[f]));
+			CHECK(COMHandles.effect->SetMatrixTranspose("fvm", &p[f]));
 			pass(i,0);
 		}
 	}
 
 	view_display();
 	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0, 1.0f, 0));
-	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
+	CHECK(COMHandles.effect->SetMatrixTranspose("vm", &proj));
 	pass(3,1);
-	CHECK(COMHandles.effect->SetMatrixTranspose("vp", &proj));
+	CHECK(COMHandles.effect->SetMatrixTranspose("vm", &proj));
 	pass(2,1);
 
 	CHECK(COMHandles.effect->End());
@@ -215,7 +215,7 @@ extern "C" {
 		uploadparams();
 
 		CHECK(COMHandles.effect->SetMatrixTranspose("m", COMHandles.matrix_stack->GetTop()));
-		CHECK(COMHandles.effect->SetRawValue("color", &r, 0, 16));
+		CHECK(COMHandles.effect->SetRawValue("c", &r, 0, 16));
 
 		CHECK(COMHandles.effect->SetTexture("_tex", COMHandles.textures[index]));
 		CHECK(COMHandles.effect->SetTexture("_detailtex", COMHandles.dtextures[index]));
@@ -226,22 +226,22 @@ extern "C" {
 
 	void __stdcall placelight(float r, float g, float b, float a, int index)
 	{
-		setposition("lightpos", index);
+		setposition("ld", index);
 
-		CHECK(COMHandles.effect->SetRawValue("lightcol", &r, index*16, 16));
+		CHECK(COMHandles.effect->SetRawValue("lc", &r, index*16, 16));
 		CHECK(COMHandles.effect->CommitChanges());
 	}
 
 	void __stdcall placecamera()
 	{
-		setposition("campos", 0);
+		setposition("d", 0);
 
 		setfov();
 
 		COMHandles.matrix_stack->Push();
 		D3DXMatrixInverse(COMHandles.matrix_stack->GetTop(), NULL, COMHandles.matrix_stack->GetTop());
 		COMHandles.matrix_stack->MultMatrix(&proj);
-		CHECK(COMHandles.effect->SetMatrixTranspose("vp", COMHandles.matrix_stack->GetTop()));
+		CHECK(COMHandles.effect->SetMatrixTranspose("vm", COMHandles.matrix_stack->GetTop()));
 		COMHandles.matrix_stack->Pop();
 	}
 

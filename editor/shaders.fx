@@ -1,24 +1,12 @@
-#define ITERATIONS 10
-#define GRADIENT (1.0/64)
-#define SHADOW_SAMPLES 5
-#define N_LIGHTS 2
+float4x4 fvm,vm,m;
+float3 d;
 
-float4x4 m,vp,facep;
-float3 campos[1];
-
-float3 lightpos[N_LIGHTS];
-float4 lightcol[N_LIGHTS];
-float4 color = float4(1,1,1,1);
+float3 ld[2];
+float4 lc[2];
+float4 c;
 
 float detailfac = 1;
 float detailstr = 1;
-float gradient = 0.01;
-float spread = 0.01;
-float shadowedge = 2.0;
-float ambient = 0.1;
-float lpow = -1.0;
-float randomfac = 1;
-float specexp = 20;
 
 texture _tex;
 texture _detailtex;
@@ -26,81 +14,13 @@ texture _randomtex;
 texture _cubetex0;
 texture _cubetex1;
 
-sampler3D tex = sampler_state { MagFilter = Linear; Texture = <_tex>; };
-sampler3D detailtex = sampler_state { MagFilter = Linear; Texture = <_detailtex>; };
-sampler3D randomtex = sampler_state { Texture = <_randomtex>; };
-samplerCUBE cubetex[N_LIGHTS] = {
+sampler3D to = sampler_state { MagFilter = Linear; Texture = <_tex>; };
+sampler3D td = sampler_state { MagFilter = Linear; Texture = <_detailtex>; };
+sampler3D tr = sampler_state { Texture = <_randomtex>; };
+samplerCUBE tc[2] = {
 	sampler_state { Texture = <_cubetex0>; },
 	sampler_state { Texture = <_cubetex1>; },
 };
-
-float objectsizes[5] = { 20000, 10000, 0, 100, 0 };
-
-float4 r(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-	return frac(noise(p*100)*100);
-}
-
-
-float4 t0(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-	float3 r = (p-0.5)*2;
-	return 0.5 + (0.5 - length(r));
-}
-
-float4 dt0(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
-}
-
-float4 t1(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-/*	float3 r = p-0.5;
-	return noise(normalize(r)*2) + noise(p*7)*0.5 - 2.0 + dot(r,r)*20; */
-	
-	float3 r = (p-0.5)*2;
-	return 1 - (1.2 + noise(p*15)*0.05 - length(r) - 0.025/length(r.xy)
-	 - 0.025/length(r.xz) - 0.025/length(r.zy));
-}
-
-float4 dt1(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
-}
-
-/* tunnel object */
-float4 t2(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-	float3 r = (p-0.5)*2;
-	float w = length(r)-0.3;
-	return 0.4+10*w*w + noise(normalize(r)*2)*0.4;
-}
-
-float4 dt2(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
-}
-
-/* low-poly rocks in tunnel */
-float4 t3(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-	float3 r = p-0.5;
-	return 0.9 - (noise(p*3)*0.15 + length(r));
-}
-
-float4 dt3(float3 p : POSITION, float s : PSIZE) : COLOR0
-{
-	return (8+noise(sin(p*2*3.1415926535)*8)+noise(sin(p*2*3.1415926535)*4)+noise(sin(p*2*3.1415926535)*2))/8;
-}
-
-float shadow(int index, float3 v) {
-	return saturate((texCUBE(cubetex[index], v).r - length(v))*shadowedge+1);
-}
-
-float random(float3 v) {
-	return tex3D(randomtex, v*2373).r*randomfac;
-}
-
 
 struct S {
 	float4 p : POSITION; //pos
@@ -110,92 +30,161 @@ struct S {
 
 S v(float4 p : POSITION) {
 	float4 tp = mul(m,p);
-	S s = {mul(vp, tp), tp.xyz, p.xyz+0.5};
+	S s = {mul(vm, tp), tp.xyz, p.xyz+0.5};
 	return s;
 }
 
-float objtex(float3 p)
+
+
+
+float objectsizes[5] = { 0, 0, 0, 200, 0 };
+//float objectsizes[5] = { 20000, 10000, 0, 100, 0 };
+
+float4 r(float3 p : POSITION) : COLOR0
 {
-	return tex3D(tex, p).r + tex3D(detailtex, p*detailfac) * detailstr;
+	return frac(noise(p*100)*100);
 }
 
-float grad(float3 p, float3 g)
+
+float4 dt0(float3 p : POSITION) : COLOR0
 {
-	return objtex(p-g*gradient)-objtex(p+g*gradient);
+	return (3+noise(sin(p*6.2832)*8)+noise(sin(p*6.2832)*4)+noise(sin(p*6.2832)*2))/6;
+}
+float4 dt1(float3 p : POSITION) : COLOR0
+{
+	return (3+noise(sin(p*6.2832)*8)+noise(sin(p*6.2832)*4)+noise(sin(p*6.2832)*2))/6;
+}
+float4 dt2(float3 p : POSITION) : COLOR0
+{
+	return (3+noise(sin(p*6.2832)*8)+noise(sin(p*6.2832)*4)+noise(sin(p*6.2832)*2))/6;
+}
+float4 dt3(float3 p : POSITION) : COLOR0
+{
+	return (3+noise(sin(p*6.2832)*8)+noise(sin(p*6.2832)*4)+noise(sin(p*6.2832)*2))/6;
+}
+
+float4 t0(float3 p : POSITION) : COLOR0
+{
+	float3 r = (p-0.5)*2;
+	return 0.5 + (0.05 - length(r));
+}
+float4 t1(float3 p : POSITION) : COLOR0
+{
+	float3 r = (p-0.5)*2;
+	return 1 - (1.2 + noise(p*15)*0.05 - length(r) - 0.025/length(r.xy)
+	 - 0.025/length(r.xz) - 0.025/length(r.zy));
+}
+
+
+
+/* tunnel object */
+float4 t2(float3 p : POSITION) : COLOR0
+{
+	float3 r = (p-0.5)*2;
+	float w = length(r)-0.3;
+	return 0.4+10*w*w + noise(normalize(r)*2)*0.4;
+}
+
+
+
+/* low-poly rocks in tunnel */
+float4 t3(float3 p : POSITION) : COLOR0
+{
+	float3 r = p-0.5;
+	return 0.9 - (noise(p*3)*0.15 + length(r));
+}
+
+
+
+float sh(int i, float3 p) {
+	return saturate((texCUBE(tc[i], p).r - length(p))*8+1);
+}
+
+float z(float3 p) {
+//	v=normalize(v);
+//	return frac(v.x*v.y*v.z*999999)*2; // save the random texture
+	return tex3D(tr, p*2373).r*2;
+}
+
+
+float o(float3 p)
+{
+	return (tex3D(to, p).r + tex3D(td, p*detailfac) * detailstr);
+}
+
+float g(float3 p, float3 g)
+{
+	return o(p-g/64)-o(p+g/64);
 }
 
 float4 p(S s) : COLOR0 {
-	//return random(s.v);
-	//return tex3D(tex,s.t);
+	float3 cam = d-s.v;
+	float3 n = normalize(mul(m,float4(g(s.t,float3(1,0,0)),g(s.t,float3(0,1,0)),g(s.t,float3(0,0,1)),0)));
 
-	//return float4(lightpos[0],1);
-	//return float4((s.v-lightpos[0])*0.01+0.5,1);
-	//return campos[0].x + saturate(texCUBE(cubetex[0], s.v-lightpos[0]).r*0.04);
-
-	float3 cam = campos[0]-s.v;
-	float3 texcoord = s.t;
-	float3 normal = float3(grad(texcoord,float3(1,0,0)),grad(texcoord,float3(0,1,0)),grad(texcoord,float3(0,0,1)));
-	float nl = length(normal);
-	//return 0.3-nl*0.2;
-	normal = normalize(mul(m,float4(normal,0)));
-
-	float3 result = 0;
-	for (int l = 0 ; l < N_LIGHTS ; l++)
+	float3 q = 0;
+	for (int i = 0 ; i < 2 ; i++)
 	{
-		float3 lightv = s.v - lightpos[l];
-		float3 refl = normalize(reflect(lightv, normal));
-		float spec = saturate(1-nl*20)*pow(dot(refl,normalize(cam)), specexp);
-		float light = saturate(-dot(normalize(lightv),normal));
-		float atten = 10.0/length(lightv);
-		float fog = exp(length(cam)*-0.02);
-		float3 col = color.rgb * (1 + color.a * (tex3D(detailtex,texcoord*detailfac)-0.5));
+		float3 lv = s.v - ld[i];
 
-		float pshadow = 0;
-		float a = random(lightv)*17;
-		for (int j = 0 ; j < SHADOW_SAMPLES ; j++)
-		{
-			float3 dir = float3(sin(a*3),sin(a*5),sin(a*7));
-			pshadow += shadow(l, lightv + normalize(dir)*spread);
-			a += 1;
-		}
-		pshadow /= SHADOW_SAMPLES;
-		//pshadow = 1;
-
-		float vl = 0;
-		float3 lstep = cam/ITERATIONS;
-		float3 lcoord = lightv+random(lightv)*lstep;
-		for (int i = 0 ; i < ITERATIONS ; i++) {
-			vl += shadow(l, lcoord) * pow(length(lcoord),lpow);
-			lcoord += lstep;
-		}
-		vl /= ITERATIONS;
-		//vl = 0;
-
-		float3 lc = lightcol[l].rgb;
-		result += lc * (((ambient+pshadow*(light * col + spec))*atten)*fog + vl*length(cam)*lightcol[l].a);
+		float3 ls = cam/10;
+		float3 ll = lv+z(lv)*ls-ls;
+		float vl = 
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll)+
+			sh(i, ll += ls) / dot(ll,ll);
+	
+		float a = z(lv)*17;
+		q += lc[i].rgb // light color
+			*((0.01 // ambient
+			+(
+			sh(i, lv + normalize(sin(a++*float3(3,5,7)))/2)+
+			sh(i, lv + normalize(sin(a++*float3(3,5,7)))/2)+
+			sh(i, lv + normalize(sin(a++*float3(3,5,7)))/2)+
+			sh(i, lv + normalize(sin(a++*float3(3,5,7)))/2)+
+			sh(i, lv + normalize(sin(a++*float3(3,5,7)))/2)
+			) // shadow map on surface
+			*(saturate(-dot(n,normalize(lv))) // diffuse light
+			*c.rgb // surface color
+			+c.a*pow(saturate(-dot(n,normalize(normalize(lv)-normalize(cam)))), 64) // specular
+			))+vl*length(cam) // volumetric light
+			*lc[i].a // volumetric light strength
+			);
 	}
-	return float4(sqrt(result),1);
-	return float4(result/sqrt(length(result)),1);
+
+	return float4(sqrt(q),1);
 }
 
-float4 dummyp(S s) : COLOR0 {
+
+
+
+
+
+float4 b(S s) : COLOR0 {
 	return 0;
 }
 
-struct cube_s {
+struct T {
 	float4 p : POSITION;
 	float3 v : TEXCOORD0;
 };
 
-cube_s cube_v(float4 p : POSITION, uniform int index) {
-	cube_s s;
+T cube_v(float4 p : POSITION, uniform int i) {
 	p = mul(m,p);
-	s.p = mul(facep, float4(p.xyz-lightpos[index],1));
-	s.v = p.xyz-lightpos[index];
+	T s = {
+		mul(fvm, float4(p.xyz-ld[i],1)),
+		p.xyz-ld[i]
+	};
 	return s;
 }
 
-float4 cube_p(cube_s s) : COLOR0 {
+float4 cube_p(T s) : COLOR0 {
 	return length(s.v);
 }
 
@@ -217,6 +206,6 @@ technique {
 
 	pass {
 		VertexShader = compile vs_3_0 v();
-		PixelShader = compile ps_3_0 dummyp();
+		PixelShader = compile ps_3_0 b();
 	}
 }
