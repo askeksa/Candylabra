@@ -337,6 +337,7 @@ _traverse:
 	ret
 	
 .not_assign:
+%if 0
 	dec eax
 	jnz .not_local_assign
 
@@ -355,6 +356,7 @@ _traverse:
 	ret
 	
 .not_local_assign:
+%endif
 	dec eax
 	jnz .not_conditional
 

@@ -1,9 +1,9 @@
-float4x4 fvm,vm,m;
+float4x4 m,vm,fvm;
 float3 d;
 
 float3 ld[2];
 float4 lc[2];
-float4 c;
+float4 c = float4(1,1,1,1);
 
 float detailfac = 1;
 float detailstr = 1;
@@ -34,11 +34,7 @@ S v(float4 p : POSITION) {
 	return s;
 }
 
-
-
-
-float objectsizes[5] = { 0, 0, 0, 200, 0 };
-//float objectsizes[5] = { 20000, 10000, 0, 100, 0 };
+float objectsizes[5] = { 0, 0, 0, 0, 0 };
 
 float4 r(float3 p : POSITION) : COLOR0
 {
@@ -62,20 +58,23 @@ float4 dt3(float3 p : POSITION) : COLOR0
 {
 	return (3+noise(sin(p*6.2832)*8)+noise(sin(p*6.2832)*4)+noise(sin(p*6.2832)*2))/6;
 }
+float4 dt4(float3 p : POSITION) : COLOR0
+{
+	return (3+noise(sin(p*6.2832)*8)+noise(sin(p*6.2832)*4)+noise(sin(p*6.2832)*2))/6;
+}
 
 float4 t0(float3 p : POSITION) : COLOR0
 {
 	float3 r = (p-0.5)*2;
 	return 0.5 + (0.05 - length(r));
 }
+
 float4 t1(float3 p : POSITION) : COLOR0
 {
 	float3 r = (p-0.5)*2;
 	return 1 - (1.2 + noise(p*15)*0.05 - length(r) - 0.025/length(r.xy)
 	 - 0.025/length(r.xz) - 0.025/length(r.zy));
 }
-
-
 
 /* tunnel object */
 float4 t2(float3 p : POSITION) : COLOR0
@@ -85,13 +84,17 @@ float4 t2(float3 p : POSITION) : COLOR0
 	return 0.4+10*w*w + noise(normalize(r)*2)*0.4;
 }
 
-
-
 /* low-poly rocks in tunnel */
 float4 t3(float3 p : POSITION) : COLOR0
 {
-	float3 r = p-0.5;
-	return 0.9 - (noise(p*3)*0.15 + length(r));
+	float3 r = (p-0.5)*8;
+	return 0.9 - (noise(2+r*2)*0.2 + length(r));
+}
+
+float4 t4(float3 p : POSITION) : COLOR0
+{
+	float3 r = (p-0.5)*2;
+	return 0.9 - (noise(0+r*2)*0.2 + noise(0+r*3)*0.1 + length(r) + 0.04/length(r.yz) * saturate(r.x));
 }
 
 
@@ -103,7 +106,8 @@ float sh(int i, float3 p) {
 float z(float3 p) {
 //	v=normalize(v);
 //	return frac(v.x*v.y*v.z*999999)*2; // save the random texture
-	return tex3D(tr, p*2373).r*2;
+	return frac(sin(p*2373)*2373)*2;
+	//return tex3D(tr, p*2373).r*2;
 }
 
 
@@ -139,7 +143,7 @@ float4 p(S s) : COLOR0 {
 			sh(i, ll += ls) / dot(ll,ll)+
 			sh(i, ll += ls) / dot(ll,ll)+
 			sh(i, ll += ls) / dot(ll,ll);
-	
+//		vl = 0;
 		float a = z(lv)*17;
 		q += lc[i].rgb // light color
 			*((0.01 // ambient
@@ -149,6 +153,7 @@ float4 p(S s) : COLOR0 {
 			sh(i, lv + normalize(sin(a++*float3(3,5,7)))/2)+
 			sh(i, lv + normalize(sin(a++*float3(3,5,7)))/2)+
 			sh(i, lv + normalize(sin(a++*float3(3,5,7)))/2)
+//			5
 			) // shadow map on surface
 			*(saturate(-dot(n,normalize(lv))) // diffuse light
 			*c.rgb // surface color
@@ -166,25 +171,24 @@ float4 p(S s) : COLOR0 {
 
 
 
-float4 b(S s) : COLOR0 {
+float4 dummyp(S s) : COLOR0 {
 	return 0;
 }
 
-struct T {
+struct cube_s {
 	float4 p : POSITION;
 	float3 v : TEXCOORD0;
 };
 
-T cube_v(float4 p : POSITION, uniform int i) {
+cube_s cube_v(float4 p : POSITION, uniform int index) {
+	cube_s s;
 	p = mul(m,p);
-	T s = {
-		mul(fvm, float4(p.xyz-ld[i],1)),
-		p.xyz-ld[i]
-	};
+	s.p = mul(fvm, float4(p.xyz-ld[index],1));
+	s.v = p.xyz-ld[index];
 	return s;
 }
 
-float4 cube_p(T s) : COLOR0 {
+float4 cube_p(cube_s s) : COLOR0 {
 	return length(s.v);
 }
 
@@ -206,6 +210,6 @@ technique {
 
 	pass {
 		VertexShader = compile vs_3_0 v();
-		PixelShader = compile ps_3_0 b();
+		PixelShader = compile ps_3_0 dummyp();
 	}
 }

@@ -307,7 +307,7 @@ extern "C" {
 
 		view_restore();
 
-		int border_offset = (int)((width - height * 16.0f / 9.0f) / 2);
+		int border_offset = (int)((width - height * 4.0f / 3.0f) / 2);
 		if(border_offset > 0) {
 			D3DRECT hborders[2] = {
 				{border_offset, 0, border_offset+1, height},
