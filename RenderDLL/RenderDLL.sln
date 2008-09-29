@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderDLL", "RenderDLL.vcproj", "{06303C31-671B-4BBD-AFFE-8E7028FE9229}"
 EndProject
 Global
