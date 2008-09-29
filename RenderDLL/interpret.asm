@@ -58,7 +58,7 @@ _parseParam:
 	push eax
 	call _parseParam
 	pop eax
-	
+%if 0
 	dec eax
 	jne .not_pow
 	fyl2x
@@ -73,6 +73,7 @@ _parseParam:
 	fscale
 	fstp st1
 .not_pow
+%endif
 	dec eax
 	jne .not_add
 	faddp st1

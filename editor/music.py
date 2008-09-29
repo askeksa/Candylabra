@@ -19,7 +19,7 @@ def initMusic():
     #pygame.mixer.music.load("test.ogg")
     #pygame.mixer.music.load("G:\musik\mod\mobyle.mod")
     #pygame.mixer.music.load("Silence.ogg")
-    pygame.mixer.music.load("func2.3_q.ogg")
+    pygame.mixer.music.load("func2.3_short_q.ogg")
 
 def playMusic(pos):
     global music_start_pos

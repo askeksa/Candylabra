@@ -266,7 +266,6 @@ extern "C" {
 			0, 1
 		};
 		display_viewport = newport;
-
 	}
 
 	void view_display()
@@ -274,6 +273,13 @@ extern "C" {
 		CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.backbuffer));
 		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.depthbuffer));
 		CHECK(COMHandles.device->SetScissorRect(&scissorRect));
+		int border_offset = (int)((width - height * 4.0f / 3.0f) / 2);
+		if(border_offset > 0) {
+			RECT rect = {
+				scissorRect.left+border_offset, scissorRect.top, scissorRect.right-border_offset, scissorRect.bottom
+			};
+			CHECK(COMHandles.device->SetScissorRect(&rect));
+		};
 		CHECK(COMHandles.device->SetViewport(&display_viewport));
 	}
 
