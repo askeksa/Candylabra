@@ -3,8 +3,6 @@
 
 #include <d3d9.h>
 
-static const int N_OBJECTS = 42;
-static const int N_LIGHTS = 2;
-static const int CUBESIZE = 512;
+static const int N_OBJECTS = 100;
 
 #endif

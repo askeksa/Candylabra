@@ -492,6 +492,7 @@ class Window(object):
         self.manager.addWindowListener(self)
 
     def mainloop(self):
+        old_fps = 60.0
         last_time = time.clock()
         while True:
             events = d3d.getMessages()
@@ -514,6 +515,8 @@ class Window(object):
             now = time.clock()
             fps = 1.0 / (now - last_time)
             last_time = now
+            fps = fps * 0.1 + old_fps * 0.9
+            old_fps = fps
             self.updateTitle(fps)
 
     def handleWindowEvent(self, event, manager):

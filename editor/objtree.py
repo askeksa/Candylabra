@@ -25,12 +25,12 @@ OP_PRIM = 0x04
 OP_LIGHT = 0x05
 OP_CAMERA = 0x06
 OP_ASSIGN = 0x07
-OP_LOCALASSIGN = 0x07
-OP_CONDITIONAL = 0x08
-OP_NOPLEAF = 0x09
-OP_ROTATE = 0x0a
-OP_SCALE = 0x0b
-OP_TRANSLATE = 0x0c
+OP_LOCALASSIGN = 0x08
+OP_CONDITIONAL = 0x09
+OP_NOPLEAF = 0x0a
+OP_ROTATE = 0x0b
+OP_SCALE = 0x0c
+OP_TRANSLATE = 0x0d
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -47,13 +47,25 @@ def update_predefined_variables():
 def makeMatrix(*data):
     return array.array("f", data)
 
+def float32(f):
+    return struct.unpack('f', struct.pack('f', f))[0]
+
+def float2string(f):
+    nd = 0
+    s = "0"
+    f = float32(f)
+    while float32(float(s)) != f:
+        s = ("%."+str(nd)+"f") % f
+        nd += 1
+    return s
+
 class DefValue(object):
     def __init__(self, exp):
         self.setExp(exp)
 
     def setExp(self, exp):
         if isinstance(exp, types.FloatType):
-            self.exp = "%.20f" % exp
+            self.exp = float2string(exp)
         else:
             self.exp = str(exp)
 
@@ -386,14 +398,14 @@ class PrimitiveNode(ObjectNode):
         return 0
 
 
-class Item(PrimitiveNode):
-    MAX_INDEX = 41
+class Text(PrimitiveNode):
+    MAX_INDEX = 100
 
     def __init__(self, index):
-        PrimitiveNode.__init__(self, index, Item.MAX_INDEX)
+        PrimitiveNode.__init__(self, index, Text.MAX_INDEX)
 
     def getName(self):
-        return "Object %d" % (self.index)
+        return "Text %d" % (self.index)
 
     def export(self, exporter):
         exporter.out += [OP_PRIM]
@@ -484,8 +496,8 @@ class Exporter(object):
         tokens_regexp = re.compile(
             '\s+|({|}|\*|\/|%|#|\+|-|\^|\||\(|\))' # delimiters
             )
-        operators = {'sin': [0xF2], 'clamp':[0xF3], '+': [0xF4], '-': [0xF5], '*': [0xF6], '/': [0xF7], '%': [0xF8], '|': [0xF9], '#': [0xFA]}
-    
+        operators = {'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], '^': [0xF5], '+': [0xF6], '-': [0xF7], '*': [0xF8], '/': [0xF9], '%': [0xFA], '|': [0xFB], '#': [0xFC]}
+
         def is_id(s):
             return id_regexp.match(s) != None
     

@@ -51,14 +51,19 @@ _parseParam:
 	fstp st0
 	fldz
 .dont_clamp
-	ret	
+	ret
 .not_clamp:
+	dec eax
+	jne .not_round
+	frndint
+	ret
+.not_round
+
 	;;binary operations
 	;load second argument
 	push eax
 	call _parseParam
 	pop eax
-%if 0
 	dec eax
 	jne .not_pow
 	fyl2x
@@ -73,7 +78,6 @@ _parseParam:
 	fscale
 	fstp st1
 .not_pow
-%endif
 	dec eax
 	jne .not_add
 	faddp st1
@@ -138,7 +142,7 @@ _interpret@4:
 	pusha
 	
 	;; COMHandles.matrix_stack->LoadIdentity();
-	comcall [comhandle(matrix_stack)], LoadIdentity
+	;comcall [comhandle(matrix_stack)], LoadIdentity
 	
 	mov ebx, _constantPool
 	mov esi, dword [esp+9*4]
@@ -338,7 +342,6 @@ _traverse:
 	ret
 	
 .not_assign:
-%if 0
 	dec eax
 	jnz .not_local_assign
 
@@ -357,7 +360,6 @@ _traverse:
 	ret
 	
 .not_local_assign:
-%endif
 	dec eax
 	jnz .not_conditional
 
