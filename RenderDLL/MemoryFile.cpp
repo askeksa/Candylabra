@@ -14,9 +14,10 @@ MemoryFile::MemoryFile(const char* filename, bool suppressErrors) : size(0), dat
 		infile.read((char*)data, size);
 		infile.close();
 	} else {
+		data = NULL;
+		size = 0;
 		if(!suppressErrors) {
-			cerr << "error: could failed to open file '" << filename << "'" << endl;
-			exit(-1);
+			cerr << "Unable to open file '" << filename << "'" << endl;
 		}
 	}
 }
