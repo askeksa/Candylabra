@@ -5,6 +5,12 @@
 #include "MemoryFile.h"
 #include <assert.h>
 
+extern "C" {
+	extern RECT scissorRect;
+};
+int render_width = 0;
+int render_height = 0;
+
 static void maketexts(char *texts, int size)
 {
 	LPD3DXMESH mesh = NULL;
@@ -92,55 +98,61 @@ void render_reinit()
 	init_effect_and_stuff();
 }
 
-D3DXMATRIX p[6] = {
-	D3DXMATRIX(
-	0,0,1,1,
-	0,1,0,0,
-	-1,0,0,0,
-	0,0,-1,0
-	),
-	D3DXMATRIX(
-	0,0,-1,-1,
-	0,1,0,0,
-	1,0,0,0,
-	0,0,-1,0
-	),
-	D3DXMATRIX(
-	1,0,0,0,
-	0,0,1,1,
-	0,-1,0,0,
-	0,0,-1,0
-	),
-	D3DXMATRIX(
-	1,0,0,0,
-	0,0,-1,-1,
-	0,1,0,0,
-	0,0,-1,0
-	),
-	D3DXMATRIX(
-	1,0,0,0,
-	0,1,0,0,
-	0,0,1,1,
-	0,0,-1,0
-	),
-	D3DXMATRIX(
-	-1,0,0,0,
-	0,1,0,0,
-	0,0,-1,-1,
-	0,0,-1,0
-	),
+void prepare_render_surfaces()
+{
+	int width = scissorRect.right-scissorRect.left;
+	int	height = scissorRect.bottom - scissorRect.top;
+	if (render_width != width || render_height != height)
+	{
+		if (COMHandles.renderbuffertex) COMHandles.renderbuffertex->Release();
+		if (COMHandles.renderdepthbuffer) COMHandles.renderdepthbuffer->Release();
+		CHECK(COMHandles.device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &COMHandles.renderbuffertex, NULL));
+		CHECK(COMHandles.device->CreateDepthStencilSurface(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, TRUE, &COMHandles.renderdepthbuffer, NULL));
+		render_width = width;
+		render_height = height;
+
+		CHECK(COMHandles.renderbuffertex->GetSurfaceLevel(0, &COMHandles.renderbuffer));
+	}
+
+	CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.renderbuffer));
+	CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.renderdepthbuffer));
+}
+
+float fullscreenquad[] = {
+	-1.0,  1.0, 0.0, 0.0, 0.0,
+	 1.0,  1.0, 0.0, 1.0, 0.0,
+	-1.0, -1.0, 0.0, 0.0, 1.0,
+	 1.0, -1.0, 0.0, 1.0, 1.0
 };
+
+void blit_to_screen(int pass)
+{
+	CHECK(COMHandles.effect->BeginPass(pass));
+	CHECK(COMHandles.device->SetTexture(0, COMHandles.renderbuffertex));
+	CHECK(COMHandles.device->SetFVF(D3DFVF_XYZ|D3DFVF_TEX1));
+	CHECK(COMHandles.device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, fullscreenquad, 5*sizeof(float)));
+	CHECK(COMHandles.effect->EndPass());
+}
 
 void render_main()
 {
+	D3DXTECHNIQUE_DESC tdesc;
+	CHECK(COMHandles.effect->GetTechniqueDesc(COMHandles.effect->GetTechnique(0), &tdesc));
+
 	CHECK(COMHandles.effect->Begin(0, 0));
 
-	view_display();
-	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0, 1.0f, 0));
+	prepare_render_surfaces();
+	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0xff000000, 1.0f, 0));
 	setfov();
 	//CHECK(COMHandles.effect->SetMatrixTranspose("vm", &proj));
-	CHECK(COMHandles.matrix_stack->LoadMatrix(&proj));
-	pass(0,0);
+	for (int p = 0 ; p < tdesc.Passes-1 ; p++)
+	{
+		CHECK(COMHandles.matrix_stack->LoadMatrix(&proj));
+		pass(p,p);
+	}
+
+	view_display();
+	blit_to_screen(tdesc.Passes-1);
 
 	CHECK(COMHandles.effect->End());
 }

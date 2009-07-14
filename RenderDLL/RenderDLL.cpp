@@ -30,20 +30,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     return TRUE;
 }
 
-#ifndef NDEBUG
-void check(char *n, int r) {
-	if (r != D3D_OK) {
-		char buff[512];
-		sprintf(buff, "%s returned %s\n", n, DXGetErrorString(r));
-		MessageBox(0, buff, 0, 0);
-		ExitProcess(1);
-	}
-}
-#define CHECK(e) check(#e, e)
-#else
-#define CHECK(e) e
-#endif
-
 extern "C" {
 	D3DXMATRIXA16 proj;
 
@@ -199,6 +185,7 @@ extern "C" {
 	RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device)
 	{
 		if(!inited) {
+			memset(&COMHandles, 0, sizeof(COMHandles));
 			COMHandles.device = device;
 			init2();
 			inited = true;
