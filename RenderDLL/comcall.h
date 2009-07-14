@@ -14,6 +14,9 @@ struct COMStruct {
 	LPD3DXTEXTURESHADER			tshader;
 	LPDIRECT3DSURFACE9			backbuffer;
 	LPDIRECT3DSURFACE9			depthbuffer;
+	LPDIRECT3DTEXTURE9			renderbuffertex;
+	LPDIRECT3DSURFACE9			renderbuffer;
+	LPDIRECT3DSURFACE9			renderdepthbuffer;
 	LPD3DXMESH					meshes[N_OBJECTS];
 };
 
