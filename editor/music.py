@@ -8,7 +8,7 @@ global music_start_pos
 global music_is_playing
 
 # todo: read from sync
-samples_per_beat = 5610*4
+samples_per_beat = 18900
 samples_per_second = 44100
 music_start_pos = 0
 music_is_playing = False
@@ -18,8 +18,8 @@ def initMusic():
     #pygame.mixer.music.load("j:\Shared\cs2.1.mp3")
     #pygame.mixer.music.load("test.ogg")
     #pygame.mixer.music.load("G:\musik\mod\mobyle.mod")
-    pygame.mixer.music.load("Silence.ogg")
-    #pygame.mixer.music.load("func2.3_short_q.ogg")
+    #pygame.mixer.music.load("Silence.ogg")
+    pygame.mixer.music.load("solskogen3-clean.ogg")
 
 def playMusic(pos):
     global music_start_pos

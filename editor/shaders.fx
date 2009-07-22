@@ -1,27 +1,28 @@
-float4x4 m;
+float4x4 m,o;
 
 float4 c = float4(1,1,1,1);
 
 float spec;
+float blur;
 
 sampler tex;
 
 struct S {
 	float4 p : POSITION; //pos
-	float3 v : TEXCOORD0; //screenspace pos
+	float4 s : TEXCOORD0; //screenspace pos
 	float3 n : TEXCOORD1; //normal
+	float f : TEXCOORD2;
 };
 
 S v(float4 p : POSITION, float3 n : NORMAL) {
-	float4 tp = mul(m,p);
-	S s = {tp, tp.xyz/tp.w, mul((float3x3)m,n)};
+	float4 t = mul(m,p);
+	S s = {mul(o,t), t, mul((float3x3)m,n), 1-0.01*abs(n.z)};
 	return s;
 }
 
 float4 p(S s) : COLOR0 {
-	float3 n = normalize(s.n);
-	float l = 0.2 + 0.8*saturate(-n.z);
-	return c*l + spec*(1-c)*pow(l,8);
+	float l = saturate(1.0 + 0.8*dot(normalize(s.n),normalize(s.s)));
+	return float4((c*l + spec*(1-l)*float4(1,1,0.8,1)*pow(1.2-l,10)).xyz,c.a);
 }
 
 void ppv(float4 p : POSITION, float2 tc : TEXCOORD0, out float4 tp : POSITION, out float2 ttc : TEXCOORD0) {
@@ -34,14 +35,20 @@ float4 ppp(float2 tc : TEXCOORD0) : COLOR0 {
 	int i;
 	for (i = 1 ; i < 20 ; i+=2)
 	{
-		s += tex2D(tex, tc+0.0002*i*float2(3*cos(i),4*sin(i)));
+		float a = i*(3.14159265358979/4);
+		s += tex2D(tex, tc+0.0001*i*float2(3*cos(a),4*sin(a)));
 	}
-	return float4((tex2D(tex, tc)/*2-s*0.1*/).xyz,1);
+	float4 t = tex2D(tex, tc);
+	s /= 10;
+	//return float4(t.xyz*(1-abs(s.a-t.a)*200),1);
+	//return float4(t.xyz*(1-blur)+s.yzx*blur,1);
+	return float4(t.xyz,1);
 }
 
 
 technique {
 	pass {
+		AlphaBlendEnable=TRUE;
 		VertexShader = compile vs_2_0 v();
 		PixelShader = compile ps_2_0 p();
 	}
