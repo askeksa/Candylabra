@@ -487,12 +487,12 @@ class BrickField(Container):
                         self.origin_brick.extra_node_children.append(b)
                     self.updateDisplay()
                 self.status = BrickField.IDLE
-            elif event.buttonDown(BUTTON_RIGHT) and event.double:
-                if b in self.selected:
-                    self.delete(self.selected)
-                else:
-                    self.delete([b])
-                self.status = BrickField.IDLE
+#            elif event.buttonDown(BUTTON_RIGHT) and event.double:
+#                if b in self.selected:
+#                    self.delete(self.selected)
+#                else:
+#                    self.delete([b])
+#                self.status = BrickField.IDLE
 
         if self.status == BrickField.CREATING:
             if event.buttonDown(BUTTON_RIGHT):

@@ -7,9 +7,11 @@
 
 extern "C" {
 	extern RECT scissorRect;
+	extern float constantPool[256];
 };
 int render_width = 0;
 int render_height = 0;
+float last_fov = 0.0f;
 
 static void maketexts(char *texts, int size)
 {
@@ -34,6 +36,10 @@ static void maketexts(char *texts, int size)
 			{
 				while (t < size && texts[t] >= ' ') t++;
 				while (t < size && texts[t] < ' ') t++;
+				for (int j = 0 ; j < strlen(fontname) ; j++)
+				{
+					if (fontname[j] == '_') fontname[j] = ' ';
+				}
 
 				if (!firstfont) SelectObject(hdc, hFontOld);
 				firstfont = false;
@@ -104,12 +110,14 @@ void prepare_render_surfaces()
 	int	height = scissorRect.bottom - scissorRect.top;
 	if (render_width != width || render_height != height)
 	{
+		if (COMHandles.renderbuffer) COMHandles.renderbuffer->Release();
 		if (COMHandles.renderbuffertex) COMHandles.renderbuffertex->Release();
 		if (COMHandles.renderdepthbuffer) COMHandles.renderdepthbuffer->Release();
 		CHECK(COMHandles.device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &COMHandles.renderbuffertex, NULL));
 		CHECK(COMHandles.device->CreateDepthStencilSurface(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, TRUE, &COMHandles.renderdepthbuffer, NULL));
 		render_width = width;
 		render_height = height;
+		last_fov = 0.0f;
 
 		CHECK(COMHandles.renderbuffertex->GetSurfaceLevel(0, &COMHandles.renderbuffer));
 	}
@@ -128,6 +136,7 @@ float fullscreenquad[] = {
 void blit_to_screen(int pass)
 {
 	CHECK(COMHandles.effect->BeginPass(pass));
+	//COMHandles.device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 	CHECK(COMHandles.device->SetTexture(0, COMHandles.renderbuffertex));
 	CHECK(COMHandles.device->SetFVF(D3DFVF_XYZ|D3DFVF_TEX1));
 	CHECK(COMHandles.device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, fullscreenquad, 5*sizeof(float)));
@@ -143,11 +152,10 @@ void render_main()
 
 	prepare_render_surfaces();
 	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0xff000000, 1.0f, 0));
-	setfov();
-	//CHECK(COMHandles.effect->SetMatrixTranspose("vm", &proj));
+	CHECK(COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE));
 	for (int p = 0 ; p < tdesc.Passes-1 ; p++)
 	{
-		CHECK(COMHandles.matrix_stack->LoadMatrix(&proj));
+		//CHECK(COMHandles.matrix_stack->LoadMatrix(&proj));
 		pass(p,p);
 	}
 
@@ -169,6 +177,13 @@ extern "C" {
 	void __stdcall drawprimitive(float r, float g, float b, float a, int index)
 	{
 		uploadparams();
+
+		if (constantPool[2] != last_fov)
+		{
+			setfov();
+			CHECK(COMHandles.effect->SetMatrixTranspose("o", &proj));
+			last_fov = constantPool[2];
+		}
 
 		CHECK(COMHandles.effect->SetMatrixTranspose("m", COMHandles.matrix_stack->GetTop()));
 		CHECK(COMHandles.effect->SetRawValue("c", &r, 0, 16));

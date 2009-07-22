@@ -142,7 +142,7 @@ _interpret@4:
 	pusha
 	
 	;; COMHandles.matrix_stack->LoadIdentity();
-	;comcall [comhandle(matrix_stack)], LoadIdentity
+	comcall [comhandle(matrix_stack)], LoadIdentity
 	
 	mov ebx, _constantPool
 	mov esi, dword [esp+9*4]
@@ -293,6 +293,7 @@ _traverse:
 	ret
 
 .not_primitive:
+%if 0
 	dec eax
 	jnz .not_light
 	;; ----------------
@@ -328,6 +329,7 @@ _traverse:
 	ret
 	
 .not_camera:
+%endif
 	dec eax
 	jnz .not_assign
 
