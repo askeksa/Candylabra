@@ -1118,7 +1118,7 @@ Ntp487
 Rp488
 (dp489
 g452
-S'x/15-round((time-124)/0.75+0.5)'
+S'x/15-round((time-123.75)/0.75+0.5)'
 p490
 sbasg454
 (lp491
@@ -3359,7 +3359,7 @@ Ntp1479
 Rp1480
 (dp1481
 g703
-S'-0.5-clamp(127-time)+clamp(time-172)*clamp(time-172)*0.03125'
+S'-0.5-clamp(126.5-time)+clamp(time-172)*clamp(time-172)*0.03125'
 p1482
 sbag1
 (g12
@@ -5549,7 +5549,7 @@ Ntp2469
 Rp2470
 (dp2471
 g1791
-S'time-126'
+S'time-125.75'
 p2472
 sbasg959
 (lp2473
