@@ -10,7 +10,10 @@ visning af implicitte børn
 fjernelse af eksplicit kant når implicit opstår
 tegn kanter øverst
 inverter selection
-copy
++copy
++multiselect
++scrollhjul
+
 +fornuftig save/load håndtering
 +syntax error on extra text in expression
 

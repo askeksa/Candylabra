@@ -16,6 +16,7 @@ import parser
 import re
 import types
 import struct
+import copy
 from ctypes import create_string_buffer,windll
 
 OP_FANOUT = 0x01
@@ -113,6 +114,12 @@ class ObjectNode(object):
 
     def variableChildren(self):
         return False
+
+    def clone(self):
+        cloned = copy.copy(self)
+        cloned.children = []
+        cloned.definitions = [DefValue(d.exp) for d in self.definitions]
+        return cloned
 
 
 class SaveTransform(ObjectNode):

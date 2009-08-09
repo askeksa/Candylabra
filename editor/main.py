@@ -172,7 +172,7 @@ if __name__ == "__main__":
     scrollbarv = Scrollbar(ORIENTATION_VERTICAL)
     valuebar = ValueBar()
     valuebar.addChild(Component())
-    field = BrickField(display, valuebar)
+    field = BrickField(display, valuebar, scrollbarv)
     field.setPosAndSize((0,0),(2000,3000))
     #field.addChild(Brick(ot.Rotate(ot.AXIS_X), field, (1,1)))
     #field.addChild(Brick(ot.Identity(), field, (2,1)))
