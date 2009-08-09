@@ -30,15 +30,25 @@ WINDOW_UNMINIMIZED = 4
 WINDOW_QUIT = 5
 
 
-class KeyEvent(object):
-    def __init__(self, direction, code, char):
+class Event(object):
+    def __init__(self, keymask):
+        self.keymask = keymask
+
+    def keyHeld(self, code):
+        return (self.keymask & (1 << code)) != 0
+
+
+class KeyEvent(Event):
+    def __init__(self, direction, code, char, keymask):
+        Event.__init__(self, keymask)
         self.direction = direction
         self.code = code
         self.char = char
 
 
-class MouseEvent(object):
-    def __init__(self, button, direction, double, x, y):
+class MouseEvent(Event):
+    def __init__(self, button, direction, double, x, y, keymask):
+        Event.__init__(self, keymask)
         self.button = button
         self.direction = direction
         self.double = double
@@ -60,6 +70,7 @@ class WindowEvent(object):
 class InputManager(object):
     def __init__(self):
         self.reset()
+        self.keymask = 0
 
     def reset(self):
         self.keylisteners = []
@@ -109,7 +120,14 @@ class InputManager(object):
                 else:
                     char = None
 
-                event = KeyEvent(direction, code, char)
+                if code < 32:
+                    # Qualifier key
+                    if direction == KEY_DOWN:
+                        self.keymask |= 1 << code
+                    else:
+                        self.keymask &= ~(1 << code)
+
+                event = KeyEvent(direction, code, char, self.keymask)
 
                 for l in self.keylisteners:
                     event = l.handleKeyEvent(event, self)
@@ -145,7 +163,7 @@ class InputManager(object):
                         direction = BUTTON_DOWN
                     double = e[0] in (WM.MOUSELDOUBLE, WM.MOUSERDOUBLE, WM.MOUSEMDOUBLE)
 
-                event = MouseEvent(button, direction, double, e[1], e[2])
+                event = MouseEvent(button, direction, double, e[1], e[2], self.keymask)
 
                 for l in self.mouselisteners:
                     event = l.handleMouseEvent(event, self)

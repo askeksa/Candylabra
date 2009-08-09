@@ -248,12 +248,16 @@ class BrickField(Container):
     CONNECTING = 3
     SELECTING = 4
 
-    def __init__(self, display, valuebar):
+    def __init__(self, display, valuebar, scrollbar):
         Container.__init__(self)
         self.display = display
         self.valuebar = valuebar
+        self.scrollbar = scrollbar
         self.status = BrickField.IDLE
+        self.copying = False
+        self.scrollstep = 4 * Brick.HEIGHT
         self.selected = set()
+        self.base_selected = set()
         self.setActive(None)
         self.root = None
         self.frames = []
@@ -269,6 +273,7 @@ class BrickField(Container):
                 if b in c.extra_node_children:
                     c.extra_node_children.remove(b)
         self.selected = set()
+        self.base_selected = set()
         self.setActive(None)
         self.updateDisplay()
 
@@ -397,40 +402,62 @@ class BrickField(Container):
         self.creator = creator
         self.status = BrickField.CREATING
 
-    def legalBrickPos(self, gridpos):
+    def legalBrickPos(self, gridpos, ignoreselected):
         if not (gridpos[0] >= 0 and gridpos[1] >= 0):
             return False
         return all(b.gridpos != gridpos
                    for b in self.children
-                   if not b in self.selected)
+                   if not ignoreselected or not b in self.selected)
+
+#    def handleKeyEvent(self, event, manager):
+#        if event.direction == KEY_DOWN:
+#            tkMessageBox.showerror("Key", "%d" % event.code)
 
     def handleMouseEvent(self, event, manager):
         self.current_pos = (event.x, event.y)
         gridpos = self.getGridPos(self.current_pos)
         self.frames = []
         old_status = self.status
+
+        if event.buttonDown(BUTTON_WHEELDOWN):
+            self.scrollbar.setAreaPos(self.scrollbar.getAreaPos()+self.scrollstep)
+        if event.buttonDown(BUTTON_WHEELUP):
+            self.scrollbar.setAreaPos(self.scrollbar.getAreaPos()-self.scrollstep)
         
         if self.status == BrickField.IDLE:
             if event.buttonDown(BUTTON_LEFT):
                 b = self.brickAt(gridpos)
                 if b:
                     # Brick clicked
-                    if (not self.active and not self.selected) or b not in self.selected:
-                        self.setActive(b)
-                        self.selected = set([b])
-                    if event.double:
-                        if self.root == b:
-                            windll.RenderDLL.reinit()
-                            ot.update_predefined_variables()
-                        self.setRoot(b)
-                        #self.display.reftime = time.clock()
-                        #playMusic(0)
+                    if event.keyHeld(VK.SHIFT):
+                        # Toggle selection
+                        if b in self.selected:
+                            self.selected.remove(b)
+                        else:
+                            self.selected.add(b)
                     else:
-                        self.status = BrickField.MOVING
-                        self.origin_brick = b
+                        if (not self.active and not self.selected) or b not in self.selected:
+                            # Activate
+                            self.setActive(b)
+                            self.selected = set([b])
+                        if event.double:
+                            if self.root == b:
+                                windll.RenderDLL.reinit()
+                                ot.update_predefined_variables()
+                            self.setRoot(b)
+                            #self.display.reftime = time.clock()
+                            #playMusic(0)
+                        else:
+                            self.status = BrickField.MOVING
+                            self.origin_brick = b
+                            self.copying = event.keyHeld(VK.CONTROL)
                 else:
                     # Empty space clicked
-                    self.selected = set()
+                    if event.keyHeld(VK.SHIFT):
+                        self.base_selected = self.selected
+                    else:
+                        self.base_selected = set()
+                        self.selected = set()
                     self.setActive(None)
                     self.status = BrickField.SELECTING
                     self.origin_pos = self.current_pos
@@ -444,16 +471,35 @@ class BrickField(Container):
                     self.origin_brick = b
 
         if self.status == BrickField.MOVING:
+            # Moving or copying
             diffpos = tsub(gridpos,self.origin_brick.gridpos)
             if event.buttonDown(BUTTON_RIGHT):
                 # Abort move
                 self.status = BrickField.IDLE
             elif event.buttonUp(BUTTON_LEFT):
                 # Button released - move bricks
-                if all(self.legalBrickPos(tadd(sb.gridpos, diffpos)) for sb in self.selected):
-                    # No conflicts - move bricks
-                    for sb in self.selected:
-                        sb.gridpos = tadd(sb.gridpos, diffpos)
+                if all(self.legalBrickPos(tadd(sb.gridpos, diffpos), not self.copying) for sb in self.selected):
+                    # No conflicts
+                    if self.copying:
+                        # Copy bricks
+                        copymap = dict()
+                        for sb in self.selected:
+                            nodecopy = sb.node.clone()
+                            brickcopy = Brick(nodecopy, self, tadd(sb.gridpos, diffpos))
+                            copymap[sb] = brickcopy
+                            self.addChild(brickcopy)
+                        for sb in self.selected:
+                            for sbc in sb.extra_node_children:
+                                if sbc in self.selected:
+                                    copymap[sb].extra_node_children.append(copymap[sbc])
+                                else:
+                                    copymap[sb].extra_node_children.append(sbc)
+                        self.selected = set(copymap.values())
+                        self.copying = False
+                    else:
+                        # Move bricks
+                        for sb in self.selected:
+                            sb.gridpos = tadd(sb.gridpos, diffpos)
                     self.updateDisplay()
                 self.status = BrickField.IDLE
             else:
@@ -464,14 +510,16 @@ class BrickField(Container):
                 ]
 
         if self.status == BrickField.SELECTING:
-            self.selected = [
+            self.selected = set([
                 b for b in self.children
                 if b.hitRect(self.selectionRect())
-            ]
+            ])
+            self.selected.update(self.base_selected)
+
             if event.buttonDown(BUTTON_RIGHT):
                 # Abort select
                 self.setActive(None)
-                self.selected = []
+                self.selected = self.base_selected
                 self.status = BrickField.IDLE
             elif event.buttonUp(BUTTON_LEFT):
                 # Button released - end select

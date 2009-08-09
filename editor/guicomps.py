@@ -323,11 +323,16 @@ class Scrollbar(Container):
     def initDragging(self):
         self.orig_area_pos = self.area_pos
 
+    def getAreaPos(self):
+        return self.area_pos
+
+    def setAreaPos(self, pos):
+        self.area_pos = max(0, min(self.area_total-self.area_shown, pos))
+
     def updateDragging(self, delta):
         o = self.orientation
         area_pos = int(round(self.orig_area_pos + delta * self.area_total / float(self.container.size[o])))
-        area_pos = max(0, min(self.area_total-self.area_shown, area_pos))
-        self.area_pos = area_pos
+        self.setAreaPos(area_pos)
 
     def stopDragging(self):
         pass
