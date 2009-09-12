@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="RenderDLL"
 	ProjectGUID="{06303C31-671B-4BBD-AFFE-8E7028FE9229}"
 	RootNamespace="RenderDLL"
@@ -232,6 +232,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\engine_textobj.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\interpret.asm"
 				>
 				<FileConfiguration
@@ -297,6 +301,14 @@
 			</File>
 			<File
 				RelativePath=".\constants.nh"
+				>
+			</File>
+			<File
+				RelativePath=".\engine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\engine_textobj.h"
 				>
 			</File>
 			<File

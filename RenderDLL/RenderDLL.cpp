@@ -11,8 +11,13 @@
 #include "comcall.h"
 #include "render.h"
 #include "main.h"
+#include "engine_textobj.h"
 
 using namespace std;
+
+int current_engine_id = -1;
+
+char effectfile[101];
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -122,7 +127,7 @@ extern "C" {
 	MemoryFile* mf;
 
 	bool __stdcall init3() {
-		if (D3DXCreateEffectFromFile(COMHandles.device, "shaders.fx", NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS) != D3D_OK)
+		if (D3DXCreateEffectFromFile(COMHandles.device, effectfile, NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS) != D3D_OK)
 		{
 			MessageBox(0, (char *)errors->GetBufferPointer(), 0, 0);
 			effect_valid = false;
@@ -176,37 +181,75 @@ extern "C" {
 		}
 	}
 
+static const char enginenames[] = "Default|TextObject|Haumea|";
+
+	RENDERDLL_API int __stdcall getengines(char *buf)
+	{
+		strcpy(buf, enginenames);
+		return 3;
+	}
+
+	void init_engine(int engine_id)
+	{
+		switch (engine_id)
+		{
+		case 0:
+			active_engine = new TextObjectEngine();
+			break;
+		case 1:
+			active_engine = new TextObjectEngine();
+			break;
+		case 2:
+			active_engine = new TextObjectEngine();
+			break;
+		}
+		current_engine_id = engine_id;
+	}
+
 	RENDERDLL_API int __stdcall getparams(char *buf)
 	{
 		strcpy(buf, parambuf);
 		return nparams;
 	}
 
-	RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device)
+	RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device, int engine_id, char *effect)
 	{
 		if(!inited) {
 			memset(&COMHandles, 0, sizeof(COMHandles));
 			COMHandles.device = device;
+			strncpy(effectfile, effect, 100);
+			init_engine(engine_id);
 			init2();
 			inited = true;
 		}
 		return 0;
 	}
 
-	RENDERDLL_API int __stdcall reinit()
+	RENDERDLL_API int __stdcall reinit(int engine_id, char *effect)
 	{
+		if (!inited) return 0;
+
 		if (effect_valid)
 		{
 			delete mf;
 			COMHandles.effect->Release();
 		}
 
+		strncpy(effectfile, effect, 100);
 		if (!init3())
 		{
 			return 0;
 		}
 
-		render_reinit();
+		if (engine_id != current_engine_id)
+		{
+			render_deinit();
+			delete active_engine;
+			init_engine(engine_id);
+			render_init();
+		} else {
+			render_reinit();
+		}
 		return 1;
 	}
 

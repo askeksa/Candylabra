@@ -23,15 +23,15 @@ OP_FANOUT = 0x01
 OP_SAVETRANS = 0x2
 OP_CALL = 0x03
 OP_PRIM = 0x04
-OP_LIGHT = -1#0x05
-OP_CAMERA = -1#0x06
-OP_ASSIGN = 0x05
-OP_LOCALASSIGN = 0x06
-OP_CONDITIONAL = 0x07
-OP_NOPLEAF = 0x08
-OP_ROTATE = 0x09
-OP_SCALE = 0x0a
-OP_TRANSLATE = 0x0b
+OP_LIGHT = 0x05
+OP_CAMERA = 0x06
+OP_ASSIGN = 0x07
+OP_LOCALASSIGN = 0x08
+OP_CONDITIONAL = 0x09
+OP_NOPLEAF = 0x0a
+OP_ROTATE = 0x0b
+OP_SCALE = 0x0c
+OP_TRANSLATE = 0x0d
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -405,20 +405,24 @@ class PrimitiveNode(ObjectNode):
         return 0
 
 
-class Text(PrimitiveNode):
+class Item(PrimitiveNode):
     MAX_INDEX = 100
 
     def __init__(self, index):
         PrimitiveNode.__init__(self, index, Text.MAX_INDEX)
 
     def getName(self):
-        return "Text %d" % (self.index)
+        return "Object %d" % (self.index)
 
     def export(self, exporter):
         exporter.out += [OP_PRIM]
         exporter.out += [self.index]
         self.exportDefinitions(exporter)
         return self.children
+
+
+class Text(Item):
+    pass
 
 
 class Light(PrimitiveNode):
@@ -613,7 +617,11 @@ class Exporter(object):
             self.seenlabels.add(node)
             label = self.newLabel(node)
             self.out += [OP_LABEL]
+        outpos = len(self.out)
         visitchildren = node.export(self)
+        for o in self.out[outpos:]:
+            if o < 0 or o > 255:
+                raise ExportException(node, "Illegal value in export array: %d" % o)
         if len(visitchildren) != node.export_nchildren():
             if len(visitchildren) == 0:
                 self.out += [OP_NOPLEAF]
