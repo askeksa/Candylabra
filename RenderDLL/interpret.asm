@@ -293,7 +293,6 @@ _traverse:
 	ret
 
 .not_primitive:
-%if 0
 	dec eax
 	jnz .not_light
 	;; ----------------
@@ -329,7 +328,6 @@ _traverse:
 	ret
 	
 .not_camera:
-%endif
 	dec eax
 	jnz .not_assign
 

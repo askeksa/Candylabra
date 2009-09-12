@@ -30,7 +30,7 @@ def setfilename(n):
 def save():
     if filename is not None:
         field.save(filename)
-        tkMessageBox.showerror("Saved (no error)", "File saved: "+filename)        
+        tkMessageBox.showinfo("Saved (no error)", "File saved: "+filename)        
     else:
         saveas()
 
@@ -105,59 +105,43 @@ def export():
             sys.stderr.flush()
             tkMessageBox.showerror(title = "Export error", message = e.message)
 
-class TimeSlider(Scrollbar):
-    #music_was_playing = False
-    def initDragging(self):
-        Scrollbar.initDragging(self)
-        #self.music_was_playing = musicIsPlaying()
-        stopMusic()
 
-    def updateDragging(self, delta):
-        Scrollbar.updateDragging(self, delta)
+def get_engines():
+    buf = create_string_buffer(1000)
+    n_eng = windll.RenderDLL.getengines(buf)
+    return buf.raw.split("|", n_eng)[0:n_eng]
 
-    def stopDragging(self):
-        Scrollbar.stopDragging(self)
-        #if self.music_was_playing:
-        #    playMusic(self.area_pos/1000.)
-        display.playbutton.repeatAction()
+def set_engine(engine_id):
+    field.project.engine_id = engine_id
+    field.display.setProject(field.project)
 
-class PlayButton(Button):
-    active = False
-    display = None
-    def action(self):
-        self.active = not self.active
-        self.repeatAction()
+def set_effect():
+    chosen_name = tkFileDialog.askopenfilename(initialfile = field.project.effect_file)
+    if chosen_name:
+        field.project.effect_file = chosen_name
+        field.display.setProject(field.project)
 
-    def repeatAction(self):
-        if self.active:
-            self.activate()
-        else:
-            self.passivate()
-        
-    def activate(self):
-        self.active = True
-        self.color = 0xcc5555
-        self.text = "Stop"
-        playMusic(self.display.timebar.area_pos/1000.)
-        
-    def passivate(self):
-        self.active = False
-        self.text = "Play"
-        self.color = 0x808080
-        stopMusic()    
+def set_music():
+    chosen_name = tkFileDialog.askopenfilename(initialfile = field.project.music_file)
+    if chosen_name:
+        field.project.music_file = chosen_name
+        field.display.setProject(field.project)
 
-    def __init__(self, display):
-        self.display = display
-        Button.__init__(self, self.action, "Play", 0x808080)
+def set_bpm():
+    bpm = tkSimpleDialog.askfloat("Enter value",
+                                  "Beats per minute",
+                                  initialvalue=field.project.bpm)
+    field.project.bpm = bpm
+    field.display.setProject(field.project)
+
 
 if __name__ == "__main__":
     Tkinter.Tk().withdraw()
 
-    initMusic()
     display = MeshDisplay()
     display.weight = 2.0
     timepane = Sequence(ORIENTATION_HORIZONTAL)
-    timebar = TimeSlider(ORIENTATION_HORIZONTAL)
+    timebar = TimeSlider(ORIENTATION_HORIZONTAL, display)
     timebar.area_shown = 10000
     timebar.area_total = 1000*getMusicLength()+timebar.area_shown
     timebar.area_pos = 0
@@ -180,13 +164,16 @@ if __name__ == "__main__":
     scrollfield.addChild(field)
     scrollfield.weight = 2.0
     adjuster = Adjuster()
+
     buttonpane = Sequence(ORIENTATION_VERTICAL)
     buttonpane.weight = 0.001
 
-    button_text = CreateButton("Text", (lambda : ot.Text(0)), field, 'T')
-    #button_light = CreateButton("Light", (lambda : ot.Light(0)), field, 'L')
-    #button_camera = CreateButton("Camera", (lambda : ot.Camera()), field, 'C')
-    button_identity = CreateButton("", ot.Identity, field, 'I')
+    button_item = CreateButton("object", (lambda : ot.Item(0)), field)
+    for o in range(0,10):
+        button_item.addHotkey(ord('0')+o, (lambda : ot.Item(o)))
+    button_light = CreateButton("light", (lambda : ot.Light(0)), field)
+    button_camera = CreateButton("camera", (lambda : ot.Camera()), field)
+    button_identity = CreateButton("", ot.Identity, field, 'Q')
     button_fix = CreateButton("Fix", ot.SaveTransform, field, 'F')
     button_move = CreateButton("Move", ot.Move, field, 'M')
     button_scale = CreateButton("Scale", ot.Scale, field, 'S')
@@ -201,16 +188,9 @@ if __name__ == "__main__":
     filler = Component()
     filler.weight = 1000000
 
-    FBCOL = 0x806060
-    button_load = Button(load, "load", color = FBCOL)
-    button_insert = Button(insert, "insert", color = FBCOL)
-    button_save = Button(save, "save", color = FBCOL)
-    button_saveas = Button(saveas, "save as", color = FBCOL)
-    button_export = Button(export, "export", color = FBCOL)
-
-    buttonpane.addChild(button_text)
-    #buttonpane.addChild(button_light)
-    #buttonpane.addChild(button_camera)
+    buttonpane.addChild(button_item)
+    buttonpane.addChild(button_light)
+    buttonpane.addChild(button_camera)
     buttonpane.addChild(button_identity)
     buttonpane.addChild(button_fix)
     buttonpane.addChild(button_move)
@@ -223,11 +203,43 @@ if __name__ == "__main__":
     buttonpane.addChild(button_globaldef)
     buttonpane.addChild(button_localdef)
     buttonpane.addChild(filler)
-    buttonpane.addChild(button_load)
-    buttonpane.addChild(button_insert)
-    buttonpane.addChild(button_save)
-    buttonpane.addChild(button_saveas)
-    buttonpane.addChild(button_export)
+
+    bottombuttons = Sequence(ORIENTATION_HORIZONTAL)
+    bottombuttons.weight = 0.001
+
+    FBCOL = 0x806060
+    button_load = Button(load, "load", color = FBCOL)
+    button_insert = Button(insert, "insert", color = FBCOL)
+    button_save = Button(save, "save", color = FBCOL)
+    button_saveas = Button(saveas, "save as", color = FBCOL)
+    button_export = Button(export, "export", color = FBCOL)
+
+    filler = Component()
+    filler.weight = 1000000
+
+    ENGCOL = 0x609090
+    engine_buttons = [Button((lambda : set_engine(id)), name, color = ENGCOL) for (id, name) in enumerate(get_engines())]
+    PARCOL = 0x807070
+    button_effect = Button(set_effect, "effect", color = PARCOL)
+    button_music = Button(set_music, "music", color = PARCOL)
+    button_bpm = Button(set_bpm, "BPM", color = PARCOL)
+
+    bottombuttons.addChild(button_load)
+    bottombuttons.addChild(button_insert)
+    bottombuttons.addChild(button_save)
+    bottombuttons.addChild(button_saveas)
+    bottombuttons.addChild(button_export)
+    bottombuttons.addChild(filler)
+    for b in engine_buttons:
+        bottombuttons.addChild(b)
+    bottombuttons.addChild(button_effect)
+    bottombuttons.addChild(button_music)
+    bottombuttons.addChild(button_bpm)
+
+
+    #buttonscroll = Scrollbar(ORIENTATION_VERTICAL)
+    #buttonfield = Scrollable(buttonscroll)
+    #buttonfield.addChild(buttonpane)
 
     hseq = Sequence(ORIENTATION_HORIZONTAL)
     vseq = Sequence(ORIENTATION_VERTICAL)
@@ -246,6 +258,7 @@ if __name__ == "__main__":
     vseq.addChild(adjuster)
     vseq.addChild(edit_seq)
     vseq.addChild(valuebar)
+    vseq.addChild(bottombuttons)
 
     root = EditorRoot(disp_seq)
     root.addChild(vseq)

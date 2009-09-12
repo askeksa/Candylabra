@@ -76,9 +76,10 @@ class MeshDisplay(Component):
         self.badnode = None
         self.timebar = None
         # self.reftime = 0
+        self.project = None
 
     def setTree(self, tree):
-        windll.RenderDLL.init(c_void_p(d3d.getDevice()))
+        windll.RenderDLL.init(c_void_p(d3d.getDevice()), self.project.engine_id, self.project.effect_file)
 
         ot.update_predefined_variables()
 
@@ -120,6 +121,12 @@ class MeshDisplay(Component):
         self.bindings[name] = value
         struct.pack_into('f', self.exported_constants, self.constmap[name]*4, value)
 
+    def setProject(self, project):
+        self.project = project
+        windll.RenderDLL.reinit(self.project.engine_id, self.project.effect_file)
+        ot.update_predefined_variables()
+        initMusic(self.project.music_file)
+
     def render(self, info):
         global frame
         if self.tree and self.timebar and not self.badnode:
@@ -141,7 +148,7 @@ class MeshDisplay(Component):
 
             #self.exportTree()
             #self.setBinding("time", time.clock()-self.reftime)
-            self.setBinding("time", max(0,self.timebar.area_pos/1000.))
+            self.setBinding("time", max(0,self.timebar.area_pos/1000.) * (self.project.bpm / 60.0))
             #self.setBinding("frame", frame)
             #frame += 1
             
@@ -241,6 +248,15 @@ class Brick(TextBevel):
         return self.node
 
 
+class Project:
+    def __init__(self, field):
+        self.bricks = field.children
+        self.engine_id = 0
+        self.effect_file = "shaders.fx"
+        self.music_file = "Silence.ogg"
+        self.bpm = 120.0
+
+
 class BrickField(Container):
     IDLE = 0
     CREATING = 1
@@ -263,6 +279,8 @@ class BrickField(Container):
         self.frames = []
         self.current_pos = None
         self.addHotkey(d3dc.VK.DELETE, (lambda event, manager : self.delete(self.selected)))
+        self.project = Project(self)
+        self.display.setProject(self.project)
 
     def delete(self, bricks):
         if self.root in bricks:
@@ -442,8 +460,7 @@ class BrickField(Container):
                             self.selected = set([b])
                         if event.double:
                             if self.root == b:
-                                windll.RenderDLL.reinit()
-                                ot.update_predefined_variables()
+                                self.display.setProject(self.project)
                             self.setRoot(b)
                             #self.display.reftime = time.clock()
                             #playMusic(0)
@@ -566,7 +583,7 @@ class BrickField(Container):
     def save(self, filename):
         try:
             f = open(filename, 'w')
-            pickle.dump(self.children, f)
+            pickle.dump(self.project, f)
             f.close()
         except IOError:
             tkMessageBox.showerror("File error", "Could not write to file")
@@ -574,8 +591,18 @@ class BrickField(Container):
     def _load(self, filename, offset):
         try:
             f = open(filename, 'r')
-            newbricks = pickle.load(f)
+            project = pickle.load(f)
             f.close()
+
+            if isinstance(project, Project):
+                self.project = project
+                newbricks = project.bricks
+                project.bricks = self.children
+            else:
+                self.project = Project(self)
+                newbricks = project
+            self.display.setProject(self.project)
+
             for c in newbricks:
                 c.__init__(c.node, self, tadd(c.gridpos, offset), c.extra_node_children)
 
@@ -586,6 +613,10 @@ class BrickField(Container):
                     globaldef = ot.GlobalDefinition(c.node.var)
                     globaldef.definitions = c.node.definitions
                     c.node = globaldef
+                if isinstance(c.node, ot.Text):
+                    item = ot.Item(c.node.index)
+                    item.definitions = c.node.definitions
+                    c.node = item
                 for i,d in enumerate(c.node.definitions):
                     if isinstance(d, types.TupleType):
                         c.node.definitions[i] = d[1]
@@ -608,6 +639,16 @@ class BrickField(Container):
         for c in self.children:
             lowest = max(lowest, c.gridpos[1])
         self._load(filename, (0,lowest+1))
+
+    def set_effect_file(self, filename):
+        self.effect_file = filename
+
+    def set_music_file(self, filename):
+        self.music_file = filename
+
+    def set_bpm(self, bpm):
+        self.bpm = bpm
+
 
 
 class CreateButton(TextBevel):
@@ -710,6 +751,56 @@ class ValueBar(Sequence):
     def updateMinMax(self):
         Sequence.updateMinMax(self)
         self.minsize = (self.minsize[0],Brick.SIZE[1])
+
+
+class TimeSlider(Scrollbar):
+    def __init__(self, orientation, display):
+        self.display = display
+        Scrollbar.__init__(self, orientation)
+
+    #music_was_playing = False
+    def initDragging(self):
+        Scrollbar.initDragging(self)
+        #self.music_was_playing = musicIsPlaying()
+        stopMusic()
+
+    def updateDragging(self, delta):
+        Scrollbar.updateDragging(self, delta)
+
+    def stopDragging(self):
+        Scrollbar.stopDragging(self)
+        #if self.music_was_playing:
+        #    playMusic(self.area_pos/1000.)
+        self.display.playbutton.repeatAction()
+
+
+class PlayButton(Button):
+    def __init__(self, display):
+        self.display = display
+        self.active = False
+        Button.__init__(self, self.action, "Play", 0x808080)
+
+    def action(self):
+        self.active = not self.active
+        self.repeatAction()
+
+    def repeatAction(self):
+        if self.active:
+            self.activate()
+        else:
+            self.passivate()
+        
+    def activate(self):
+        self.active = True
+        self.color = 0xcc5555
+        self.text = "Stop"
+        playMusic(self.display.timebar.area_pos/1000.0)
+        
+    def passivate(self):
+        self.active = False
+        self.text = "Play"
+        self.color = 0x808080
+        stopMusic()    
 
 
 class EditorRoot(Root):
