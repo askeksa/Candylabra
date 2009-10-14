@@ -232,6 +232,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\engine_haumea.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\engine_textobj.cpp"
 				>
 			</File>
@@ -270,10 +274,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\render.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\RenderDLL.cpp"
 				>
 			</File>
@@ -308,6 +308,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\engine_haumea.h"
+				>
+			</File>
+			<File
 				RelativePath=".\engine_textobj.h"
 				>
 			</File>
@@ -321,10 +325,6 @@
 			</File>
 			<File
 				RelativePath=".\objgen.h"
-				>
-			</File>
-			<File
-				RelativePath=".\render.h"
 				>
 			</File>
 			<File

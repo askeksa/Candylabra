@@ -17,7 +17,12 @@ struct COMStruct {
 	LPDIRECT3DTEXTURE9			renderbuffertex;
 	LPDIRECT3DSURFACE9			renderbuffer;
 	LPDIRECT3DSURFACE9			renderdepthbuffer;
+	LPDIRECT3DSURFACE9			cubedepth;
+	LPDIRECT3DVOLUMETEXTURE9	randomtex;
+	LPDIRECT3DVOLUMETEXTURE9	textures[N_OBJECTS]; // Object shape textures
+	LPDIRECT3DVOLUMETEXTURE9	dtextures[N_OBJECTS]; // Detail textures
 	LPD3DXMESH					meshes[N_OBJECTS];
+	LPDIRECT3DCUBETEXTURE9		cubetex[N_LIGHTS];
 };
 
 extern "C" {

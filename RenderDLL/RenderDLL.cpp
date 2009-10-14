@@ -9,13 +9,14 @@
 #include "MemoryFile.h"
 #include "objgen.h"
 #include "comcall.h"
-#include "render.h"
 #include "main.h"
 #include "engine_textobj.h"
+#include "engine_haumea.h"
 
 using namespace std;
 
 int current_engine_id = -1;
+Engine *active_engine;
 
 char effectfile[101];
 
@@ -153,7 +154,7 @@ extern "C" {
 		CHECK(COMHandles.device->GetDepthStencilSurface(&COMHandles.depthbuffer));
 
 		init3();
-		render_init();
+		active_engine->init();
 	}
 
 	RECT scissorRect;
@@ -200,7 +201,7 @@ static const char enginenames[] = "Default|TextObject|Haumea|";
 			active_engine = new TextObjectEngine();
 			break;
 		case 2:
-			active_engine = new TextObjectEngine();
+			active_engine = new HaumeaEngine();
 			break;
 		}
 		current_engine_id = engine_id;
@@ -243,12 +244,12 @@ static const char enginenames[] = "Default|TextObject|Haumea|";
 
 		if (engine_id != current_engine_id)
 		{
-			render_deinit();
+			active_engine->deinit();
 			delete active_engine;
 			init_engine(engine_id);
-			render_init();
+			active_engine->init();
 		} else {
-			render_reinit();
+			active_engine->reinit();
 		}
 		return 1;
 	}
@@ -331,7 +332,7 @@ static const char enginenames[] = "Default|TextObject|Haumea|";
 		updatemusic();
 		view_enter();
 
-		render_main();
+		active_engine->render();
 
 		//restore state
 		COMHandles.device->SetVertexShader(NULL);
@@ -354,4 +355,21 @@ static const char enginenames[] = "Default|TextObject|Haumea|";
 
 		return 0;
 	}
+
+
+	void __stdcall drawprimitive(float r, float g, float b, float a, int index)
+	{
+		active_engine->drawprimitive(r,g,b,a,index);
+	}
+
+	void __stdcall placelight(float r, float g, float b, float a, int index)
+	{
+		active_engine->placelight(r,g,b,a,index);
+	}
+
+	void __stdcall placecamera()
+	{
+		active_engine->placecamera();
+	}
+
 };
