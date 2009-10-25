@@ -188,26 +188,8 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\comcall.asm"
+				RelativePath=".\comcall.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="nasmw -dDEBUG -f win32 -Xvc $(InputDir)\$(InputFileName) -o $(OutDir)\$(InputName).obj&#x0D;&#x0A;"
-						Outputs="$(OutDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="nasmw -dDEBUG -f win32 -Xvc $(InputDir)\$(InputFileName) -o $(OutDir)\$(InputName).obj&#x0D;&#x0A;"
-						Outputs="$(OutDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\dll.asm"

@@ -130,7 +130,14 @@ extern "C" {
 	bool __stdcall init3() {
 		if (D3DXCreateEffectFromFile(COMHandles.device, effectfile, NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS) != D3D_OK)
 		{
-			MessageBox(0, (char *)errors->GetBufferPointer(), 0, 0);
+			if (errors == NULL)
+			{
+				char msg[100];
+				sprintf(msg, "Could not create effect from file %s", effectfile);
+				MessageBox(0, msg, 0, 0);
+			} else {
+				MessageBox(0, (char *)errors->GetBufferPointer(), 0, 0);
+			}
 			effect_valid = false;
 			return false;
 		}

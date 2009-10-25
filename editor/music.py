@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import pygame
+import tkMessageBox
 
 global samples_per_beat
 global samples_per_second
@@ -24,7 +25,11 @@ def initMusic(filename):
     #pygame.mixer.music.load("G:\musik\mod\mobyle.mod")
     #pygame.mixer.music.load("Silence.ogg")
     #pygame.mixer.music.load("solskogen3-clean.ogg")
-    pygame.mixer.music.load(filename)
+    try:
+        pygame.mixer.music.load(filename)
+    except Exception:
+        tkMessageBox.showerror("File error", "Could not load music from file %s" % filename)
+        return
     if music_is_playing:
         playMusic(pos)
 
