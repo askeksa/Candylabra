@@ -252,8 +252,8 @@ class Project:
     def __init__(self, field):
         self.bricks = field.children
         self.engine_id = 0
-        self.effect_file = "shaders.fx"
-        self.music_file = "Silence.ogg"
+        self.effect_file = "../objects/default.fx"
+        self.music_file = "../objects/Silence.ogg"
         self.bpm = 120.0
 
 

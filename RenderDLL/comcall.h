@@ -29,4 +29,6 @@ extern "C" {
 	extern COMStruct COMHandles;
 };
 
+#define RELEASE(o) do { if ((o) != NULL) { (o)->Release(); o = NULL; } } while (0)
+
 #endif
