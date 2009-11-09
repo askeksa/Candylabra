@@ -12,6 +12,7 @@
 #include "main.h"
 #include "engine_textobj.h"
 #include "engine_haumea.h"
+#include "engine_eris.h"
 
 using namespace std;
 
@@ -189,12 +190,12 @@ extern "C" {
 		}
 	}
 
-static const char enginenames[] = "Default|TextObject|Haumea|";
+static const char enginenames[] = "Default|TextObject|Haumea|Eris|";
 
 	RENDERDLL_API int __stdcall getengines(char *buf)
 	{
 		strcpy(buf, enginenames);
-		return 3;
+		return 4;
 	}
 
 	void init_engine(int engine_id)
@@ -209,6 +210,9 @@ static const char enginenames[] = "Default|TextObject|Haumea|";
 			break;
 		case 2:
 			active_engine = new HaumeaEngine();
+			break;
+		case 3:
+			active_engine = new ErisEngine();
 			break;
 		}
 		current_engine_id = engine_id;
@@ -308,10 +312,11 @@ static const char enginenames[] = "Default|TextObject|Haumea|";
 
 	void view_display()
 	{
+		float aspect = active_engine->getaspect();
 		CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.backbuffer));
 		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.depthbuffer));
 		CHECK(COMHandles.device->SetScissorRect(&scissorRect));
-		int border_offset = (int)((width - height * 4.0f / 3.0f) / 2);
+		int border_offset = (int)((width - height * aspect) / 2);
 		if(border_offset > 0) {
 			RECT rect = {
 				scissorRect.left+border_offset, scissorRect.top, scissorRect.right-border_offset, scissorRect.bottom
@@ -351,7 +356,8 @@ static const char enginenames[] = "Default|TextObject|Haumea|";
 
 		view_restore();
 
-		int border_offset = (int)((width - height * 4.0f / 3.0f) / 2);
+		float aspect = active_engine->getaspect();
+		int border_offset = (int)((width - height * aspect) / 2);
 		if(border_offset > 0) {
 			D3DRECT hborders[2] = {
 				{border_offset, 0, border_offset+1, height},

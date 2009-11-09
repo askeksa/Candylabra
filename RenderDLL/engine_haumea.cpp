@@ -7,7 +7,13 @@
 
 extern char effectfile[];
 
-float objectsizes[N_OBJECTS];
+static float objectsizes[N_OBJECTS];
+static float marching_vertices[30000000];
+
+float HaumeaEngine::getaspect()
+{
+	return 4.0f / 3.0f;
+}
 
 bool maketexture(IDirect3DVolumeTexture9 **texp, int size, char *fun)
 {
@@ -27,8 +33,6 @@ bool maketexture(IDirect3DVolumeTexture9 **texp, int size, char *fun)
 	RELEASE(COMHandles.tshader);
 	return true;
 }
-
-float marching_vertices[30000000];
 
 void makemesh(IDirect3DVolumeTexture9 **texp, ID3DXMesh **meshp, char *fun, int nvertices)
 {
@@ -147,7 +151,7 @@ void HaumeaEngine::deinit()
 	}
 }
 
-D3DXMATRIX p[6] = {
+static D3DXMATRIX p[6] = {
 	D3DXMATRIX(
 	0,0,1,1,
 	0,1,0,0,
@@ -221,7 +225,7 @@ void HaumeaEngine::render()
 	CHECK(COMHandles.effect->End());
 }
 
-void setposition(char *name, int index)
+void HaumeaEngine::setposition(char *name, int index)
 {
 	D3DXMATRIX *trans = COMHandles.matrix_stack->GetTop();
 	float pos[3] = { trans->_41, trans->_42, trans->_43 };

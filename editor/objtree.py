@@ -23,15 +23,16 @@ OP_FANOUT = 0x01
 OP_SAVETRANS = 0x2
 OP_CALL = 0x03
 OP_PRIM = 0x04
-OP_LIGHT = 0x05
-OP_CAMERA = 0x06
-OP_ASSIGN = 0x07
-OP_LOCALASSIGN = 0x08
-OP_CONDITIONAL = 0x09
-OP_NOPLEAF = 0x0a
-OP_ROTATE = 0x0b
-OP_SCALE = 0x0c
-OP_TRANSLATE = 0x0d
+OP_DYNPRIM = 0x05
+OP_LIGHT = 0x06
+OP_CAMERA = 0x07
+OP_ASSIGN = 0x08
+OP_LOCALASSIGN = 0x09
+OP_CONDITIONAL = 0x0a
+OP_NOPLEAF = 0x0b
+OP_ROTATE = 0x0c
+OP_SCALE = 0x0d
+OP_TRANSLATE = 0x0e
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -366,7 +367,10 @@ class GlobalDefinition(DefinitionNode):
 
 class LocalDefinition(DefinitionNode):
     def brickColor(self):
-        return 0xc09080
+        if self.var in predefined_variables:
+            return 0xf0d090
+        else:
+            return 0xc09080
 
     def export(self, exporter):
         var_index = exporter.getConstIndex(self.var, self)
@@ -423,6 +427,34 @@ class Item(PrimitiveNode):
 
 class Text(Item):
     pass
+
+
+class DynamicItem(PrimitiveNode):
+    MAX_INDEX = 100
+
+    def __init__(self, index):
+        PrimitiveNode.__init__(self, index, Text.MAX_INDEX)
+
+    def getParameters(self):
+        return ["i", "r","g","b","a"]
+
+    def getOptions(self):
+        return []
+
+    def getName(self):
+        name = "%s" % (self.definitions[0].exp)
+        if len(name) > 14:
+            name = name[0:14]
+        return name
+
+    def setDefaultValues(self):
+        PrimitiveNode.setDefaultValues(self)
+        self.definitions[0] = DefValue(str(self.index))
+
+    def export(self, exporter):
+        exporter.out += [OP_DYNPRIM]
+        self.exportDefinitions(exporter)
+        return self.children
 
 
 class Light(PrimitiveNode):

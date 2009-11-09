@@ -132,7 +132,7 @@ _param_scales:
 dd  0x40c90fdb	;2pi Rotate		1.0 is a full revolution
 dd	0x3f800000	;1   Scale
 dd	0x3f800000	;1   Translate
-dd  0x437f0000	;255 Primitive color
+;dd  0x437f0000	;255 Primitive color
 
 section jumptable bss align=4
 _jump_locations: resd 256
@@ -293,6 +293,35 @@ _traverse:
 	ret
 
 .not_primitive:
+	dec eax
+	jnz .not_dynamic_primitive
+	;; ----------------
+	;; dynamic primitive
+	;; ----------------
+	push eax ; space for index	
+
+	push byte 1
+	pop edx
+	push byte 5
+	pop ecx
+
+	;unpack arguments
+.unpack_loop_dynamic_primitive:
+	call _parseParam
+	push eax
+	fmul dword [_param_scales+edx*4]
+	fstp dword [esp]
+	loop .unpack_loop_dynamic_primitive
+
+	; Extract index
+	fld dword [esp]
+	pop eax
+	fistp dword [esp+4*4]
+
+	call _drawprimitive@20
+	ret
+
+.not_dynamic_primitive:
 	dec eax
 	jnz .not_light
 	;; ----------------

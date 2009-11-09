@@ -20,4 +20,6 @@ public:
 	virtual void drawprimitive(float r, float g, float b, float a, int index);
 	virtual void placelight(float r, float g, float b, float a, int index);
 	virtual void placecamera();
+
+	virtual float getaspect();
 };
