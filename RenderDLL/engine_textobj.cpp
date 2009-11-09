@@ -10,6 +10,11 @@ extern "C" {
 	extern float constantPool[256];
 };
 
+float TextObjectEngine::getaspect()
+{
+	return 4.0f / 3.0f;
+}
+
 void TextObjectEngine::maketexts(char *texts, int size)
 {
 	LPD3DXMESH mesh = NULL;

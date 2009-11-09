@@ -169,8 +169,9 @@ if __name__ == "__main__":
     buttonpane.weight = 0.001
 
     button_item = CreateButton("object", (lambda : ot.Item(0)), field)
-    for o in range(0,10):
-        button_item.addHotkey(ord('0')+o, (lambda : ot.Item(o)))
+    button_dynitem = CreateButton("dyn object", (lambda : ot.DynamicItem(0)), field)
+    #for o in range(0,10):
+    #    button_item.addHotkey(ord('0')+o, (lambda e,m : field.setCreating(lambda : ot.DynamicItem(o))))
     button_light = CreateButton("light", (lambda : ot.Light(0)), field)
     button_camera = CreateButton("camera", (lambda : ot.Camera()), field)
     button_identity = CreateButton("", ot.Identity, field, 'Q')
@@ -189,6 +190,7 @@ if __name__ == "__main__":
     filler.weight = 1000000
 
     buttonpane.addChild(button_item)
+    buttonpane.addChild(button_dynitem)
     buttonpane.addChild(button_light)
     buttonpane.addChild(button_camera)
     buttonpane.addChild(button_identity)

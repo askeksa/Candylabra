@@ -214,6 +214,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\engine_eris.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\engine_haumea.cpp"
 				>
 			</File>
@@ -252,15 +256,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\MemoryFile.h"
-				>
-			</File>
-			<File
 				RelativePath=".\RenderDLL.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\editor\shaders.fx"
 				>
 			</File>
 		</Filter>
@@ -290,6 +286,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\engine_eris.h"
+				>
+			</File>
+			<File
 				RelativePath=".\engine_haumea.h"
 				>
 			</File>
@@ -303,6 +303,10 @@
 			</File>
 			<File
 				RelativePath=".\Marching.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MemoryFile.h"
 				>
 			</File>
 			<File
