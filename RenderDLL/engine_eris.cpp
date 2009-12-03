@@ -7,6 +7,10 @@
 
 extern char effectfile[];
 
+extern "C" {
+	extern RECT scissorRect;
+};
+
 float ErisEngine::getaspect()
 {
 	return 16.0f / 9.0f;
@@ -21,10 +25,12 @@ void maketexts(const unsigned char *text, int n_objects)
 
 	int t = 0;
 
-	char *fontname = "Arial Black";
+	// Eivind: arial black er ikke default installert på min maskin! (windows 7) Bytter til bold Arial...
+	//char *fontname = "Arial Black";
+	char *fontname = "Arial";
 	int fontsize = 10;
 	float fontex = 0.5f;
-	hFont = CreateFont(fontsize, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+	hFont = CreateFont(fontsize, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
 		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, fontname);
 	hFontOld = (HFONT)SelectObject(hdc, hFont); 
 
@@ -61,6 +67,34 @@ static void deinit_effect_and_stuff()
 	}
 }
 
+void ErisEngine::prepare_render_surfaces()
+{
+	int width = scissorRect.right-scissorRect.left;
+	int	height = scissorRect.bottom - scissorRect.top;
+	if (render_width != width || render_height != height)
+	{
+		if (COMHandles.renderbuffer) COMHandles.renderbuffer->Release();
+		if (COMHandles.renderbuffertex) COMHandles.renderbuffertex->Release();
+		if (COMHandles.renderdepthbuffer) COMHandles.renderdepthbuffer->Release();
+		CHECK(COMHandles.device->CreateTexture(width, height, 0, D3DUSAGE_RENDERTARGET|D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, &COMHandles.renderbuffertex, NULL));
+		CHECK(COMHandles.device->CreateDepthStencilSurface(width, height, D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, TRUE, &COMHandles.renderdepthbuffer, NULL));
+		render_width = width;
+		render_height = height;
+		last_fov = 0.0f;
+
+#if 0
+		char hei[256];
+		sprintf(hei, "w:%d h:%d ..\n", width, height);
+		MessageBox(NULL, hei, hei, 0);
+#endif
+
+		CHECK(COMHandles.renderbuffertex->GetSurfaceLevel(0, &COMHandles.renderbuffer));
+	}
+
+	CHECK(COMHandles.device->SetRenderTarget(0, COMHandles.renderbuffer));
+	CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.renderdepthbuffer));
+}
+
 void ErisEngine::init()
 {
 	for (int i = 0 ; i < N_LIGHTS ; i++)
@@ -75,6 +109,9 @@ void ErisEngine::init()
 void ErisEngine::reinit()
 {
 	deinit_effect_and_stuff();
+	render_width = 0;
+	render_height = 0;
+	last_fov = 0.0f;
 	init_effect_and_stuff();
 }
 
@@ -127,9 +164,33 @@ static D3DXMATRIX p[6] = {
 	),
 };
 
+
+void ErisEngine::blit_to_screen(int pass)
+{
+	float fullscreenquad[] = {
+		-1.0,  1.0, 0.0, 0.0, 0.0,
+		 1.0,  1.0, 0.0, 1.0, 0.0,
+		-1.0, -1.0, 0.0, 0.0, 1.0,
+		 1.0, -1.0, 0.0, 1.0, 1.0
+	};
+	// bias according to resolution to get sample point in middle of pixel
+	for (int i=0; i<4; i++){
+		fullscreenquad[i*5+3] += .5f / render_width;
+		fullscreenquad[i*5+4] += .5f / render_height;
+	}
+
+	CHECK(COMHandles.effect->BeginPass(pass));
+	//COMHandles.device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	CHECK(COMHandles.device->SetTexture(0, COMHandles.renderbuffertex));
+	CHECK(COMHandles.device->SetFVF(D3DFVF_XYZ|D3DFVF_TEX1));
+	CHECK(COMHandles.device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, fullscreenquad, 5*sizeof(float)));
+	CHECK(COMHandles.effect->EndPass());
+}
+
 void ErisEngine::render()
 {
 	CHECK(COMHandles.effect->Begin(0, 0));
+
 
 	for (int i = 0 ; i < N_LIGHTS ; i++)
 	{
@@ -151,12 +212,18 @@ void ErisEngine::render()
 		}
 	}
 
-	view_display();
+	prepare_render_surfaces();
+
 	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0, 1.0f, 0));
+/*
 	CHECK(COMHandles.effect->SetMatrixTranspose("vm", &proj));
 	pass(3,1);
+*/
 	CHECK(COMHandles.effect->SetMatrixTranspose("vm", &proj));
 	pass(2,1);
+
+	view_display();
+	blit_to_screen(3);
 
 	CHECK(COMHandles.effect->End());
 }
