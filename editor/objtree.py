@@ -100,9 +100,6 @@ class ObjectNode(object):
         for p in self.getParameters():
             self.definitions.append(DefValue(self.getDefault()))
 
-    def brickColor(self):
-        return 0x808080
-
     def export_nchildren(self):
         return 1
 
@@ -143,12 +140,9 @@ class SaveTransform(ObjectNode):
         return True
 
 
-class Transform(ObjectNode):
-    pass
-
-class Identity(Transform):
+class LabeledNode(ObjectNode):
     def __init__(self):
-        Transform.__init__(self)
+        ObjectNode.__init__(self)
         self.label = ""
 
     def getOptions(self):
@@ -162,8 +156,42 @@ class Identity(Transform):
             self.label = value
         return self.label
 
+
+class Identity(LabeledNode):
+    def __init__(self):
+        LabeledNode.__init__(self)
+
+    def brickColor(self):
+        return 0x808080
+
     def export(self, exporter):
         return self.children
+
+
+class Link(LabeledNode):
+    def __init__(self, field):
+        LabeledNode.__init__(self)
+        self.field = field
+
+    def brickColor(self):
+        if self.label not in self.field.labelbricks:
+            return 0xc0c0c0
+        if any(b.node == self and b.childBricks() for b in self.field.labelbricks[self.label]):
+            return 0xf0f0f0
+        if any(b.childBricks() for b in self.field.labelbricks[self.label]):
+            return 0xc0c0c0
+        return 0x505050
+
+    def export(self, exporter):
+        if len(self.children) == 0:
+            raise ExportException(self, "No link label with children")
+        if sum(1 for b in self.field.labelbricks[self.label] if b.childBricks()) > 1:
+            raise ExportException(self, "More than one link label with children")
+        return self.children
+
+
+class Transform(ObjectNode):
+    pass
 
 
 class Move(Transform):

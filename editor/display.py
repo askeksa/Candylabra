@@ -236,15 +236,24 @@ class Brick(TextBevel):
         return (self.gridpos[0] == other.gridpos[0] and 
                 self.gridpos[1] == other.gridpos[1]+1)
 
-    def buildTree(self, bricklist, visited):
+    def childBricks(self):
+        child_bricks = [b for b in self.field.children if b.below(self)] + self.extra_node_children
+        child_bricks.sort(lambda a,b : cmp(a.gridpos, b.gridpos))
+        return child_bricks
+
+    def buildTree(self, visited):
         if self.node not in visited:
             visited.add(self.node)
-            child_bricks = [b for b in bricklist if b.below(self)] + self.extra_node_children
-            child_bricks.sort(lambda a,b : cmp(a.gridpos, b.gridpos))
+
+            child_bricks = self.childBricks()
+            if isinstance(self.node, ot.Link):
+                for b in self.field.labelbricks[self.node.label]:
+                    if b != self and len(b.childBricks()) > 0:
+                        child_bricks.append(b)
 
             self.node.children = []
             for b in child_bricks:
-                self.node.children.append(b.buildTree(bricklist, visited))
+                self.node.children.append(b.buildTree(visited))
         return self.node
 
 
@@ -281,6 +290,10 @@ class BrickField(Container):
         self.addHotkey(d3dc.VK.DELETE, (lambda event, manager : self.delete(self.selected)))
         self.project = Project(self)
         self.display.setProject(self.project)
+        self.labelbricks = dict()
+
+    def __getstate__(self):
+        raise Exception("Internal error: Attempt to serialize the BrickField!")
 
     def delete(self, bricks):
         if self.root in bricks:
@@ -366,8 +379,15 @@ class BrickField(Container):
         self.updateValueBar(active)
 
     def updateDisplay(self):
+        self.labelbricks = dict()
+        for b in self.children:
+            if isinstance(b.node, ot.Link):
+                if b.node.label not in self.labelbricks:
+                    self.labelbricks[b.node.label] = []
+                self.labelbricks[b.node.label].append(b)
+                    
         if self.root:
-            self.display.setTree(self.root.buildTree(self.children, set()))
+            self.display.setTree(self.root.buildTree(set()))
         else:
             self.display.setTree(None)
 
@@ -581,12 +601,20 @@ class BrickField(Container):
             manager.removeMouseListener(self)
 
     def save(self, filename):
+        # Clear field fields
+        for b in self.children:
+            if isinstance(b.node, ot.Link):
+                b.node.field = None
         try:
             f = open(filename, 'w')
             pickle.dump(self.project, f)
             f.close()
         except IOError:
             tkMessageBox.showerror("File error", "Could not write to file")
+        # Restore field fields
+        for b in self.children:
+            if isinstance(b.node, ot.Link):
+                b.node.field = self
 
     def _load(self, filename, offset):
         try:
@@ -620,6 +648,10 @@ class BrickField(Container):
                 for i,d in enumerate(c.node.definitions):
                     if isinstance(d, types.TupleType):
                         c.node.definitions[i] = d[1]
+
+                # Restore field field
+                if isinstance(c.node, ot.Link):
+                    c.node.field = self
                 self.addChild(c)
         except IOError:
             tkMessageBox.showerror("File error", "Could not read file")
@@ -719,6 +751,7 @@ class ValueAdjuster(TextBevel, Draggable):
                                                 initialvalue=self.value)
             self.setValue(newvalue)
             self.field.updateValueBar(self.field.active)
+            self.field.updateDisplay()
             return None
         return event
 
