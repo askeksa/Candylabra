@@ -174,7 +174,7 @@ if __name__ == "__main__":
     #    button_item.addHotkey(ord('0')+o, (lambda e,m : field.setCreating(lambda : ot.DynamicItem(o))))
     button_light = CreateButton("light", (lambda : ot.Light(0)), field)
     button_camera = CreateButton("camera", (lambda : ot.Camera()), field)
-    button_identity = CreateButton("", ot.Identity, field, 'Q')
+    button_identity = CreateButton("lAbel", (lambda : ot.Identity(field)), field, 'A')
     button_link = CreateButton("linK", (lambda : ot.Link(field)), field, 'K')
     button_fix = CreateButton("Fix", ot.SaveTransform, field, 'F')
     button_move = CreateButton("Move", ot.Move, field, 'M')
