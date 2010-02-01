@@ -119,6 +119,9 @@ class ObjectNode(object):
         cloned.definitions = [DefValue(d.exp) for d in self.definitions]
         return cloned
 
+    def export(self, exporter):
+        return self.children
+
 
 class SaveTransform(ObjectNode):
     def getName(self):
@@ -158,10 +161,21 @@ class LabeledNode(ObjectNode):
 
 
 class Identity(LabeledNode):
-    def __init__(self):
+    def __init__(self, field):
         LabeledNode.__init__(self)
+        self.field = field
 
     def brickColor(self):
+        if self.label not in self.field.labelbricks or not any(b.node == self for b in self.field.labelbricks[self.label]):
+            # button
+            return 0x808080
+        if self.label in self.field.linkbricks:
+            if self.label in self.field.labelbricks and len(self.field.labelbricks[self.label]) > 1:
+                # more than one linked label
+                return 0xb0a0a0
+            # linked label
+            return 0xb0b0b0
+        # unlinked label
         return 0x808080
 
     def export(self, exporter):
@@ -174,19 +188,23 @@ class Link(LabeledNode):
         self.field = field
 
     def brickColor(self):
-        if self.label not in self.field.labelbricks:
-            return 0xc0c0c0
-        if any(b.node == self and b.childBricks() for b in self.field.labelbricks[self.label]):
+        if self.label not in self.field.linkbricks or not any(b.node == self for b in self.field.linkbricks[self.label]):
+            # button
             return 0xf0f0f0
-        if any(b.childBricks() for b in self.field.labelbricks[self.label]):
-            return 0xc0c0c0
+        if self.label in self.field.labelbricks:
+            if len(self.field.labelbricks[self.label]) > 1:
+                # more than one matching label
+                return 0xf0e0e0
+            # one matching label
+            return 0xf0f0f0
+        # no matching labels
         return 0x505050
 
     def export(self, exporter):
         if len(self.children) == 0:
-            raise ExportException(self, "No link label with children")
-        if sum(1 for b in self.field.labelbricks[self.label] if b.childBricks()) > 1:
-            raise ExportException(self, "More than one link label with children")
+            raise ExportException(self, "No matching label")
+        if len(self.field.labelbricks[self.label]) > 1:
+            raise ExportException(self, "More than one matching label")
         return self.children
 
 
@@ -711,7 +729,7 @@ class Exporter(object):
     
         while self.todo:
             nodes,ref_index = self.todo.pop()
-            dummy = Identity()
+            dummy = ObjectNode()
             dummy.children = list(nodes)
             self.labeled.add(dummy)
             self.seenlabels = set()

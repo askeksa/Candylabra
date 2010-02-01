@@ -246,14 +246,10 @@ class Brick(TextBevel):
             visited.add(self.node)
 
             child_bricks = self.childBricks()
-            if isinstance(self.node, ot.Link):
-                for b in self.field.labelbricks[self.node.label]:
-                    if b != self and len(b.childBricks()) > 0:
-                        child_bricks.append(b)
+            if isinstance(self.node, ot.Link) and self.node.label in self.field.labelbricks:
+                child_bricks = self.field.labelbricks[self.node.label] + child_bricks
 
-            self.node.children = []
-            for b in child_bricks:
-                self.node.children.append(b.buildTree(visited))
+            self.node.children = [b.buildTree(visited) for b in child_bricks]
         return self.node
 
 
@@ -291,6 +287,7 @@ class BrickField(Container):
         self.project = Project(self)
         self.display.setProject(self.project)
         self.labelbricks = dict()
+        self.linkbricks = dict()
 
     def __getstate__(self):
         raise Exception("Internal error: Attempt to serialize the BrickField!")
@@ -334,7 +331,10 @@ class BrickField(Container):
         Container.render(self, info)
 
         for b in self.children:
-            for c in b.extra_node_children:
+            targets = b.extra_node_children
+            if isinstance(b.node, ot.Link) and b.node.label in self.labelbricks:
+                targets = targets + self.labelbricks[b.node.label]
+            for c in targets:
                 if b in self.selected or c in self.selected:
                     self.drawConnection(b,c, 0xffffffff)
 
@@ -378,13 +378,17 @@ class BrickField(Container):
         self.active = active
         self.updateValueBar(active)
 
-    def updateDisplay(self):
-        self.labelbricks = dict()
+    def makeBrickMap(self, typ, bmap):
+        bmap.clear()
         for b in self.children:
-            if isinstance(b.node, ot.Link):
-                if b.node.label not in self.labelbricks:
-                    self.labelbricks[b.node.label] = []
-                self.labelbricks[b.node.label].append(b)
+            if isinstance(b.node, typ):
+                if b.node.label not in bmap:
+                    bmap[b.node.label] = []
+                bmap[b.node.label].append(b)
+
+    def updateDisplay(self):
+        self.makeBrickMap(ot.Identity, self.labelbricks)
+        self.makeBrickMap(ot.Link, self.linkbricks)
                     
         if self.root:
             self.display.setTree(self.root.buildTree(set()))
@@ -603,7 +607,7 @@ class BrickField(Container):
     def save(self, filename):
         # Clear field fields
         for b in self.children:
-            if isinstance(b.node, ot.Link):
+            if "field" in b.node.__dict__:
                 b.node.field = None
         try:
             f = open(filename, 'w')
@@ -613,7 +617,7 @@ class BrickField(Container):
             tkMessageBox.showerror("File error", "Could not write to file")
         # Restore field fields
         for b in self.children:
-            if isinstance(b.node, ot.Link):
+            if "field" in b.node.__dict__:
                 b.node.field = self
 
     def _load(self, filename, offset):
@@ -635,7 +639,7 @@ class BrickField(Container):
                 c.__init__(c.node, self, tadd(c.gridpos, offset), c.extra_node_children)
 
                 # HACKs to improve loading compatibility
-                if isinstance(c.node, ot.Identity) and not "label" in c.node.__dict__:
+                if isinstance(c.node, ot.Identity) and "label" not in c.node.__dict__:
                     c.node.label = ""
                 if isinstance(c.node, ot.DefinitionNode) and not isinstance(c.node, ot.LocalDefinition):
                     globaldef = ot.GlobalDefinition(c.node.var)
@@ -650,7 +654,7 @@ class BrickField(Container):
                         c.node.definitions[i] = d[1]
 
                 # Restore field field
-                if isinstance(c.node, ot.Link):
+                if isinstance(c.node, ot.Identity) or isinstance(c.node, ot.Link):
                     c.node.field = self
                 self.addChild(c)
         except IOError:
