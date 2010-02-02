@@ -56,7 +56,7 @@ def insert():
 def export():
     if field.active:
         try:
-            tree = field.active.buildTree(field.children, set())
+            tree = field.active.buildTree(set())
             exporter = ot.Exporter(tree)
             instructions,constants,constmap = exporter.optimized_export()
             #print instructions

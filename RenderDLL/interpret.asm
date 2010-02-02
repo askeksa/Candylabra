@@ -233,15 +233,11 @@ _traverse:
 	jnz .not_savetrans
 
 	;; ----------------
-	;; fanout with fix
+	;; fix
 	;; ----------------
-	.fanout_savetrans_loop:
-		comcall dword [comhandle(matrix_stack)], Push
-		call _traverse
-		comcall dword [comhandle(matrix_stack)], Pop
-		cmp byte [esi], byte 0
-		jne .fanout_savetrans_loop
-	lodsb
+	comcall dword [comhandle(matrix_stack)], Push
+	call _traverse
+	comcall dword [comhandle(matrix_stack)], Pop
 	ret
 
 .not_savetrans:
@@ -316,7 +312,7 @@ _traverse:
 	; Extract index
 	fld dword [esp]
 	pop eax
-	fistp dword [esp+4*4]
+	fistp dword		[esp+4*4]
 
 	call _drawprimitive@20
 	ret
