@@ -19,20 +19,26 @@ import struct
 import copy
 from ctypes import create_string_buffer,windll
 
-OP_FANOUT = 0x01
-OP_SAVETRANS = 0x2
-OP_CALL = 0x03
-OP_PRIM = 0x04
-OP_DYNPRIM = 0x05
-OP_LIGHT = 0x06
-OP_CAMERA = 0x07
-OP_ASSIGN = 0x08
-OP_LOCALASSIGN = 0x09
-OP_CONDITIONAL = 0x0a
-OP_NOPLEAF = 0x0b
-OP_ROTATE = 0x0c
-OP_SCALE = 0x0d
-OP_TRANSLATE = 0x0e
+code = 0
+def next():
+    global code
+    code = code+1
+    return code
+
+OP_FANOUT      = next()
+OP_SAVETRANS   = next()
+OP_CALL        = next()
+OP_PRIM        = next()
+OP_DYNPRIM     = next()
+OP_LIGHT       = next()
+OP_CAMERA      = next()
+OP_ASSIGN      = next()
+OP_LOCALASSIGN = next()
+OP_CONDITIONAL = next()
+OP_NOPLEAF     = next()
+OP_ROTATE      = next()
+OP_SCALE       = next()
+OP_TRANSLATE   = next()
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -110,9 +116,6 @@ class ObjectNode(object):
     def setParamName(self, p_index, p_name):
         pass
 
-    def variableChildren(self):
-        return False
-
     def clone(self):
         cloned = copy.copy(self)
         cloned.children = []
@@ -131,16 +134,20 @@ class SaveTransform(ObjectNode):
         return 0xc060a0
 
     def export_nchildren(self):
-        return len(self.children)
+        return 1
 
     def export(self, exporter):
         if len(self.children) == 0:
             raise ExportException(self, "Fix node with no children")
-        exporter.out += [OP_SAVETRANS]
-        return self.children
-
-    def variableChildren(self):
-        return True
+        if len(self.children) == 1:
+            exporter.out += [OP_SAVETRANS]
+            return self.children
+        savechildren = []
+        for c in self.children:
+            save = SaveTransform()
+            save.children = [c]
+            savechildren.append(save)
+        return savechildren
 
 
 class LabeledNode(ObjectNode):
@@ -709,7 +716,7 @@ class Exporter(object):
                 self.out += [OP_FANOUT]
         for c in visitchildren:
             self.exportnode(c)
-        if len(visitchildren) > 1 or node.variableChildren():
+        if len(visitchildren) > 1:
             self.out += [0]
         if node in self.seenlabels:
             self.seenlabels.remove(node)
