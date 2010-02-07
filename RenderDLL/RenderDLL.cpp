@@ -13,6 +13,7 @@
 #include "engine_textobj.h"
 #include "engine_haumea.h"
 #include "engine_eris.h"
+#include "engine_ikadalawampu.h"
 
 using namespace std;
 
@@ -182,20 +183,18 @@ extern "C" {
 	{
 		width = scissorRect.right - scissorRect.left;
 		height = scissorRect.bottom - scissorRect.top;
-		{//projection matrix
-			float CAMERA_NEAR_Z = 0.125f;
-			float CAMERA_FAR_Z = 1024.0f;
-			float aspect = width / (float)height;
-			D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
-		}
+		float CAMERA_NEAR_Z = 0.125f;
+		float CAMERA_FAR_Z = 1024.0f;
+		float aspect = active_engine->getaspect();
+		D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
 	}
 
-static const char enginenames[] = "Default|TextObject|Haumea|Eris|";
+static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|";
 
 	RENDERDLL_API int __stdcall getengines(char *buf)
 	{
 		strcpy(buf, enginenames);
-		return 4;
+		return 5;
 	}
 
 	void init_engine(int engine_id)
@@ -213,6 +212,9 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|";
 			break;
 		case 3:
 			active_engine = new ErisEngine();
+			break;
+		case 4:
+			active_engine = new IkadalawampuEngine();
 			break;
 		}
 		current_engine_id = engine_id;
@@ -317,13 +319,17 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|";
 		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.depthbuffer));
 		CHECK(COMHandles.device->SetScissorRect(&scissorRect));
 		int border_offset = (int)((width - height * aspect) / 2);
+		CHECK(COMHandles.device->SetViewport(&display_viewport));
 		if(border_offset > 0) {
 			RECT rect = {
 				scissorRect.left+border_offset, scissorRect.top, scissorRect.right-border_offset, scissorRect.bottom
 			};
 			CHECK(COMHandles.device->SetScissorRect(&rect));
+			D3DVIEWPORT9 port = {rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top,
+				0, 1
+			};
+			CHECK(COMHandles.device->SetViewport(&port));
 		};
-		CHECK(COMHandles.device->SetViewport(&display_viewport));
 	}
 
 	void view_restore()
@@ -385,4 +391,8 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|";
 		active_engine->placecamera();
 	}
 
+	float __stdcall frandom()
+	{
+		return active_engine->random();
+	}
 };

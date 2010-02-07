@@ -38,7 +38,7 @@ void TextObjectEngine::maketexts(char *texts, int size)
 			{
 				while (t < size && texts[t] >= ' ') t++;
 				while (t < size && texts[t] < ' ') t++;
-				for (int j = 0 ; j < strlen(fontname) ; j++)
+				for (unsigned j = 0 ; j < strlen(fontname) ; j++)
 				{
 					if (fontname[j] == '_') fontname[j] = ' ';
 				}
@@ -155,7 +155,7 @@ void TextObjectEngine::render()
 	prepare_render_surfaces();
 	CHECK(COMHandles.device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_TARGET, 0xff000000, 1.0f, 0));
 	CHECK(COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE));
-	for (int p = 0 ; p < tdesc.Passes-1 ; p++)
+	for (unsigned p = 0 ; p < tdesc.Passes-1 ; p++)
 	{
 		//CHECK(COMHandles.matrix_stack->LoadMatrix(&proj));
 		pass(p,p);
@@ -191,4 +191,9 @@ void TextObjectEngine::placelight(float r, float g, float b, float a, int index)
 
 void TextObjectEngine::placecamera()
 {
+}
+
+float TextObjectEngine::random()
+{
+	return mentor_synth_random();
 }

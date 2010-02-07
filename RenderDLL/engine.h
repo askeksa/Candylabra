@@ -2,7 +2,7 @@
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
-virtual class Engine {
+class Engine {
 public:
 	virtual void init() = 0;
 	virtual void reinit() = 0;
@@ -14,6 +14,7 @@ public:
 	virtual void placecamera() = 0;
 
 	virtual float getaspect() = 0;
+	virtual float random() = 0;
 };
 
 #endif

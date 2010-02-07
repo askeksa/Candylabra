@@ -42,7 +42,7 @@ inline static void tetrahedron(const celltype *tex) {
 		int v2 = tex[i2]*2-65535;
 		if((v1 ^ v2) < 0) {
 			for(int j = 0; j < 3; j++) {
-				float d = (v2-v1)<<(TEX_BITS);
+				float d = (float)((v2-v1)<<(TEX_BITS));
 				*out++ = (v2*(i1&TEX_MASK) - v1*(i2&TEX_MASK))/d - 0.5f;
 				i1>>=TEX_BITS;
 				i2>>=TEX_BITS;
@@ -73,5 +73,5 @@ int __stdcall marching_cubes(const celltype *tex, float *org_out) {
 			}
 		}
 	}
-	return (out-org_out)/3;
+	return (int)((out-org_out)/3);
 }

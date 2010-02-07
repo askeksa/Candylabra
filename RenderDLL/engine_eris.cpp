@@ -195,7 +195,7 @@ void ErisEngine::render()
 	for (int i = 0 ; i < N_LIGHTS ; i++)
 	{
 		char var[20];
-		sprintf(var, "_cubetex%d", i);
+		sprintf_s(var, 20, "_cubetex%d", i);
 		CHECK(COMHandles.effect->SetTexture(var, COMHandles.cubetex[i]));
 	}
 
@@ -269,4 +269,9 @@ void ErisEngine::placecamera()
 	COMHandles.matrix_stack->MultMatrix(&proj);
 	CHECK(COMHandles.effect->SetMatrixTranspose("vm", COMHandles.matrix_stack->GetTop()));
 	COMHandles.matrix_stack->Pop();
+}
+
+float ErisEngine::random()
+{
+	return 0.0f;
 }

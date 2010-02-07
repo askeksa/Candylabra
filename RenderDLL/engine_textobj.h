@@ -22,4 +22,5 @@ public:
 	virtual void placecamera();
 
 	virtual float getaspect();
+	virtual float random();
 };
