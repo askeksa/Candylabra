@@ -1,10 +1,10 @@
 
 #include "engine.h"
 
-class HaumeaEngine : public Engine {
+class IkadalawampuEngine : public Engine {
 	void setposition(char *name, int index);
 public:
-	HaumeaEngine() {}
+	IkadalawampuEngine() {}
 
 	virtual void init();
 	virtual void reinit();

@@ -26,7 +26,9 @@ _parseParam:
 	sub eax, dword 0xF0
 		dec eax
 		jne .not_rand
+		pusha
 		call _frandom@0
+		popa
 		ret
 	.not_rand
 	
@@ -134,7 +136,7 @@ dd	0x3f800000	;1   Scale
 dd	0x3f800000	;1   Translate
 ;dd  0x437f0000	;255 Primitive color
 
-section jumptable bss align=4
+section jumptabl bss align=4
 _jump_locations: resd 256
 
 section interpre code align=1

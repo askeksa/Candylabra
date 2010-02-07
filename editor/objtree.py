@@ -27,7 +27,7 @@ def next():
 
 OP_FANOUT      = next()
 OP_SAVETRANS   = next()
-OP_CALL        = next()
+OP_REPEAT      = next()
 OP_PRIM        = next()
 OP_DYNPRIM     = next()
 OP_LIGHT       = next()
@@ -347,7 +347,7 @@ class Repeat(ObjectNode):
         n_rep = self.n+1
         if (n_rep % 256) == 255 or (n_rep / 256) > 254:
             raise ExportException(self, "Illegal repeat count")
-        exporter.out += [OP_CALL, 0, (n_rep % 256), (n_rep / 256)]
+        exporter.out += [OP_REPEAT, 0, (n_rep % 256), (n_rep / 256)]
         return []
 
 
@@ -696,7 +696,7 @@ class Exporter(object):
         if node in self.labelmap:
             if node in self.seenlabels:
                 raise ExportException(node, "Loop without repeat")
-            self.out += [OP_CALL, self.labelmap[node], 0, 0]
+            self.out += [OP_REPEAT, self.labelmap[node], 0, 0]
             return
         if node in self.labeled:
             self.seenlabels.add(node)

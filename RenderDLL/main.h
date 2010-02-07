@@ -6,7 +6,7 @@
 static void check(char *n, int r) {
 	if (r != D3D_OK) {
 		char buff[512];
-		sprintf(buff, "%s returned %s\n", n, DXGetErrorString(r));
+		sprintf_s(buff, 512, "%s returned %s\n", n, DXGetErrorString(r));
 		MessageBox(0, buff, 0, 0);
 		ExitProcess(1);
 	}
@@ -17,7 +17,7 @@ static ID3DXBuffer *errors;
 static void checkcompile(char *statement, int error) {
 	if (error != D3D_OK) {
 		char buff[2048];
-		sprintf(buff, "%s\nfailed with error %s\n%s", statement, DXGetErrorString(error), errors->GetBufferPointer());
+		sprintf_s(buff, 2048, "%s\nfailed with error %s\n%s", statement, DXGetErrorString(error), errors->GetBufferPointer());
 		MessageBox(0, buff, 0, 0);
 		ExitProcess(1);
 	}
@@ -35,5 +35,7 @@ extern "C" {
 	void pass(int effectpass, int treepass);
 	void view_display();
 	void setfov();
+	float __stdcall mentor_synth_random();
+	float __stdcall amiga_random();
 	extern D3DXMATRIXA16 proj;
 }

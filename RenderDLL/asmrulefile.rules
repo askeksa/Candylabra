@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="Asm file rule file"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="Asm"
+			DisplayName="Nasm"
+			CommandLine="nasmw -f win32 -Xvc $(InputDir)\$(InputFileName) -o $(OutDir)\$(InputName).obj"
+			Outputs="$(OutDir)\$(InputName).obj"
+			FileExtensions="*.asm"
+			ExecutionDescription="Assembling $(InputName)"
+			ShowOnlyRuleProperties="false"
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

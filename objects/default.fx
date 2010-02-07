@@ -48,7 +48,6 @@ float4 ppp(float2 tc : TEXCOORD0) : COLOR0 {
 
 technique {
 	pass {
-		AlphaBlendEnable=TRUE;
 		VertexShader = compile vs_2_0 v();
 		PixelShader = compile ps_2_0 p();
 	}
