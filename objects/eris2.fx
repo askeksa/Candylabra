@@ -1,4 +1,4 @@
-//.Text
+//.     KEEBOARDERS   LOONEES @ KEENDERGARDEN09 
 #define ITERATIONS 10
 
 float4x4 m,vm,fvm;
@@ -8,9 +8,9 @@ float3 ld[2];
 float4 lc[2];
 float4 c = float4(1,1,1,1);
 
-float ambi = 0;
-float diff = 0;
 float fade = 0;
+
+sampler tex;
 
 texture _cubetex0;
 texture _cubetex1;
@@ -20,11 +20,12 @@ samplerCUBE tc[2] = {
 	sampler_state { Texture = <_cubetex1>; },
 };
 
+
 struct S {
-	float4 p : POSITION; //pos
-	float3 v : TEXCOORD0; //worldspace pos
-	float3 t : TEXCOORD1; //objectspace pos
-	float3 n : TEXCOORD2; //normal
+	float4 p : POSITION;
+	float3 v : TEXCOORD0;
+	float3 t : TEXCOORD1;
+	float3 n : TEXCOORD2;
 };
 
 S v(float4 p : POSITION, float3 n : NORMAL) {
@@ -34,8 +35,9 @@ S v(float4 p : POSITION, float3 n : NORMAL) {
 }
 
 
+
 float sh(int i, float3 p) {
-	return saturate((texCUBE(tc[i], p).r - length(p))) / dot(p,p);
+	return max(0, texCUBE(tc[i], p).r - length(p)) / dot(p,p);
 }
 
 float z(float3 p) {
@@ -58,27 +60,19 @@ float4 p(S s) : COLOR0 {
 		for (int j = 0 ; j < ITERATIONS ; j++) {
 			vl += sh(i, ll += ls);
 		}
-//		vl = 0;
-		q += lc[i].rgb // light color
-			*((
-			((ambi + diff*saturate(-dot(n,normalize(lv)))) // amibient/diffuse light
-			*c.rgb // surface color
-			+c.a*pow(saturate(-dot(n,normalize(normalize(lv)-normalize(cam)))), 64) // specular
-			))+
-			  vl*length(cam)/ITERATIONS // volumetric light
-			  *lc[i].a // volumetric light strength
+		q += lc[i].rgb
+			*(
+			  c.a*pow(max(0, -dot(n,normalize(normalize(lv)-normalize(cam)))), 64)
+			  +
+			  vl*length(cam)/ITERATIONS
+			  *lc[i].a
 			);
 	}
 
-	return float4(sqrt(q)*fade,1);
+	return float4(q,1);
 }
 
 
-
-
-float4 dummyp(S s) : COLOR0 {
-	return 0;
-}
 
 struct T {
 	float4 p : POSITION;
@@ -97,24 +91,39 @@ float4 cube_p(T s) : COLOR0 {
 	return length(s.v);
 }
 
+void ppv(float4 p : POSITION, float2 tc : TEXCOORD0, out float4 tp : POSITION, out float2 ttc : TEXCOORD0) {
+	tp = p;
+	ttc = tc;
+}
+float4 ppp(float2 tc : TEXCOORD0) : COLOR0 {
+	float3 r=tex2D(tex, tc).xyz;
+	for (int i=1; i<16; i++)
+	{
+		float4 t=log2(i*1.28);
+		t.xy = tc + float2(sin(i*2)*i*0.001f, cos(i*2)*i*.0013f);
+		r += tex2Dlod(tex, t).xyz/float(i);
+	}
+	return float4(r*fade,1);
+}
+
 technique {
 	pass {
-		VertexShader = compile vs_2_0 cube_v(0);
-		PixelShader = compile ps_2_0 cube_p();
+		VertexShader = compile vs_3_0 cube_v(0);
+		PixelShader = compile ps_3_0 cube_p();
 	}
 
 	pass {
-		VertexShader = compile vs_2_0 cube_v(1);
-		PixelShader = compile ps_2_0 cube_p();
+		VertexShader = compile vs_3_0 cube_v(1);
+		PixelShader = compile ps_3_0 cube_p();
 	}
 
 	pass {
-		VertexShader = compile vs_2_0 v();
+		VertexShader = compile vs_3_0 v();
 		PixelShader = compile ps_3_0 p();
 	}
 
 	pass {
-		VertexShader = compile vs_2_0 v();
-		PixelShader = compile ps_2_0 dummyp();
+		VertexShader = compile vs_3_0 ppv();
+		PixelShader = compile ps_3_0 ppp();
 	}
 }

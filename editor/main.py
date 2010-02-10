@@ -12,6 +12,7 @@ import sys
 import struct
 import traceback
 import types
+import os
 
 import tkFileDialog
 import tkSimpleDialog
@@ -115,16 +116,25 @@ def set_engine(engine_id):
     field.project.engine_id = engine_id
     field.display.setProject(field.project)
 
+def make_filename_relative(filename):
+    filename = os.path.abspath(filename)
+    cwd = os.path.abspath(os.getcwd())
+    tooldir = os.path.dirname(cwd)
+    for basedir,prefix in [(tooldir,".."), (os.path.dirname(tooldir),".."+os.sep+"..")]:
+        if os.path.normcase(filename).startswith(os.path.normcase(basedir)):
+            return prefix + filename[len(basedir):]
+    return filename
+
 def set_effect():
     chosen_name = tkFileDialog.askopenfilename(initialfile = field.project.effect_file)
     if chosen_name:
-        field.project.effect_file = chosen_name
+        field.project.effect_file = make_filename_relative(chosen_name)
         field.display.setProject(field.project)
 
 def set_music():
     chosen_name = tkFileDialog.askopenfilename(initialfile = field.project.music_file)
     if chosen_name:
-        field.project.music_file = chosen_name
+        field.project.music_file = make_filename_relative(chosen_name)
         field.display.setProject(field.project)
 
 def set_bpm():
