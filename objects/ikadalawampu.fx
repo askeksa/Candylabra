@@ -4,9 +4,10 @@ struct palette {
 	int3 a,b,c,d;
 };
 
-palette palettes[2] = {
+palette palettes[3] = {
 	0,0,0, 4,6,8, 9,4,2, 12,12,12,
-	5,5,5, 11,6,8, 9,4,2, 15,15,15
+	5,5,5, 11,6,8, 9,4,2, 15,15,15,
+	0,0,0, 1,2,13, 1,9,1, 15,15,15
 };
 
 float4 c = float4(1,1,1,1);
@@ -41,7 +42,10 @@ void ppv(float4 p : POSITION, out float4 tp : POSITION, out float2 ttc : TEXCOOR
 float4 ppp(float2 tc : TEXCOORD0) : COLOR0 {
 	//return float4(frac(tc*10.0),0,1);
 	float2 coli = tex2D(tex, tc).xy;
-	//coli = round(coli*15)/15;
+	int2 pixelcoord = floor(tc*screensize);
+	float2 dither = frac(pixelcoord*0.5);
+	float ditherval = abs(dither.x-dither.y)+dither.y*0.5;
+	//coli = floor(coli*15+ditherval)/15;
 	palette pal0 = palettes[int(p0)];
 	palette pal1 = palettes[int(p1)];
 	float3 a = lerp(pal0.a,pal1.a,pfade);
