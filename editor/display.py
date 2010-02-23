@@ -44,13 +44,6 @@ def getprec(val,minp=0,maxp=32):
         return getprec(val,minp,(minp+maxp+1)/2-1)
     return getprec(val,(minp+maxp+1)/2,maxp)
 
-def MatrixPerspectiveOffCenterLH(l,r,b,t,zn,zf):
-    return ot.makeMatrix(
-        2*zn/(r-l),  0,           0,             0,
-        0,           2*zn/(t-b),  0,             0,
-        (l+r)/(l-r), (t+b)/(b-t), zf/(zf-zn),    1,
-        0,           0,           zn*zf/(zn-zf), 0)
-
 def evalSpline(x0, dx0, x1, dx1, x):
     a = 2*x0 - 2*x1 + dx0 + dx1
     b = 3*x1 - 3*x0 - 2*dx0 - dx1
@@ -103,19 +96,6 @@ class MeshDisplay(Component):
         except ot.ExportException, e:
             self.badnode = e.node
             self.getRoot().window.setError(e.message)
-    
-    def setProjection(self):
-        compsize = self.size[0]
-        centerx = self.pos[0] + self.size[0]/2
-        centery = self.pos[1] + self.size[1]/2
-        wsize = self.rootsize()
-        factor = CAMERA_NEAR_Z / CAMERA_ZOOM / compsize
-        l = -centerx * factor
-        r = (wsize[0]-centerx) * factor
-        t = centery * factor
-        b = (centery-wsize[1]) * factor
-        matrix = MatrixPerspectiveOffCenterLH(l,r,b,t,CAMERA_NEAR_Z,CAMERA_FAR_Z)
-        d3d.setMatrix(matrix, d3dc.MATRIX.PROJECTION)
 
     def setBinding(self, name, value):
         self.bindings[name] = value
@@ -132,37 +112,17 @@ class MeshDisplay(Component):
         if self.tree and self.timebar and not self.badnode:
             if self.timebar.draggable.status != Draggable.DRAGGING and self.playbutton.active:
                 self.timebar.area_pos = max(0,min(getMusicLength(),getMusicPos()))*1000
-            d3d.setView((0,0,0),(0,0,1),CAMERA_FAR_Z)
-            self.setProjection()
 
-            d3d.setLight(0, d3dc.LIGHT.DIRECTIONAL, 0xffffffff, 100, (0,0,0), (1,-2,5))
-            d3d.setState(d3dc.RS.LIGHTING, True)
-            d3d.setState(d3dc.RS.ENABLELIGHT, True, 0)
+            d3d.setView((0,0,0),(0,0,1),CAMERA_FAR_Z)
             d3d.setState(d3dc.RS.ALPHABLENDENABLE, False)
             d3d.setState(d3dc.RS.ZENABLE, True)
             d3d.setState(d3dc.RS.CULLMODE, d3dc.RS.CULL.CCW)
 
-            oldrect = info.addScissorRect(self.pos + self.size)
-            tmlist = []
             self.bindings = {}
-
-            #self.exportTree()
-            #self.setBinding("time", time.clock()-self.reftime)
             self.setBinding("time", max(0,self.timebar.area_pos/1000.) * (self.project.bpm / 60.0))
-            #self.setBinding("frame", frame)
-            #frame += 1
             
-            #self.tree.collectMeshes(tmlist, self.bindings, self.basematrix)
-            #for transform, mesh, color in tmlist:
-            #    d3d.setMatrix(transform)
-            #    d3d.setMaterial(color | 0xff000000, 0xffffffff, 0, 0, 10)
-            #    mesh.render()
-
-            d3d.setTransform()
-            d3d.setMaterial(0xff000000, 0xffffffff, 0, 0, 10)
-
+            oldrect = info.addScissorRect(self.pos + self.size)
             windll.RenderDLL.renderobj(self.exported_program, self.exported_constants)
-
             info.setScissorRect(oldrect)
 
             d3d.setState(d3dc.RS.CULLMODE, d3dc.RS.CULL.NONE)
