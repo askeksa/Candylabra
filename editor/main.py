@@ -54,12 +54,12 @@ def insert():
     if chosen_name:
         field.insert(chosen_name)
 
-def export():
+def export(exportfun, swap_endian = False):
     if field.active:
         try:
             tree = field.active.buildTree(set())
             exporter = ot.Exporter(tree)
-            instructions,constants,constmap = exporter.optimized_export()
+            instructions,constants,constmap = exportfun(exporter)
             #print instructions
             #print constants
             node_to_brick = {}
@@ -74,6 +74,7 @@ def export():
 
             print
             print
+            print constmap
             print
             for c in sorted(conststring.keys(), (lambda a,b : cmp(abs(a), abs(b)))):
                 print conststring[c]
@@ -96,12 +97,14 @@ def export():
                     #this_exp = ord(frep[3])
                     #frep = frep[0:3] + chr(this_exp-last_exp)
                     #last_exp = this_exp
+                    if swap_endian:
+                        frep = frep[3]+frep[2]+frep[1]+frep[0]
                     consts_file.write(frep)
                 consts_file.close()
             except IOError:
                 tkMessageBox.showerror("File error", "Could not write files")
 
-        except ot.ExportException, e:
+        except Exception, e:
             traceback.print_exc()
             sys.stderr.flush()
             tkMessageBox.showerror(title = "Export error", message = e.message)
@@ -226,7 +229,8 @@ if __name__ == "__main__":
     button_insert = Button(insert, "insert", color = FBCOL)
     button_save = Button(save, "save", color = FBCOL)
     button_saveas = Button(saveas, "save as", color = FBCOL)
-    button_export = Button(export, "export", color = FBCOL)
+    button_export = Button((lambda : export(lambda exporter : exporter.optimized_export())), "export", color = FBCOL)
+    button_export_amiga = Button((lambda : export(lambda exporter : exporter.export_amiga(), swap_endian = True)), "export amiga", color = FBCOL)
 
     filler = Component()
     filler.weight = 1000000
@@ -243,6 +247,7 @@ if __name__ == "__main__":
     bottombuttons.addChild(button_save)
     bottombuttons.addChild(button_saveas)
     bottombuttons.addChild(button_export)
+    bottombuttons.addChild(button_export_amiga)
     bottombuttons.addChild(filler)
     for b in engine_buttons:
         bottombuttons.addChild(b)
