@@ -781,6 +781,100 @@ class Exporter(object):
     
         return instructions,constants,constmap
 
+    def export_amiga(self):
+        nodemap = {
+            0: 0, # fanout terminator
+            OP_FANOUT: 0xF6,
+            OP_SAVETRANS: 0xF8,
+            OP_REPEAT: 0xF9,
+            OP_PRIM: 0xFE,
+            OP_DYNPRIM: None,
+            OP_LIGHT: None,
+            OP_CAMERA: None,
+            OP_ASSIGN: 0xF4,
+            OP_LOCALASSIGN: 0xF5,
+            OP_CONDITIONAL: 0xFA,
+            OP_NOPLEAF: 0xF7,
+            OP_ROTATE: 0xFD,
+            OP_SCALE: 0xFB,
+            OP_TRANSLATE: 0xFC,
+            OP_LABEL: 0xFF
+        }
+
+        expmap = {
+            0xF1: 0xF6, # random
+            0xF2: 0xFE, # sin
+            0xF3: 0xFD, # clamp
+            0xF4: 0xFC, # round
+            0xF6: 0xF7, # +
+            0xF7: 0xF8, # -
+            0xF8: 0xF9, # *
+            0xF9: 0xFA, # /
+            0xFA: 0xFB  # %
+        }
+
+        instructions,constants,constmap = self.optimized_export()
+
+        def traverse_exp(i, out_insts):
+            op = instructions[i]
+            i = i+1
+            if op < 128:
+                out_insts.append(op)
+            elif op in [0xF1]: # Random
+                out_insts.append(expmap[op])
+            elif op in [0xF2, 0xF3, 0xF4]: # Unary op: sin, clamp, round
+                out_insts.append(expmap[op])
+                i = traverse_exp(i, out_insts)
+            elif op in [0xF6, 0xF7, 0xF8, 0xF9, 0xFA]: # Binary op: +, -, *, /, %
+                out_insts.append(expmap[op])
+                i = traverse_exp(i, out_insts)
+                i = traverse_exp(i, out_insts)
+            else:
+                raise Exception("Unsupported operation: %x" % op)
+            return i
+
+
+        out_insts = []
+        i = 0
+        while i < len(instructions) and instructions[i] != OP_END:
+            inst = instructions[i]
+            out_insts.append(nodemap[inst])
+            i = i+1
+            if inst in [0, OP_FANOUT, OP_SAVETRANS, OP_NOPLEAF, OP_LABEL]:
+                pass
+            elif inst in [OP_REPEAT]:
+                out_insts.append(instructions[i]) # label
+                out_insts.append(instructions[i+2]) # count high byte
+                out_insts.append(instructions[i+1]) # count low byte
+                i = i+3
+            elif inst in [OP_PRIM]:
+                i = i+1
+                i = traverse_exp(i, []) # a
+                i = traverse_exp(i, []) # b
+                i = traverse_exp(i, out_insts) # g
+                i = traverse_exp(i, out_insts) # r
+            elif inst in [OP_ASSIGN, OP_LOCALASSIGN]:
+                i = traverse_exp(i, out_insts)
+                out_insts.append(instructions[i]) # variable
+                i = i+1
+            elif inst in [OP_CONDITIONAL]:
+                i = traverse_exp(i, out_insts)
+                out_insts.append(instructions[i]) # positive label
+                out_insts.append(instructions[i+1]) # negative label
+                i = i+2
+            elif inst in [OP_ROTATE]:
+                i = traverse_exp(i, out_insts) # z
+                i = traverse_exp(i, []) # x
+                i = traverse_exp(i, []) # y
+            elif inst in [OP_SCALE, OP_TRANSLATE]:
+                i = traverse_exp(i, []) # z
+                i = traverse_exp(i, out_insts) # y
+                i = traverse_exp(i, out_insts) # x
+            else:
+                raise Exception("Unexpected node ID: %d" % inst)
+
+        return out_insts,constants,constmap
+
 
 def export(tree):
     exporter = Exporter(tree)
