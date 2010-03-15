@@ -124,10 +124,11 @@ extern "C" {
 	int noteSamples;
 	int numChannels;
 	int numRows;
-	float channelDeltas[256*128];
-	int channelCounts[256*128];
+	int timerFac,channelFac;
+	int channelDataLength;
+	float channelDeltas[32*16384];
+	int channelCounts[32*16384];
 	unsigned char* notes;
-	MemoryFile* mf;
 
 	bool __stdcall init3() {
 		if (D3DXCreateEffectFromFile(COMHandles.device, effectfile, NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS) != D3D_OK)
@@ -144,13 +145,26 @@ extern "C" {
 			return false;
 		}
 		effect_valid = true;
-
+/*
 		mf = new MemoryFile("sync");
 		int* ptr = (int*)mf->getPtr();
 		noteSamples = *ptr++;
 		numChannels = *ptr++;
 		numRows = *ptr++;
 		notes = (unsigned char*)ptr;
+*/
+		MemoryFile* mf = new MemoryFile("sync");
+		int* ptr = (int*)mf->getPtr();
+		timerFac = *ptr++;
+		channelFac = *ptr++;
+		channelDataLength = *ptr++;
+		if (channelDataLength <= sizeof(channelDeltas))
+		{
+			memcpy(channelDeltas, ptr, channelDataLength);
+		} else {
+			MessageBox(0, "Sync data buffer overflow", 0, 0);
+		}
+		delete mf;
 
 		initparams();
 		return true;
@@ -245,7 +259,6 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 
 		if (effect_valid)
 		{
-			delete mf;
 			COMHandles.effect->Release();
 		}
 
@@ -347,7 +360,7 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 		memcpy(constantPool, constants, sizeof(float)*256);
 		memcpy(&constantPool[1], &paramvals[1], sizeof(float)*(nparams-1));
 		
-		updatemusic();
+		//updatemusic();
 		view_enter();
 
 		active_engine->render();

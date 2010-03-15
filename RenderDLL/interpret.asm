@@ -5,6 +5,8 @@ global _interpret@4
 extern _constantPool
 extern _channelDeltas
 extern _channelCounts
+extern _timerFac
+extern _channelFac
 extern _frandom@0
 extern _drawprimitive@20
 extern _placelight@20
@@ -104,27 +106,43 @@ _parseParam:
 	dec eax
 	jne .not_delta
 	
+	push edx
+	fld st0
+	fimul dword [_timerFac]
 	push eax
 	fistp dword [esp]
 	pop ebp
+	fxch st0,st1
 	push eax
 	fistp dword [esp]
 	pop eax
-	shl eax, 9
-	fld dword [_channelDeltas+eax+ebp*4]
+
+	shl ebp, byte 2
+	cmp ebp, [_channelFac]
+	jl .delta_before_end
+	mov ebp, [_channelFac]
+	sub ebp, byte 4
+.delta_before_end:
+	cmp eax, 32
+	jge .oor_delta
+	mul dword [_channelFac]
+	fsub dword [_channelDeltas+eax+ebp]
+.oor_delta:
+	pop edx
 	ret
 .not_delta
 	dec eax
 	jne .not_count
 	
+	fimul dword [_timerFac]
 	push eax
 	fistp dword [esp]
 	pop ebp
 	push eax
 	fistp dword [esp]
 	pop eax
-	shl eax, 9
-	fild dword [_channelCounts+eax+ebp*4]
+	mul dword [_channelFac]
+	fld dword [_channelCounts+eax+ebp*4]
 	ret
 .not_count
 	ret	

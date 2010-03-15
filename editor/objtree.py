@@ -802,7 +802,7 @@ class Exporter(object):
         }
 
         expmap = {
-            0xF1: 0xF6, # random
+            0xF1: 0xF5, # random
             0xF2: 0xFE, # sin
             0xF3: 0xFD, # clamp
             0xF4: 0xFC, # round
@@ -810,7 +810,8 @@ class Exporter(object):
             0xF7: 0xF8, # -
             0xF8: 0xF9, # *
             0xF9: 0xFA, # /
-            0xFA: 0xFB  # %
+            0xFA: 0xFB, # %
+            0xFB: 0xF6
         }
 
         instructions,constants,constmap = self.optimized_export()
@@ -825,7 +826,7 @@ class Exporter(object):
             elif op in [0xF2, 0xF3, 0xF4]: # Unary op: sin, clamp, round
                 out_insts.append(expmap[op])
                 i = traverse_exp(i, out_insts)
-            elif op in [0xF6, 0xF7, 0xF8, 0xF9, 0xFA]: # Binary op: +, -, *, /, %
+            elif op in [0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB]: # Binary op: +, -, *, /, %
                 out_insts.append(expmap[op])
                 i = traverse_exp(i, out_insts)
                 i = traverse_exp(i, out_insts)
