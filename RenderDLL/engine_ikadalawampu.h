@@ -2,6 +2,9 @@
 #include "engine.h"
 
 class IkadalawampuEngine : public Engine {
+	int p_particles, p_colortables, p_lines, p_pixels;
+	int lastcolor0,lastcolor1;
+
 	void setposition(char *name, int index);
 public:
 	IkadalawampuEngine() {}

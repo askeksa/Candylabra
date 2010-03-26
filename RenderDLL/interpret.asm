@@ -2,6 +2,8 @@
 %include "constants.nh"
 
 global _interpret@4
+global _nodecount
+global _subexpcount
 extern _constantPool
 extern _channelDeltas
 extern _channelCounts
@@ -12,11 +14,16 @@ extern _drawprimitive@20
 extern _placelight@20
 extern _placecamera@0
 
+section counters bss align=4
+_nodecount: resd 1
+_subexpcount: resd 1
+
 ;parseParam
 ;esi: expression data
 ;ebx: constant pool
 section parsepar code align=1
 _parseParam:
+	inc dword [_subexpcount]
 	xor eax, eax
 	lodsb
 	cmp eax, dword 0xF0
@@ -230,6 +237,7 @@ _interpret@4:
 ;;esi: program pointer
 section traverse code align=1
 _traverse:
+	inc dword [_nodecount]
 	xor eax, eax
 .skip_label:
 	lodsb
