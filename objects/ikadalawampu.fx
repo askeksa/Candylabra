@@ -59,6 +59,9 @@ float4 ppp(float2 tc : TEXCOORD0) : COLOR0 {
 	return float4(col,1.0);
 }
 
+float4 barp() : COLOR0 {
+	return c;
+}
 
 technique {
 	pass {
@@ -69,5 +72,10 @@ technique {
 	pass {
 		VertexShader = compile vs_2_0 ppv();
 		PixelShader = compile ps_2_0 ppp();
+	}
+
+	pass {
+		VertexShader = compile vs_2_0 ppv();
+		PixelShader = compile ps_2_0 barp();
 	}
 }
