@@ -111,16 +111,15 @@ void IkadalawampuEngine::render()
 	CHECK(COMHandles.effect->BeginPass(2));
 	CHECK(COMHandles.device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE));
 	CHECK(COMHandles.device->SetTexture(0, 0));
-	struct bar bars[7] = {
+	struct bar bars[6] = {
 		0.75, 0.4,0.4,0.4, // c2p+clear
 		0.000040f*nodecount, 0.2,0.2,0.8,
 		0.000040f*subexpcount, 0.2,0.6,0.6,
-		0.000400f*p_particles, 0.2,0.8,0.2,
-		0.001500f*p_colortables, 1.0,1.0,0.0,
-		0.000100f*p_lines, 1.0,0.5,0.0,
+		0.000500f*p_particles, 0.2,0.8,0.2,
+		0.000100f*p_lines, 1.0,1.0,0.0,
 		0.000010f*p_pixels, 1.0,0.0,0.0
 	};
-	drawbars(0.98,-0.9,0.01,1.8, 5, bars, 7);
+	drawbars(0.98,-0.9,0.01,1.8, 5, bars, 6);
 	CHECK(COMHandles.effect->EndPass());
 
 	CHECK(COMHandles.effect->End());

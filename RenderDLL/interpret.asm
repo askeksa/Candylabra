@@ -111,11 +111,12 @@ _parseParam:
 	fstp st1
 .not_modulus:
 	dec eax
-	jne .not_delta
+	jne .not_noteat
 	
 	push edx
 	fld st0
 	fimul dword [_timerFac]
+	fsub dword [_half]
 	push eax
 	fistp dword [esp]
 	pop ebp
@@ -126,18 +127,18 @@ _parseParam:
 
 	shl ebp, byte 2
 	cmp ebp, [_channelFac]
-	jl .delta_before_end
+	jl .noteat_before_end
 	mov ebp, [_channelFac]
 	sub ebp, byte 4
-.delta_before_end:
+.noteat_before_end:
 	cmp eax, 32
-	jge .oor_delta
+	jge .oor_noteat
 	mul dword [_channelFac]
 	fsub dword [_channelDeltas+eax+ebp]
-.oor_delta:
+.oor_noteat:
 	pop edx
 	ret
-.not_delta
+.not_noteat:
 	dec eax
 	jne .not_count
 	
@@ -160,6 +161,10 @@ dd  0x40c90fdb	;2pi Rotate		1.0 is a full revolution
 dd	0x3f800000	;1   Scale
 dd	0x3f800000	;1   Translate
 ;dd  0x437f0000	;255 Primitive color
+
+section half data align=4
+_half:
+dd	0x3f000000
 
 section jumptabl bss align=4
 _jump_locations: resd 256
