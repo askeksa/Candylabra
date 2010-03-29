@@ -54,7 +54,7 @@ def insert():
     if chosen_name:
         field.insert(chosen_name)
 
-def export(exportfun, swap_endian = False):
+def export(exportfun, swap_endian = False, truncate = False):
     if field.active:
         try:
             tree = field.active.buildTree(set())
@@ -70,7 +70,11 @@ def export(exportfun, swap_endian = False):
             for c,nodes in exporter.constnodes.iteritems():
                 if isinstance(c,types.FloatType):
                     intrep = struct.unpack('I', struct.pack('f', c))[0]
-                    conststring[c] = ("%f (%08X): " % (c, intrep)) + str([n.getName() + (" (%d,%d)" % node_to_brick[n].gridpos) for n in nodes])
+                    if truncate:
+                        fhex = "%08X -> %08X" % (intrep, intrep & 0xffff0000)
+                    else:
+                        fhex = "%08X" % (intrep)
+                    conststring[c] = ("%f (%s): " % (c, fhex)) + str([n.getName() + (" (%d,%d)" % node_to_brick[n].gridpos) for n in nodes])
 
             print
             print
@@ -97,6 +101,8 @@ def export(exportfun, swap_endian = False):
                     #this_exp = ord(frep[3])
                     #frep = frep[0:3] + chr(this_exp-last_exp)
                     #last_exp = this_exp
+                    if truncate:
+                        frep = chr(0)+chr(0)+frep[2:4]
                     if swap_endian:
                         frep = frep[3]+frep[2]+frep[1]+frep[0]
                     consts_file.write(frep)
