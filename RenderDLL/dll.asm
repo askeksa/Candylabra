@@ -33,10 +33,10 @@ _mentor_synth_random@0:
 
 _amiga_random@0:
 	mov eax, dword [_constantPool+4]
-	imul eax, 16307
 	add eax, byte 7
+	imul eax, 16307
 	mov [_constantPool+4], eax
-	shr eax, 16
+	sar eax, 16
 	push eax
 	fild word [esp]
 	fmul dword [_rand_scale]
