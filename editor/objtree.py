@@ -782,19 +782,22 @@ class Exporter(object):
         return instructions,constants,constmap
 
     def export_amiga(self):
+        bytecount_n = [0] * 256
+        bytecount_e = [0] * 256
+
         nodemap = {
             0: 0, # fanout terminator
-            OP_FANOUT: 0xF6,
-            OP_SAVETRANS: 0xF8,
-            OP_REPEAT: 0xF9,
+            OP_FANOUT: 0xF5,
+            OP_SAVETRANS: 0xF7,
+            OP_REPEAT: 0xF8,
             OP_PRIM: 0xFE,
             OP_DYNPRIM: None,
             OP_LIGHT: None,
             OP_CAMERA: None,
-            OP_ASSIGN: 0xF4,
-            OP_LOCALASSIGN: 0xF5,
-            OP_CONDITIONAL: 0xFA,
-            OP_NOPLEAF: 0xF7,
+            OP_ASSIGN: 0xFA,
+            OP_LOCALASSIGN: None,
+            OP_CONDITIONAL: 0xF9,
+            OP_NOPLEAF: 0xF6,
             OP_ROTATE: 0xFD,
             OP_SCALE: 0xFB,
             OP_TRANSLATE: 0xFC,
@@ -802,16 +805,16 @@ class Exporter(object):
         }
 
         expmap = {
-            0xF1: 0xF5, # random
+            0xF1: 0xF7, # random
             0xF2: 0xFE, # sin
             0xF3: 0xFD, # clamp
             0xF4: 0xFC, # round
-            0xF6: 0xF7, # +
-            0xF7: 0xF8, # -
-            0xF8: 0xF9, # *
-            0xF9: 0xFA, # /
-            0xFA: 0xFB, # %
-            0xFB: 0xF6  # @
+            0xF6: 0xF9, # +
+            0xF7: 0xFA, # -
+            0xF8: 0xFB, # *
+#            0xF9: 0xFA, # /
+#            0xFA: 0xFB, # %
+            0xFB: 0xF8  # @
         }
 
         instructions,constants,constmap = self.optimized_export()
@@ -823,11 +826,14 @@ class Exporter(object):
                 out_insts.append(op)
             elif op in [0xF1]: # Random
                 out_insts.append(expmap[op])
+                bytecount_e[expmap[op]] += 1
             elif op in [0xF2, 0xF3, 0xF4]: # Unary op: sin, clamp, round
                 out_insts.append(expmap[op])
+                bytecount_e[expmap[op]] += 1
                 i = traverse_exp(i, out_insts)
             elif op in [0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB]: # Binary op: +, -, *, /, %
                 out_insts.append(expmap[op])
+                bytecount_e[expmap[op]] += 1
                 i = traverse_exp(i, out_insts)
                 i = traverse_exp(i, out_insts)
             else:
@@ -840,12 +846,13 @@ class Exporter(object):
         while i < len(instructions) and instructions[i] != OP_END:
             inst = instructions[i]
             out_insts.append(nodemap[inst])
+            bytecount_n[nodemap[inst]] += 1
             i = i+1
             if inst in [0, OP_FANOUT, OP_SAVETRANS, OP_NOPLEAF, OP_LABEL]:
                 pass
             elif inst in [OP_REPEAT]:
                 out_insts.append(instructions[i]) # label
-                out_insts.append(instructions[i+2]) # count high byte
+                #out_insts.append(instructions[i+2]) # count high byte
                 out_insts.append(instructions[i+1]) # count low byte
                 i = i+3
             elif inst in [OP_PRIM]:
@@ -873,6 +880,13 @@ class Exporter(object):
                 i = traverse_exp(i, out_insts) # x
             else:
                 raise Exception("Unexpected node ID: %d" % inst)
+
+        for bc in [bytecount_n, bytecount_e]:
+            stat = ""
+            for i,c in enumerate(bc):
+                if c > 0:
+                    stat += "%02X: %d  " % (i,c)
+            print stat
 
         return out_insts,constants,constmap
 
