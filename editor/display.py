@@ -493,8 +493,6 @@ class BrickField(Container):
                             for sbc in sb.extra_node_children:
                                 if sbc in self.selected:
                                     copymap[sb].extra_node_children.append(copymap[sbc])
-                                else:
-                                    copymap[sb].extra_node_children.append(sbc)
                         self.selected = set(copymap.values())
                         self.copying = False
                     else:
