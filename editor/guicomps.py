@@ -147,16 +147,17 @@ class Button(TextBevel):
 class BevelFrame(Container):
     THICKNESS = 6
 
-    def __init__(self):
+    def __init__(self, thickness = None):
         Container.__init__(self)
         self.addChild(Bevel())
         self.addChild(Bevel())
         self.children[1].pressed = True
+        self.thickness = thickness if thickness is not None else BevelFrame.THICKNESS
 
     def updateMinMax(self):
         if len(self.children) >= 3:
-            self.minsize = addTuple(self.children[2].minsize, BevelFrame.THICKNESS*2)
-            self.maxsize = addTuple(self.children[2].maxsize, BevelFrame.THICKNESS*2)
+            self.minsize = addTuple(self.children[2].minsize, self.thickness*2)
+            self.maxsize = addTuple(self.children[2].maxsize, self.thickness*2)
         else:
             self.minsize = (0,0)
             self.maxsize = (Component.MAXSIZE,Component.MAXSIZE)
@@ -164,11 +165,11 @@ class BevelFrame(Container):
     def setPosAndSize(self, pos, size):
         Container.setPosAndSize(self, pos, size)
         self.children[0].setPosAndSize(pos, size)
-        self.children[1].setPosAndSize(addTuple(pos, BevelFrame.THICKNESS-2),
-                                       addTuple(size, -(BevelFrame.THICKNESS-2)*2))
+        self.children[1].setPosAndSize(addTuple(pos, self.thickness-2),
+                                       addTuple(size, -(self.thickness-2)*2))
         if len(self.children) >= 3:
-            self.children[2].setPosAndSize(addTuple(pos, BevelFrame.THICKNESS),
-                                           addTuple(size, -BevelFrame.THICKNESS*2))
+            self.children[2].setPosAndSize(addTuple(pos, self.thickness),
+                                           addTuple(size, -self.thickness*2))
 
 
 class Draggable(Bevel):
