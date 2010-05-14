@@ -478,6 +478,10 @@ class Item(PrimitiveNode):
         return self.children
 
 
+class Primitive(Item):
+    pass
+
+
 class Text(Item):
     pass
 
