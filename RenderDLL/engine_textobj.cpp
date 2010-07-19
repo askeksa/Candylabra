@@ -179,7 +179,7 @@ void TextObjectEngine::drawprimitive(float r, float g, float b, float a, int ind
 	}
 
 	CHECK(COMHandles.effect->SetMatrixTranspose("m", COMHandles.matrix_stack->GetTop()));
-	CHECK(COMHandles.effect->SetRawValue("c", &r, 0, 16));
+	COMHandles.effect->SetRawValue("c", &r, 0, 16);
 	CHECK(COMHandles.effect->CommitChanges());
 
 	if (COMHandles.meshes[index] != NULL) CHECK(COMHandles.meshes[index]->DrawSubset(0));
