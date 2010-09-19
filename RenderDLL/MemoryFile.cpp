@@ -32,4 +32,8 @@ const unsigned char* MemoryFile::getPtr() const {
 
 int MemoryFile::getSize() const {
 	return size;
-} 
+}
+
+bool MemoryFile::ok() const {
+	return data != NULL;
+}

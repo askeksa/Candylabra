@@ -131,7 +131,7 @@ _parseParam:
 	mov ebp, [_channelFac]
 	sub ebp, byte 4
 .noteat_before_end:
-	cmp eax, 32
+	cmp eax, byte 32
 	jge .oor_noteat
 	mul dword [_channelFac]
 	fsub dword [_channelDeltas+eax+ebp]

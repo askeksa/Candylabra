@@ -132,6 +132,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="3"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERDLL_EXPORTS"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -210,6 +213,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\engine_atrium.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\engine_eris.cpp"
 				>
 			</File>
@@ -219,6 +226,10 @@
 			</File>
 			<File
 				RelativePath=".\engine_ikadalawampu.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\engine_points.cpp"
 				>
 			</File>
 			<File
@@ -260,6 +271,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\engine_atrium.h"
+				>
+			</File>
+			<File
 				RelativePath=".\engine_eris.h"
 				>
 			</File>
@@ -269,6 +284,10 @@
 			</File>
 			<File
 				RelativePath=".\engine_ikadalawampu.h"
+				>
+			</File>
+			<File
+				RelativePath=".\engine_points.h"
 				>
 			</File>
 			<File

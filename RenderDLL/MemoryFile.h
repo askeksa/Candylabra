@@ -18,6 +18,9 @@ public:
 	//returns the size of the memory-mapped file.
 	//returns 0 if the file could not be opened
 	int getSize() const;
+
+	// File loaded correctly?
+	bool ok() const;
 };
 
 #endif
