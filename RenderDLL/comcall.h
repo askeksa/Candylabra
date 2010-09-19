@@ -12,10 +12,15 @@ struct COMStruct {
 	LPD3DXEFFECTCOMPILER		effectcompiler;
 	LPD3DXBUFFER				tshaderbuffer;
 	LPD3DXTEXTURESHADER			tshader;
+	LPDIRECT3DVERTEXBUFFER9		vbuffer;
 	LPDIRECT3DSURFACE9			backbuffer;
 	LPDIRECT3DSURFACE9			depthbuffer;
 	LPDIRECT3DTEXTURE9			renderbuffertex;
 	LPDIRECT3DSURFACE9			renderbuffer;
+	LPDIRECT3DTEXTURE9			postbuffer1tex;
+	LPDIRECT3DSURFACE9			postbuffer1;
+	LPDIRECT3DTEXTURE9			postbuffer2tex;
+	LPDIRECT3DSURFACE9			postbuffer2;
 	LPDIRECT3DSURFACE9			renderdepthbuffer;
 	LPDIRECT3DSURFACE9			cubedepth;
 	LPDIRECT3DVOLUMETEXTURE9	randomtex;

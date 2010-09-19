@@ -1,5 +1,5 @@
 
-#include "engine_textobj.h"
+#include "engine_atrium.h"
 #include "main.h"
 #include "comcall.h"
 #include "MemoryFile.h"
@@ -10,76 +10,21 @@ extern "C" {
 	extern float constantPool[256];
 };
 
-float TextObjectEngine::getaspect()
+float AtriumEngine::getaspect()
 {
-	return 4.0f / 3.0f;
+	return 16.0f / 9.0f;
 }
 
-void TextObjectEngine::maketexts(char *texts, int size)
+void AtriumEngine::makeobjects()
 {
-	LPD3DXMESH mesh = NULL;
-	HDC hdc = CreateCompatibleDC( NULL );
-	HFONT hFont;
-	HFONT hFontOld;
-
-	int t = 0;
-
-	bool readfont = true;
-	bool firstfont = true;
-	for (int i = 0 ; i < N_OBJECTS ; i++)
+	CHECK(D3DXCreateBox(COMHandles.device, 1.0f, 1.0f, 1.0f, &COMHandles.meshes[0], NULL));
+	for (int i = 1 ; i < N_OBJECTS ; i++)
 	{
-		float fontex;
-		if (readfont)
-		{
-			char fontname[100];
-			int fontsize;
-			int n = sscanf(&texts[t], "%s %d %f\n", &fontname, &fontsize, &fontex);
-			if (n >= 3)
-			{
-				while (t < size && texts[t] >= ' ') t++;
-				while (t < size && texts[t] < ' ') t++;
-				for (unsigned j = 0 ; j < strlen(fontname) ; j++)
-				{
-					if (fontname[j] == '_') fontname[j] = ' ';
-				}
-
-				if (!firstfont) SelectObject(hdc, hFontOld);
-				firstfont = false;
-				hFont = CreateFont(fontsize, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
-					OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, fontname);
-				hFontOld = (HFONT)SelectObject(hdc, hFont); 
-			}
-			readfont = false;
-		}
-
-		int next_t = t;
-		while (next_t < size && texts[next_t] >= ' ') next_t++;
-
-		if (next_t < size)
-		{
-			bool empty = next_t == t+3 && texts[t] == '-' && texts[t+1] == '-' && texts[t+2] == '-';
-			texts[next_t++] = 0;
-			while (next_t < size && texts[next_t] < ' ') next_t++;
-			if (!empty)
-			{
-				CHECK(D3DXCreateText(COMHandles.device, hdc, &texts[t], 0.001f, fontex, &COMHandles.meshes[i], NULL, NULL));
-			} else {
-				readfont = true;
-				i--;
-			}
-			t = next_t;
-		} else {
-			COMHandles.meshes[i] = NULL;
-		}
+		COMHandles.meshes[i] = NULL;
 	}
-
-	SelectObject(hdc, hFontOld);
-
-	DeleteObject( hFont );
-	DeleteDC( hdc );
 }
 
-void TextObjectEngine::prepare_render_surfaces()
+void AtriumEngine::prepare_render_surfaces()
 {
 	int width = scissorRect.right-scissorRect.left;
 	int	height = scissorRect.bottom - scissorRect.top;
@@ -102,25 +47,19 @@ void TextObjectEngine::prepare_render_surfaces()
 }
 
 
-void TextObjectEngine::init()
+void AtriumEngine::init()
 {
-	MemoryFile object_texts(datafile, false);
-	if (object_texts.getSize() > 0)
-	{
-		maketexts((char *)object_texts.getPtr(), object_texts.getSize());
-	}
+	makeobjects();
 }
 
-void TextObjectEngine::reinit()
+void AtriumEngine::reinit()
 {
-	deinit();
 	render_width = 0;
 	render_height = 0;
 	last_fov = 0.0f;
-	init();
 }
 
-void TextObjectEngine::deinit()
+void AtriumEngine::deinit()
 {
 	for (int i = 0 ; i < N_OBJECTS ; i++)
 	{
@@ -135,7 +74,7 @@ static float fullscreenquad[] = {
 	 1.0, -1.0, 0.0, 1.0, 1.0
 };
 
-void TextObjectEngine::blit_to_screen(int pass)
+void AtriumEngine::blit_to_screen(int pass)
 {
 	CHECK(COMHandles.effect->BeginPass(pass));
 	//COMHandles.device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -145,7 +84,7 @@ void TextObjectEngine::blit_to_screen(int pass)
 	CHECK(COMHandles.effect->EndPass());
 }
 
-void TextObjectEngine::render()
+void AtriumEngine::render()
 {
 	D3DXTECHNIQUE_DESC tdesc;
 	CHECK(COMHandles.effect->GetTechniqueDesc(COMHandles.effect->GetTechnique(0), &tdesc));
@@ -167,7 +106,7 @@ void TextObjectEngine::render()
 	CHECK(COMHandles.effect->End());
 }
 
-void TextObjectEngine::drawprimitive(float r, float g, float b, float a, int index)
+void AtriumEngine::drawprimitive(float r, float g, float b, float a, int index)
 {
 	uploadparams();
 
@@ -185,15 +124,15 @@ void TextObjectEngine::drawprimitive(float r, float g, float b, float a, int ind
 	if (COMHandles.meshes[index] != NULL) CHECK(COMHandles.meshes[index]->DrawSubset(0));
 }
 
-void TextObjectEngine::placelight(float r, float g, float b, float a, int index)
+void AtriumEngine::placelight(float r, float g, float b, float a, int index)
 {
 }
 
-void TextObjectEngine::placecamera()
+void AtriumEngine::placecamera()
 {
 }
 
-float TextObjectEngine::random()
+float AtriumEngine::random()
 {
 	return mentor_synth_random();
 }

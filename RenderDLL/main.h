@@ -33,9 +33,11 @@ static void checkcompile(char *statement, int error) {
 extern "C" {
 	void uploadparams();
 	void pass(int effectpass, int treepass);
+	void tree_pass(int treepass);
 	void view_display();
 	void setfov();
 	float __stdcall mentor_synth_random();
 	float __stdcall amiga_random();
 	extern D3DXMATRIXA16 proj;
+	extern char datafile[];
 }

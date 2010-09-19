@@ -357,17 +357,22 @@ class Scrollbar(Container):
         Container.render(self, info)
 
 class Scrollable(Container):
-    def __init__(self, scrollbar):
+    def __init__(self, scrollbars):
         Container.__init__(self)
-        self.scrollbar = scrollbar
+        self.scrollbars = scrollbars
 
     def setPosAndSize(self, pos, size):
         Container.setPosAndSize(self, pos, size)
-        self.scrollbar.area_total = self.children[0].size[self.scrollbar.orientation]
-        self.scrollbar.area_shown = size[self.scrollbar.orientation]
+        for sb in self.scrollbars:
+            sb.area_total = self.children[0].size[sb.orientation]
+            sb.area_shown = size[sb.orientation]
         
     def render(self, info):
-        self.children[0].setPosAndSize((self.pos[0], self.pos[1]-self.scrollbar.area_pos), self.children[0].size)
+        spos = list(self.pos)
+        for sb in self.scrollbars:
+            spos[sb.orientation] -= sb.area_pos
+        self.children[0].setPosAndSize(tuple(spos), self.children[0].size)
+#        self.children[0].setPosAndSize((self.pos[0], self.pos[1]-self.scrollbar.area_pos), self.children[0].size)
         #self.children[0].setPosAndSize((self.pos[0], self.pos[1]), self.children[0].size)
         oldrect = info.addScissorRect(self.pos+self.size)
         Container.render(self, info)

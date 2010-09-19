@@ -72,7 +72,7 @@ class MeshDisplay(Component):
         self.project = None
 
     def setTree(self, tree):
-        windll.RenderDLL.init(c_void_p(d3d.getDevice()), self.project.engine_id, self.project.effect_file)
+        windll.RenderDLL.init(c_void_p(d3d.getDevice()), self.project.engine_id, self.project.effect_file, self.project.sync_file, self.project.data_file)
 
         ot.update_predefined_variables()
 
@@ -103,7 +103,7 @@ class MeshDisplay(Component):
 
     def setProject(self, project):
         self.project = project
-        windll.RenderDLL.reinit(self.project.engine_id, self.project.effect_file)
+        windll.RenderDLL.reinit(self.project.engine_id, self.project.effect_file, self.project.sync_file, self.project.data_file)
         ot.update_predefined_variables()
         initMusic(self.project.music_file)
 
@@ -220,7 +220,8 @@ class Project:
         self.effect_file = "../objects/default.fx"
         self.music_file = "../objects/Silence.ogg"
         self.bpm = 120.0
-
+        self.sync_file = "sync"
+        self.data_file = "texts.txt"
 
 class BrickField(Container):
     IDLE = 0
@@ -585,6 +586,10 @@ class BrickField(Container):
             f.close()
 
             if isinstance(project, Project):
+                dummy = Project(self)
+                for pf in ["sync_file", "data_file"]:
+                    if pf not in project.__dict__:
+                        project.__dict__[pf] = dummy.__dict__[pf]
                 self.project = project
                 newbricks = project.bricks
                 project.bricks = self.children

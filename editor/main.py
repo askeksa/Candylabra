@@ -134,17 +134,24 @@ def make_filename_relative(filename):
             return prefix + filename[len(basedir):]
     return filename
 
-def set_effect():
-    chosen_name = tkFileDialog.askopenfilename(initialfile = field.project.effect_file)
+def set_project_file(field_name):
+    filename = field.project.__dict__[field_name]
+    chosen_name = tkFileDialog.askopenfilename(initialfile = filename)
     if chosen_name:
-        field.project.effect_file = make_filename_relative(chosen_name)
+        field.project.__dict__[field_name] = make_filename_relative(chosen_name)
         field.display.setProject(field.project)
 
+def set_effect():
+    set_project_file("effect_file")
+
 def set_music():
-    chosen_name = tkFileDialog.askopenfilename(initialfile = field.project.music_file)
-    if chosen_name:
-        field.project.music_file = make_filename_relative(chosen_name)
-        field.display.setProject(field.project)
+    set_project_file("music_file")
+
+def set_sync():
+    set_project_file("sync_file")
+
+def set_data():
+    set_project_file("data_file")
 
 def set_bpm():
     bpm = tkSimpleDialog.askfloat("Enter value",
@@ -173,13 +180,14 @@ if __name__ == "__main__":
     display.timebar = timebar
     display.playbutton = playbutton
     scrollbarv = Scrollbar(ORIENTATION_VERTICAL)
+    scrollbarh = Scrollbar(ORIENTATION_HORIZONTAL)
     valuebar = ValueBar()
     valuebar.addChild(Component())
     field = BrickField(display, valuebar, scrollbarv)
     field.setPosAndSize((0,0),(2000,3000))
     #field.addChild(Brick(ot.Rotate(ot.AXIS_X), field, (1,1)))
     #field.addChild(Brick(ot.Identity(), field, (2,1)))
-    scrollfield = Scrollable(scrollbarv)
+    scrollfield = Scrollable([scrollbarh,scrollbarv])
     scrollfield.addChild(field)
     scrollfield.weight = 2.0
     adjuster = Adjuster()
@@ -187,12 +195,12 @@ if __name__ == "__main__":
     buttonpane = Sequence(ORIENTATION_VERTICAL)
     buttonpane.weight = 0.001
 
-    button_item = CreateButton("object", (lambda : ot.Item(0)), field)
-    button_dynitem = CreateButton("dyn object", (lambda : ot.DynamicItem(0)), field)
+    button_item = CreateButton("Object", (lambda : ot.Item(0)), field, 'O')
+    button_dynitem = CreateButton("dyn object", (lambda : ot.DynamicItem(0)), field, 'D')
     #for o in range(0,10):
     #    button_item.addHotkey(ord('0')+o, (lambda e,m : field.setCreating(lambda : ot.DynamicItem(o))))
-    button_light = CreateButton("light", (lambda : ot.Light(0)), field)
-    button_camera = CreateButton("camera", (lambda : ot.Camera()), field)
+    button_light = CreateButton("lIght", (lambda : ot.Light(0)), field, 'I')
+    button_camera = CreateButton("caMera", (lambda : ot.Camera()), field, 'M')
     button_identity = CreateButton("lAbel", (lambda : ot.Identity(field)), field, 'A')
     button_link = CreateButton("linK", (lambda : ot.Link(field)), field, 'K')
     button_fix = CreateButton("Fix", ot.SaveTransform, field, 'F')
@@ -242,11 +250,13 @@ if __name__ == "__main__":
     filler.weight = 1000000
 
     ENGCOL = 0x609090
-    engine_buttons = [Button((lambda : set_engine(id)), name, color = ENGCOL) for (id, name) in enumerate(get_engines())]
+    engine_buttons = [Button((lambda eid : (lambda : set_engine(eid)))(id), name, color = ENGCOL) for (id, name) in enumerate(get_engines())]
     PARCOL = 0x807070
     button_effect = Button(set_effect, "effect", color = PARCOL)
     button_music = Button(set_music, "music", color = PARCOL)
     button_bpm = Button(set_bpm, "BPM", color = PARCOL)
+    button_sync = Button(set_sync, "sync", color = PARCOL)
+    button_data = Button(set_data, "data", color = PARCOL)
 
     bottombuttons.addChild(button_load)
     bottombuttons.addChild(button_insert)
@@ -260,6 +270,8 @@ if __name__ == "__main__":
     bottombuttons.addChild(button_effect)
     bottombuttons.addChild(button_music)
     bottombuttons.addChild(button_bpm)
+    bottombuttons.addChild(button_sync)
+    bottombuttons.addChild(button_data)
 
 
     #buttonscroll = Scrollbar(ORIENTATION_VERTICAL)
@@ -283,6 +295,7 @@ if __name__ == "__main__":
     vseq.addChild(adjuster)
     vseq.addChild(edit_seq)
     vseq.addChild(valuebar)
+    vseq.addChild(scrollbarh)
     vseq.addChild(bottombuttons)
 
     root = EditorRoot(disp_seq)

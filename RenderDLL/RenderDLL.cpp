@@ -10,10 +10,12 @@
 #include "objgen.h"
 #include "comcall.h"
 #include "main.h"
+#include "engine_atrium.h"
 #include "engine_textobj.h"
 #include "engine_haumea.h"
 #include "engine_eris.h"
 #include "engine_ikadalawampu.h"
+#include "engine_points.h"
 
 using namespace std;
 
@@ -21,6 +23,8 @@ int current_engine_id = -1;
 Engine *active_engine;
 
 char effectfile[101];
+char syncfile[101];
+char datafile[101];
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -153,16 +157,18 @@ extern "C" {
 		numRows = *ptr++;
 		notes = (unsigned char*)ptr;
 */
-		MemoryFile* mf = new MemoryFile("sync");
-		int* ptr = (int*)mf->getPtr();
-		timerFac = *ptr++;
-		channelFac = *ptr++;
-		channelDataLength = *ptr++;
-		if (channelDataLength <= sizeof(channelDeltas))
-		{
-			memcpy(channelDeltas, ptr, channelDataLength);
-		} else {
-			MessageBox(0, "Sync data buffer overflow", 0, 0);
+		MemoryFile* mf = new MemoryFile(syncfile);
+		if (mf->ok()) {
+			int* ptr = (int*)mf->getPtr();
+			timerFac = *ptr++;
+			channelFac = *ptr++;
+			channelDataLength = *ptr++;
+			if (channelDataLength <= sizeof(channelDeltas))
+			{
+				memcpy(channelDeltas, ptr, channelDataLength);
+			} else {
+				MessageBox(0, "Sync data buffer overflow", 0, 0);
+			}
 		}
 		delete mf;
 
@@ -184,31 +190,34 @@ extern "C" {
 	D3DVIEWPORT9 viewport;
 	D3DVIEWPORT9 display_viewport;
 	int width, height;
+	int canvas_width, canvas_height;
 	char *program;
+
+	void tree_pass(int treepass) {
+		constantPool[3] = (float)treepass;
+		interpret(program);
+	}
 
 	void pass(int effectpass, int treepass) {
 		COMHandles.effect->BeginPass(effectpass);
-		constantPool[3] = (float)treepass;
-		interpret(program);
+		tree_pass(treepass);
 		COMHandles.effect->EndPass();
 	}
 
 	void setfov()
 	{
-		width = scissorRect.right - scissorRect.left;
-		height = scissorRect.bottom - scissorRect.top;
 		float CAMERA_NEAR_Z = 0.125f;
 		float CAMERA_FAR_Z = 1024.0f;
 		float aspect = active_engine->getaspect();
 		D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
 	}
 
-static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|";
+static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Points|";
 
 	RENDERDLL_API int __stdcall getengines(char *buf)
 	{
 		strcpy(buf, enginenames);
-		return 5;
+		return 6;
 	}
 
 	void init_engine(int engine_id)
@@ -216,7 +225,7 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 		switch (engine_id)
 		{
 		case 0:
-			active_engine = new TextObjectEngine();
+			active_engine = new AtriumEngine();
 			break;
 		case 1:
 			active_engine = new TextObjectEngine();
@@ -230,6 +239,9 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 		case 4:
 			active_engine = new IkadalawampuEngine();
 			break;
+		case 5:
+			active_engine = new PointsEngine();
+			break;
 		}
 		current_engine_id = engine_id;
 	}
@@ -240,12 +252,14 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 		return nparams;
 	}
 
-	RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device, int engine_id, char *effect)
+	RENDERDLL_API int __stdcall init(LPDIRECT3DDEVICE9 device, int engine_id, char *effect, char *sync, char *data)
 	{
 		if(!inited) {
 			memset(&COMHandles, 0, sizeof(COMHandles));
 			COMHandles.device = device;
 			strncpy(effectfile, effect, 100);
+			strncpy(syncfile, sync, 100);
+			strncpy(datafile, data, 100);
 			init_engine(engine_id);
 			init2();
 			inited = true;
@@ -253,7 +267,7 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 		return 0;
 	}
 
-	RENDERDLL_API int __stdcall reinit(int engine_id, char *effect)
+	RENDERDLL_API int __stdcall reinit(int engine_id, char *effect, char *sync, char *data)
 	{
 		if (!inited) return 0;
 
@@ -263,6 +277,8 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 		}
 
 		strncpy(effectfile, effect, 100);
+		strncpy(syncfile, sync, 100);
+		strncpy(datafile, data, 100);
 		if (!init3())
 		{
 			return 0;
@@ -313,6 +329,11 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 
 	void view_enter()
 	{
+		width = scissorRect.right - scissorRect.left;
+		height = scissorRect.bottom - scissorRect.top;
+
+		//printf("(%d,%d)\n", width, height);
+
 		CHECK(COMHandles.device->GetScissorRect(&scissorRect));
 		D3DSURFACE_DESC backbufferdesc;
 		CHECK(COMHandles.backbuffer->GetDesc(&backbufferdesc));
@@ -332,17 +353,25 @@ static const char enginenames[] = "Default|TextObject|Haumea|Eris|Ikadalawampu|"
 		CHECK(COMHandles.device->SetDepthStencilSurface(COMHandles.depthbuffer));
 		CHECK(COMHandles.device->SetScissorRect(&scissorRect));
 		int border_offset = (int)((width - height * aspect) / 2);
-		CHECK(COMHandles.device->SetViewport(&display_viewport));
+		RECT rect = scissorRect;
 		if(border_offset > 0) {
-			RECT rect = {
-				scissorRect.left+border_offset, scissorRect.top, scissorRect.right-border_offset, scissorRect.bottom
-			};
+			rect.left += border_offset;
+			rect.right -= border_offset;
 			CHECK(COMHandles.device->SetScissorRect(&rect));
-			D3DVIEWPORT9 port = {rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top,
-				0, 1
-			};
-			CHECK(COMHandles.device->SetViewport(&port));
+		} else {
+			border_offset = (int)((height - width / aspect) / 2);
+			rect.top += border_offset;
+			rect.bottom -= border_offset;
+			CHECK(COMHandles.device->SetScissorRect(&rect));
+		}
+		D3DVIEWPORT9 port = {rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top,
+			0, 1
 		};
+		CHECK(COMHandles.device->SetViewport(&port));
+
+		canvas_width = rect.right-rect.left;
+		canvas_height = rect.bottom-rect.top;
+
 	}
 
 	void view_restore()
