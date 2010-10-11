@@ -213,6 +213,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\engine.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\engine_atrium.cpp"
 				>
 			</File>

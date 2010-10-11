@@ -61,7 +61,7 @@ extern "C" {
 		paramvals[1] = 0.0f;
 		paramvals[2] = 1.0f;
 		paramvals[3] = 0.0f;
-		i += sprintf(&parambuf[i], "time/seed/fov/pass/");
+		i += sprintf(&parambuf[i], active_engine->predefined_variables());
 		n += 4;
 
 		D3DXEFFECT_DESC desc;

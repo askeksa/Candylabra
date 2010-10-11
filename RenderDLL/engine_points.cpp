@@ -93,6 +93,9 @@ void PointsEngine::blit_to_screen(int pass, IDirect3DTexture9 *from)
 
 void PointsEngine::render()
 {
+	constantPool[2] = 1.0f;
+	setfov();
+
 	D3DXTECHNIQUE_DESC tdesc;
 	CHECK(COMHandles.effect->GetTechniqueDesc(COMHandles.effect->GetTechnique(0), &tdesc));
 
@@ -112,12 +115,6 @@ void PointsEngine::render()
 		CHECK(COMHandles.vbuffer->Unlock());
 
 		uploadparams();
-
-		if (constantPool[2] != last_fov)
-		{
-			setfov();
-			last_fov = constantPool[2];
-		}
 
 		CHECK(COMHandles.effect->SetMatrixTranspose("o", &proj));
 		CHECK(COMHandles.effect->SetFloat("w", (float)canvas_width));
@@ -147,6 +144,7 @@ void PointsEngine::drawprimitive(float r, float g, float b, float a, int index)
 	p->x = trans->_41;
 	p->y = trans->_42;
 	p->z = trans->_43;
+	p->size = constantPool[2];
 	p->r = r;
 	p->g = g;
 	p->b = b;
@@ -164,4 +162,8 @@ void PointsEngine::placecamera()
 float PointsEngine::random()
 {
 	return mentor_synth_random();
+}
+
+char *PointsEngine::predefined_variables() {
+	return "time/seed/size/pass/";
 }
