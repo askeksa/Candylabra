@@ -6,11 +6,11 @@
 #define MAX_POINTS 200000
 
 struct PointVertex {
-	float x,y,z;
+	float x,y,z,size;
 	float r,g,b,a;
 };
 
-#define POINTS_FVF (D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_TEXCOORDSIZE4(0))
+#define POINTS_FVF (D3DFVF_XYZ | D3DFVF_TEX2 | D3DFVF_TEXCOORDSIZE1(0) | D3DFVF_TEXCOORDSIZE4(1))
 
 class PointsEngine : public Engine {
 	int render_width;
@@ -37,4 +37,5 @@ public:
 
 	virtual float getaspect();
 	virtual float random();
+	char *predefined_variables();
 };

@@ -11,9 +11,9 @@ struct S {
 	float4 c : COLOR;
 };
 
-S v(float4 p : POSITION, float4 c : TEXCOORD0) {
+S v(float4 p : POSITION, float size : TEXCOORD0, float4 c : TEXCOORD1) {
 	float4 t = mul(o,p);
-	S s = {t,h/t.w,c};
+	S s = {t,h*size/t.w,c};
 	return s;
 }
 
@@ -66,6 +66,15 @@ technique {
 	}
 
 	pass {
+		AlphaBlendEnable = true;
+		SrcBlend = ONE;
+		DestBlend = ONE;
+		VertexShader = compile vs_2_0 v();
+		PixelShader = compile ps_2_0 p();
+	}
+
+	pass {
+		AlphaBlendEnable = false;
 		AlphaTestEnable = false;
 		VertexShader = compile vs_2_0 ppv();
 		PixelShader = compile ps_2_0 pp1p();
