@@ -60,6 +60,8 @@ void PointsEngine::init()
 		D3DPOOL_DEFAULT,
 		&COMHandles.vbuffer,
 		NULL));
+
+	mapped_buffer = new struct PointVertex[MAX_POINTS];
 }
 
 void PointsEngine::reinit()
@@ -72,6 +74,8 @@ void PointsEngine::reinit()
 void PointsEngine::deinit()
 {
 	COMHandles.vbuffer->Release();
+	delete mapped_buffer;
+	mapped_buffer = NULL;
 }
 
 static float fullscreenquad[] = {
@@ -91,10 +95,16 @@ void PointsEngine::blit_to_screen(int pass, IDirect3DTexture9 *from)
 	CHECK(COMHandles.effect->EndPass());
 }
 
+int vertex_compare(const void *e1, const void *e2)
+{
+	struct PointVertex *p1 = (struct PointVertex *)e1;
+	struct PointVertex *p2 = (struct PointVertex *)e2;
+	return *(int *)&p2->z - *(int *)&p1->z;
+}
+
 void PointsEngine::render()
 {
 	constantPool[2] = 1.0f;
-	setfov();
 
 	D3DXTECHNIQUE_DESC tdesc;
 	CHECK(COMHandles.effect->GetTechniqueDesc(COMHandles.effect->GetTechnique(0), &tdesc));
@@ -109,12 +119,15 @@ void PointsEngine::render()
 		CHECK(COMHandles.effect->BeginPass(p));
 	
 		//CHECK(COMHandles.matrix_stack->LoadMatrix(&proj));
-		CHECK(COMHandles.vbuffer->Lock(0, 0, (void **)&mapped_buffer, D3DLOCK_DISCARD));
+		//CHECK(COMHandles.vbuffer->Lock(0, 0, (void **)&mapped_buffer, D3DLOCK_DISCARD));
 		n_points = 0;
 		tree_pass(p);
-		CHECK(COMHandles.vbuffer->Unlock());
+		//CHECK(COMHandles.vbuffer->Unlock());
+
+		qsort(mapped_buffer, n_points, sizeof(struct PointVertex), vertex_compare);
 
 		uploadparams();
+		setfov();
 
 		CHECK(COMHandles.effect->SetMatrixTranspose("o", &proj));
 		CHECK(COMHandles.effect->SetFloat("w", (float)canvas_width));
@@ -122,8 +135,8 @@ void PointsEngine::render()
 		CHECK(COMHandles.effect->CommitChanges());
 
 		CHECK(COMHandles.device->SetFVF(POINTS_FVF));
-		CHECK(COMHandles.device->SetStreamSource(0, COMHandles.vbuffer, 0, sizeof(struct PointVertex)));
-		CHECK(COMHandles.device->DrawPrimitive(D3DPT_POINTLIST, 0, n_points));
+		//CHECK(COMHandles.device->SetStreamSource(0, COMHandles.vbuffer, 0, sizeof(struct PointVertex)));
+		CHECK(COMHandles.device->DrawPrimitiveUP(D3DPT_POINTLIST, n_points, mapped_buffer, sizeof(struct PointVertex)));
 
 		CHECK(COMHandles.effect->EndPass( ));
 	}
@@ -144,7 +157,7 @@ void PointsEngine::drawprimitive(float r, float g, float b, float a, int index)
 	p->x = trans->_41;
 	p->y = trans->_42;
 	p->z = trans->_43;
-	p->size = constantPool[2];
+	p->size = sqrtf(trans->_11*trans->_11 + trans->_22*trans->_22 + trans->_33*trans->_33);
 	p->r = r;
 	p->g = g;
 	p->b = b;
@@ -163,7 +176,8 @@ float PointsEngine::random()
 {
 	return mentor_synth_random();
 }
-
+/*
 char *PointsEngine::predefined_variables() {
 	return "time/seed/size/pass/";
 }
+*/

@@ -37,5 +37,5 @@ public:
 
 	virtual float getaspect();
 	virtual float random();
-	char *predefined_variables();
+	//char *predefined_variables();
 };

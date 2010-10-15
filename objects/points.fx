@@ -21,7 +21,14 @@ float4 p(S s, float2 c : TEXCOORD0) : COLOR {
 	//float l = saturate(-0.8*dot(normalize(s.n),normalize(s.s)));
 	//return float4((c*l + spec*pow(l,10)).xyz,c.a);
 	float2 cc = c-0.5;
-	return dot(cc,cc) < 0.25 ? s.c : 0;
+	float d = dot(cc,cc);
+	return d < 0.25 ? s.c : 0;
+}
+
+float4 p2(S s, float2 c : TEXCOORD0) : COLOR {
+	float2 cc = c-0.5;
+	float d = dot(cc,cc);
+	return float4(s.c.xyz, saturate(s.c.a*4 * exp(-d*16)));
 }
 
 void ppv(float4 p : POSITION, float2 tc : TEXCOORD0, out float4 tp : POSITION, out float2 ttc : TEXCOORD0) {
@@ -57,27 +64,42 @@ float4 pp2p(float2 tc : TEXCOORD0) : COLOR0 {
 
 
 technique {
+/*
 	pass {
 		AlphaBlendEnable = false;
 		AlphaTestEnable = true;
-		POINTSPRITEENABLE = true;
+		PointSpriteEnable = true;
 		VertexShader = compile vs_2_0 v();
 		PixelShader = compile ps_2_0 p();
 	}
-
+*/
 	pass {
 		AlphaBlendEnable = true;
+		AlphaTestEnable = false;
+		SrcBlend = SRCALPHA;
+		DestBlend = INVSRCALPHA;
+		ZEnable = false;
+		//ZWriteEnable = false;
+		VertexShader = compile vs_2_0 v();
+		PixelShader = compile ps_2_0 p2();
+	}
+/*
+	pass {
+		AlphaBlendEnable = true;
+		AlphaTestEnable = false;
 		SrcBlend = ONE;
 		DestBlend = ONE;
+		//ZWriteEnable = false;
 		VertexShader = compile vs_2_0 v();
-		PixelShader = compile ps_2_0 p();
+		PixelShader = compile ps_2_0 p2();
 	}
-
+*/
 	pass {
 		AlphaBlendEnable = false;
 		AlphaTestEnable = false;
+		//ZWriteEnable = true;
 		VertexShader = compile vs_2_0 ppv();
-		PixelShader = compile ps_2_0 pp1p();
+		PixelShader = compile ps_2_0 ppp();
 	}
 
 	pass {
@@ -90,6 +112,6 @@ technique {
 		SrcBlend = SRCALPHA;
 		DestBlend = INVSRCALPHA;
 		VertexShader = compile vs_2_0 ppv();
-		PixelShader = compile ps_2_0 pp2p();
+		PixelShader = compile ps_2_0 ppp();
 	}
 }
