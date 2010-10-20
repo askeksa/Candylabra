@@ -5,6 +5,12 @@
 #include "MemoryFile.h"
 #include <assert.h>
 
+#define BUCKET_EXPONENT_MIN 0x7f // Near plane at 1.0
+#define BUCKET_EXPONENT_MAX 0x88 // Far plane at 512.0
+#define BUCKET_MANTISSA_BITS 10
+#define NUM_BUCKETS ((BUCKET_EXPONENT_MAX-BUCKET_EXPONENT_MIN) << BUCKET_MANTISSA_BITS)
+#define POINTS_PER_BUCKET 101
+
 extern "C" {
 	extern int canvas_width, canvas_height;
 	extern float constantPool[256];
@@ -61,7 +67,8 @@ void PointsEngine::init()
 		&COMHandles.vbuffer,
 		NULL));
 
-	mapped_buffer = new struct PointVertex[MAX_POINTS];
+	point_bucket_sizes = new unsigned int[NUM_BUCKETS];
+	point_buckets = new struct PointVertex[NUM_BUCKETS*POINTS_PER_BUCKET];
 }
 
 void PointsEngine::reinit()
@@ -74,8 +81,10 @@ void PointsEngine::reinit()
 void PointsEngine::deinit()
 {
 	COMHandles.vbuffer->Release();
-	delete mapped_buffer;
-	mapped_buffer = NULL;
+	delete point_bucket_sizes;
+	point_bucket_sizes = NULL;
+	delete point_buckets;
+	point_buckets = NULL;
 }
 
 static float fullscreenquad[] = {
@@ -119,12 +128,21 @@ void PointsEngine::render()
 		CHECK(COMHandles.effect->BeginPass(p));
 	
 		//CHECK(COMHandles.matrix_stack->LoadMatrix(&proj));
-		//CHECK(COMHandles.vbuffer->Lock(0, 0, (void **)&mapped_buffer, D3DLOCK_DISCARD));
-		n_points = 0;
+		memset(point_bucket_sizes, 0, NUM_BUCKETS*sizeof(unsigned int));
 		tree_pass(p);
-		//CHECK(COMHandles.vbuffer->Unlock());
 
-		qsort(mapped_buffer, n_points, sizeof(struct PointVertex), vertex_compare);
+		//qsort(mapped_buffer, n_points, sizeof(struct PointVertex), vertex_compare);
+
+		unsigned int n_points = 0;
+		CHECK(COMHandles.vbuffer->Lock(0, 0, (void **)&mapped_buffer, D3DLOCK_DISCARD));
+		for (unsigned int bucket = 0 ; bucket < NUM_BUCKETS ; bucket++)
+		{
+			unsigned int bucket_size = point_bucket_sizes[bucket];
+			struct PointVertex *bucketp = &point_buckets[bucket*POINTS_PER_BUCKET];
+			memcpy(&mapped_buffer[n_points], bucketp, bucket_size*sizeof(struct PointVertex));
+			n_points += bucket_size;
+		}
+		CHECK(COMHandles.vbuffer->Unlock());
 
 		uploadparams();
 		setfov();
@@ -135,8 +153,8 @@ void PointsEngine::render()
 		CHECK(COMHandles.effect->CommitChanges());
 
 		CHECK(COMHandles.device->SetFVF(POINTS_FVF));
-		//CHECK(COMHandles.device->SetStreamSource(0, COMHandles.vbuffer, 0, sizeof(struct PointVertex)));
-		CHECK(COMHandles.device->DrawPrimitiveUP(D3DPT_POINTLIST, n_points, mapped_buffer, sizeof(struct PointVertex)));
+		CHECK(COMHandles.device->SetStreamSource(0, COMHandles.vbuffer, 0, sizeof(struct PointVertex)));
+		CHECK(COMHandles.device->DrawPrimitive(D3DPT_POINTLIST, 0, n_points));
 
 		CHECK(COMHandles.effect->EndPass( ));
 	}
@@ -152,16 +170,24 @@ void PointsEngine::render()
 
 void PointsEngine::drawprimitive(float r, float g, float b, float a, int index)
 {
-	struct PointVertex *p = &mapped_buffer[n_points++];
 	D3DXMATRIX *trans = COMHandles.matrix_stack->GetTop();
-	p->x = trans->_41;
-	p->y = trans->_42;
-	p->z = trans->_43;
-	p->size = sqrtf(trans->_11*trans->_11 + trans->_22*trans->_22 + trans->_33*trans->_33);
-	p->r = r;
-	p->g = g;
-	p->b = b;
-	p->a = a;
+	unsigned int z_int = *(unsigned int *)&trans->_43;
+	unsigned int bucket = ((BUCKET_EXPONENT_MAX << 23) - z_int) >> (23 - BUCKET_MANTISSA_BITS);
+	if (bucket < NUM_BUCKETS)
+	{
+		unsigned int bucket_size = point_bucket_sizes[bucket];
+		struct PointVertex *p = &point_buckets[bucket*POINTS_PER_BUCKET+bucket_size];
+		p->x = trans->_41;
+		p->y = trans->_42;
+		p->z = trans->_43;
+		p->size = sqrtf(trans->_11*trans->_11 + trans->_12*trans->_12 + trans->_13*trans->_13);
+		p->r = r;
+		p->g = g;
+		p->b = b;
+		p->a = a;
+		point_bucket_sizes[bucket]++;
+	}
+
 }
 
 void PointsEngine::placelight(float r, float g, float b, float a, int index)
