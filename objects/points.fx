@@ -12,7 +12,8 @@ struct S {
 };
 
 S v(float4 p : POSITION, float size : TEXCOORD0, float4 c : TEXCOORD1) {
-	float4 t = mul(o,p);
+	//float4 t = mul(o,p);
+	float4 t = p.xyzz * float4(1,1.78125,0,1);
 	S s = {t,h*size/t.w,c};
 	return s;
 }
@@ -28,7 +29,7 @@ float4 p(S s, float2 c : TEXCOORD0) : COLOR {
 float4 p2(S s, float2 c : TEXCOORD0) : COLOR {
 	float2 cc = c-0.5;
 	float d = dot(cc,cc);
-	return float4(s.c.xyz, saturate(s.c.a*4 * exp(-d*16)));
+	return float4(s.c.xyz, s.c.a * exp2(-d*24+2));
 }
 
 void ppv(float4 p : POSITION, float2 tc : TEXCOORD0, out float4 tp : POSITION, out float2 ttc : TEXCOORD0) {

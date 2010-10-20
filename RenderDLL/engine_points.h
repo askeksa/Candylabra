@@ -17,7 +17,8 @@ class PointsEngine : public Engine {
 	int render_height;
 	float last_fov;
 
-	int n_points;
+	unsigned int *point_bucket_sizes;
+	struct PointVertex *point_buckets;
 	struct PointVertex *mapped_buffer;
 
 	void makeobjects();
