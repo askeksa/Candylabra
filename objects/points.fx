@@ -1,6 +1,6 @@
 float4x4 m,o;
 
-float b,a;
+//float b,a;
 float w,h;
 
 sampler tex;
@@ -51,7 +51,7 @@ float4 pp1p(float2 tc : TEXCOORD0) : COLOR0 {
 	}
 	return s;
 }
-
+/*
 float4 pp2p(float2 tc : TEXCOORD0) : COLOR0 {
 	float4 s = 0;
 	for (float i = -6.5 ; i <= 6.5 ; i+=1) {
@@ -62,7 +62,7 @@ float4 pp2p(float2 tc : TEXCOORD0) : COLOR0 {
 	s.a *= a;
 	return s;
 }
-
+*/
 
 technique {
 /*
