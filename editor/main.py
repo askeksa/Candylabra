@@ -60,6 +60,10 @@ def export(exportfun, swap_endian = False, truncate = False):
             tree = field.active.buildTree(set())
             exporter = ot.Exporter(tree)
             instructions,constants,constmap = exportfun(exporter)
+            if isinstance(instructions, types.TupleType):
+                nodes, exps = instructions
+                instructions = None
+                #print nodes
             #print instructions
             #print constants
             node_to_brick = {}
@@ -67,14 +71,14 @@ def export(exportfun, swap_endian = False, truncate = False):
                 node_to_brick[b.node] = b
 
             conststring = {}
-            for c,nodes in exporter.constnodes.iteritems():
+            for c,cnodes in exporter.constnodes.iteritems():
                 if isinstance(c,types.FloatType):
                     intrep = struct.unpack('I', struct.pack('f', c))[0]
                     if truncate:
                         fhex = "%08X -> %08X" % (intrep, intrep & 0xffff0000)
                     else:
                         fhex = "%08X" % (intrep)
-                    conststring[c] = ("%f (%s): " % (c, fhex)) + str([n.getName() + (" (%d,%d)" % node_to_brick[n].gridpos) for n in nodes])
+                    conststring[c] = ("%f (%s): " % (c, fhex)) + str([n.getName() + (" (%d,%d)" % node_to_brick[n].gridpos) for n in cnodes])
 
             print
             print
@@ -84,16 +88,24 @@ def export(exportfun, swap_endian = False, truncate = False):
                 print conststring[c]
             sys.stdout.flush()
 
-            tree_name = tkFileDialog.asksaveasfilename(initialfile = "tree.dat")
-            if not tree_name:
-                return
             consts_name = tkFileDialog.asksaveasfilename(initialfile = "constantpool.dat")
             if not consts_name:
                 return
+            if instructions:
+                tree_name = consts_name.replace("constantpool.dat", "tree.dat")
+            else:
+                nodes_name = consts_name.replace("constantpool.dat", "nodes.dat")
+                exps_name = consts_name.replace("constantpool.dat", "exps.dat")
             try:
-                tree_file = open(tree_name, 'wb')
-                tree_file.write(''.join([chr(b) for b in instructions]))
-                tree_file.close()
+                def writebytes(filename, data):
+                    f = open(filename, 'wb')
+                    f.write(''.join([chr(b) for b in data]))
+                    f.close()
+                if instructions:
+                    writebytes(tree_name, instructions)
+                else:
+                    writebytes(nodes_name, nodes)
+                    writebytes(exps_name, exps)
                 consts_file = open(consts_name, 'wb')
                 #last_exp = 0
                 for c in constants:
@@ -244,6 +256,7 @@ if __name__ == "__main__":
     button_save = Button(save, "save", color = FBCOL)
     button_saveas = Button(saveas, "save as", color = FBCOL)
     button_export = Button((lambda : export(lambda exporter : exporter.optimized_export())), "export", color = FBCOL)
+    button_export_compiler = Button((lambda : export(lambda exporter : exporter.export_for_compiler())), "export comp", color = FBCOL)
     button_export_amiga = Button((lambda : export(lambda exporter : exporter.export_amiga(), swap_endian = True)), "export amiga", color = FBCOL)
 
     filler = Component()
@@ -263,6 +276,7 @@ if __name__ == "__main__":
     bottombuttons.addChild(button_save)
     bottombuttons.addChild(button_saveas)
     bottombuttons.addChild(button_export)
+    bottombuttons.addChild(button_export_compiler)
     bottombuttons.addChild(button_export_amiga)
     bottombuttons.addChild(filler)
     for b in engine_buttons:
