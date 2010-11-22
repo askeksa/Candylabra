@@ -343,7 +343,12 @@ class Repeat(ObjectNode):
         return 0
 
     def export(self, exporter):
-        exporter.todo.append((self.children, len(exporter.out)+1))
+        if len(self.children) == 1:
+            n = self.children[0]
+        else:
+            n = ObjectNode()
+            n.children = list(self.children)
+        exporter.todo.append((n, len(exporter.out)+1))
         n_rep = self.n+1
         if (n_rep % 256) == 255 or (n_rep / 256) > 254:
             raise ExportException(self, "Illegal repeat count")
@@ -375,8 +380,8 @@ class Conditional(ObjectNode):
             raise ExportException(self, "Conditional must have two children")
         exporter.out += [OP_CONDITIONAL]
         self.exportDefinitions(exporter)
-        exporter.todo.append(([self.children[0]], len(exporter.out)))
-        exporter.todo.append(([self.children[1]], len(exporter.out)+1))
+        exporter.todo.append((self.children[0], len(exporter.out)))
+        exporter.todo.append((self.children[1], len(exporter.out)+1))
         exporter.out += [0,0]
         return []
 
@@ -698,15 +703,6 @@ class Exporter(object):
                 self.marklabels(c)
     
     def exportnode(self, node):
-        if node in self.labelmap:
-            if node in self.seenlabels:
-                raise ExportException(node, "Loop without repeat")
-            self.out += [OP_REPEAT, self.labelmap[node], 0, 0]
-            return
-        if node in self.labeled:
-            self.seenlabels.add(node)
-            label = self.newLabel(node)
-            self.out += [OP_LABEL]
         outpos = len(self.out)
         visitchildren = node.export(self)
         for o in self.out[outpos:]:
@@ -720,7 +716,11 @@ class Exporter(object):
             if len(visitchildren) > 1:
                 self.out += [OP_FANOUT]
         for c in visitchildren:
-            self.exportnode(c)
+            if c in self.labeled:
+                self.todo.append((c, len(self.out)+1))
+                self.out += [OP_REPEAT, 0, 0, 0]
+            else:
+                self.exportnode(c)
         if len(visitchildren) > 1:
             self.out += [0]
         if node in self.seenlabels:
@@ -732,7 +732,6 @@ class Exporter(object):
         self.visited = set()
         self.labeled = set()
         self.marklabels(self.tree)
-        self.labeled.add(self.tree)
         self.todo = []
         self.labelmap = {}
 
@@ -740,13 +739,15 @@ class Exporter(object):
         self.exportnode(self.tree)
     
         while self.todo:
-            nodes,ref_index = self.todo.pop()
-            dummy = ObjectNode()
-            dummy.children = list(nodes)
-            self.labeled.add(dummy)
-            self.seenlabels = set()
-            self.exportnode(dummy)
-            self.out[ref_index] = self.labelmap[dummy]
+            n,ref_index = self.todo.pop()
+            if n not in self.labelmap:
+                self.labeled.add(n)
+                label = self.newLabel(n)
+                self.out += [OP_LABEL]
+                self.seenlabels = set()
+                self.exportnode(n)
+
+            self.out[ref_index] = self.labelmap[n]
             
         self.out += [OP_LABEL, OP_END]
     
@@ -785,6 +786,68 @@ class Exporter(object):
         instructions,constants,constmap = self.export()
     
         return instructions,constants,constmap
+
+    def export_for_compiler(self):
+        instructions,constants,constmap = self.optimized_export()
+
+        def skipexp(i):
+            inst = instructions[i]
+            i += 1
+            if inst > 0xF1:
+                i = skipexp(i)
+            if inst > 0xF4:
+                i = skipexp(i)
+            return i
+
+        nodeformat = { # (bytes before exps, exps, bytes after exps)
+            0: (0,0,0), # fanout terminator
+            OP_FANOUT: (0,0,0),
+            OP_SAVETRANS: (0,0,0),
+            OP_REPEAT: (0,0,3),
+            OP_PRIM: (1,4,0),
+            OP_DYNPRIM: (0,5,0),
+            OP_LIGHT: None,
+            OP_CAMERA: None,
+            OP_ASSIGN: (0,1,1),
+            OP_LOCALASSIGN: (0,1,1),
+            OP_CONDITIONAL: (0,1,2),
+            OP_NOPLEAF: (0,0,0),
+            OP_ROTATE: (0,3,0),
+            OP_SCALE: (0,3,0),
+            OP_TRANSLATE: (0,3,0),
+            OP_LABEL: None
+        }
+
+        nodes = []
+        exps = []
+
+        i = 0
+        while i < len(instructions):
+            inst = instructions[i]
+            i += 1
+
+            if inst == OP_END:
+                nodes += [0]
+                break
+
+            if inst == OP_LABEL:
+                continue
+
+            nodes += [inst]
+
+            b,e,a = nodeformat[inst]
+            nodes += instructions[i:i+b]
+            i += b
+
+            before_exps = i
+            for x in range(e):
+                i = skipexp(i)
+            exps += instructions[before_exps:i]
+
+            nodes += instructions[i:i+a]
+            i += a
+
+        return (nodes,exps),constants,constmap
 
     def export_amiga(self):
         bytecount_n = [0] * 256
@@ -836,7 +899,7 @@ class Exporter(object):
                 out_insts.append(expmap[op])
                 bytecount_e[expmap[op]] += 1
                 i = traverse_exp(i, out_insts)
-            elif op in [0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB]: # Binary op: +, -, *, /, %
+            elif op in [0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB]: # Binary op: +, -, *, /, %, @
                 out_insts.append(expmap[op])
                 bytecount_e[expmap[op]] += 1
                 i = traverse_exp(i, out_insts)
