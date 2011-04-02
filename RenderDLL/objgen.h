@@ -18,6 +18,8 @@ struct lockedmesh {
 extern "C" {
 	void __stdcall initmesh();
 	void __stdcall interpret(char* program);
+	void __stdcall compileTree(char* program);
+	void treecode(void);
 	void __stdcall draw();
 	void __stdcall render();
 	extern lockedmesh lockedmeshes[];

@@ -195,7 +195,9 @@ extern "C" {
 
 	void tree_pass(int treepass) {
 		constantPool[3] = (float)treepass;
-		interpret(program);
+		COMHandles.matrix_stack->LoadIdentity();
+		treecode();
+		//interpret(program);
 	}
 
 	void pass(int effectpass, int treepass) {
@@ -386,6 +388,7 @@ static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Po
 		if (!inited || !effect_valid) return 0;
 
 		program = prog;
+		compileTree(prog);
 		memcpy(constantPool, constants, sizeof(float)*256);
 		memcpy(&constantPool[1], &paramvals[1], sizeof(float)*(nparams-1));
 		
