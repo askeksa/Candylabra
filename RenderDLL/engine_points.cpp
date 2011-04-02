@@ -9,7 +9,7 @@
 #define BUCKET_EXPONENT_MAX 0x88 // Far plane at 512.0
 #define BUCKET_MANTISSA_BITS 10
 #define NUM_BUCKETS ((BUCKET_EXPONENT_MAX-BUCKET_EXPONENT_MIN) << BUCKET_MANTISSA_BITS)
-#define POINTS_PER_BUCKET 101
+#define POINTS_PER_BUCKET 201
 
 extern "C" {
 	extern int canvas_width, canvas_height;
