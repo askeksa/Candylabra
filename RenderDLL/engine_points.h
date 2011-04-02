@@ -3,7 +3,7 @@
 
 #include <d3d9.h>
 
-#define MAX_POINTS 200000
+#define MAX_POINTS 1000000
 
 struct PointVertex {
 	float x,y,z,size;
