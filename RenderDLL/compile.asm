@@ -4,6 +4,8 @@
 
 extern _constantPool
 extern _drawprimitive@20
+extern _placelight@20
+extern _placecamera@0
 extern _channelDeltas
 extern _channelCounts
 extern _timerFac
@@ -213,6 +215,8 @@ snip pushfloat
 	fmul dword [_param_scales+edx*4]
 	push eax
 	fstp dword [esp]
+snip store_index
+	fistp dword [esp+4*4]
 
 ;snip matrix_push
 ;	comcall dword [comhandle(matrix_stack)], Push
@@ -233,12 +237,12 @@ snip conditional
 	fstp st0
 	movzx eax, al
 	call [_jump_locations+eax*4]
-snip drawprimitive
-	; Call opcode and absoulte target
+snip call
+	; Call opcode and relative target adjustment
 	db 0xe8
-	dd _drawprimitive@20-(_snip_drawprimitive_end-_snip_drawprimitive)
+	dd (_snip_call-_snip_call_end)
 
-snip drawprimitive_end
+snip call_end
 
 
 section compexp text align=1
@@ -404,14 +408,93 @@ compileNode:
 	push byte 0
 	emit pushfloat
 
-	push edi
-	neg dword [esp]
-	emit drawprimitive
+	mov eax, _drawprimitive@20
+	sub eax, edi
+	push eax
+	emit call
 	ret
 .not_primitive:
 
-	; Skip unused nodes
-	sub eax, byte 3
+	dec eax
+	jnz .not_dynamic_primitive
+	;; ----------------
+	;; dynamic primitive
+	;; ----------------
+	;;emb "dynamic primitive"
+	; push dummy (eax)
+	mov al, 0x50
+	stosb
+
+	push byte 1
+	emit mov_edx
+	call compileExp
+	push byte 0
+	emit pushfloat
+	call compileExp
+	push byte 0
+	emit pushfloat
+	call compileExp
+	push byte 0
+	emit pushfloat
+	call compileExp
+	push byte 0
+	emit pushfloat
+	call compileExp
+	push byte 0
+	emit store_index
+
+	mov eax, _drawprimitive@20
+	sub eax, edi
+	push eax
+	emit call
+	ret
+.not_dynamic_primitive:
+
+	dec eax
+	jnz .not_light
+	;; ----------------
+	;; light
+	;; ----------------
+	;;emb "light"
+	; push byte
+	mov al, 0x6a
+	stosb
+	movsb
+
+	push byte 1
+	emit mov_edx
+	call compileExp
+	push byte 0
+	emit pushfloat
+	call compileExp
+	push byte 0
+	emit pushfloat
+	call compileExp
+	push byte 0
+	emit pushfloat
+	call compileExp
+	push byte 0
+	emit pushfloat
+
+	mov eax, _placelight@20
+	sub eax, edi
+	push eax
+	emit call
+	ret
+.not_light:
+
+	dec eax
+	jnz .not_camera
+	;; ----------------
+	;; camera
+	;; ----------------
+	;;emb "camera"
+	mov eax, _placecamera@0
+	sub eax, edi
+	push eax
+	emit call
+	ret
+.not_camera:
 
 	dec eax
 	jnz .not_assign
