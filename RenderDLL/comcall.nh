@@ -101,7 +101,7 @@ ch_effect				equ 8
 	mov		eax, %1
 	push	eax
 	mov		eax, [eax]
-	call	[eax + (cc_%2)*4]
+	call	[dword eax + (cc_%2)*4]
 %endmacro
 
 %define	comhandle(a)	(_COMHandles + ch_ %+ a)
