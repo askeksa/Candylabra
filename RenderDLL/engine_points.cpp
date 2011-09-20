@@ -59,13 +59,57 @@ void PointsEngine::prepare_render_surfaces()
 
 void PointsEngine::init()
 {
+#if USE_INSTANCING
 	CHECK(COMHandles.device->CreateVertexBuffer(
 		MAX_POINTS*sizeof(struct PointVertex),
-		D3DUSAGE_DYNAMIC | D3DUSAGE_POINTS | D3DUSAGE_WRITEONLY,
-		POINTS_FVF,
+		D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY,
+		0,
 		D3DPOOL_DEFAULT,
 		&COMHandles.vbuffer,
 		NULL));
+
+	static const struct CornerVertex ivbdata[4] = {
+		0.5f,0.5f, 0.5f,-0.5f, -0.5f,0.5f, -0.5f,-0.5f
+	};
+	CHECK(COMHandles.device->CreateVertexBuffer(
+		sizeof(ivbdata),
+		D3DUSAGE_WRITEONLY,
+		0,
+		D3DPOOL_DEFAULT,
+		&COMHandles.instancevbuffer,
+		NULL));
+	void *ivb = NULL;
+	CHECK(COMHandles.instancevbuffer->Lock(0, 0, &ivb, D3DLOCK_DISCARD));
+	memcpy(ivb, ivbdata, sizeof(ivbdata));
+	CHECK(COMHandles.instancevbuffer->Unlock());
+
+	static const D3DVERTEXELEMENT9 vertex_decl[] = {
+		// Stream, Offset, Type, Method, Usage, UsageIndex
+		{ 0, 0, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 2 },
+		{ 1, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		{ 1, 12, D3DDECLTYPE_FLOAT1, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+		{ 1, 16, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+		D3DDECL_END()
+	};
+	CHECK(COMHandles.device->CreateVertexDeclaration(vertex_decl, &COMHandles.vdecl));
+
+	static const unsigned short indices[] = {
+		0,1,2,3
+	};
+	CHECK(COMHandles.device->CreateIndexBuffer(sizeof(indices), D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &COMHandles.indexbuffer, NULL));
+	void *ib;
+	CHECK(COMHandles.indexbuffer->Lock(0, 0, &ib, D3DLOCK_DISCARD));
+	memcpy(ib, indices, sizeof(indices));
+	CHECK(COMHandles.indexbuffer->Unlock());
+#else
+	CHECK(COMHandles.device->CreateVertexBuffer(
+		MAX_POINTS*3*sizeof(struct PointTriVertex),
+		D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY,
+		POINT_TRI_FVF,
+		D3DPOOL_DEFAULT,
+		&COMHandles.vbuffer,
+		NULL));
+#endif
 
 	point_bucket_sizes = new unsigned int[NUM_BUCKETS];
 	point_buckets = new struct PointVertex[NUM_BUCKETS*POINTS_PER_BUCKET];
@@ -81,6 +125,10 @@ void PointsEngine::reinit()
 void PointsEngine::deinit()
 {
 	COMHandles.vbuffer->Release();
+#if USE_INSTANCING
+	COMHandles.instancevbuffer->Release();
+	COMHandles.indexbuffer->Release();
+#endif
 	delete point_bucket_sizes;
 	point_bucket_sizes = NULL;
 	delete point_buckets;
@@ -139,8 +187,24 @@ void PointsEngine::render()
 		{
 			unsigned int bucket_size = point_bucket_sizes[bucket];
 			struct PointVertex *bucketp = &point_buckets[bucket*POINTS_PER_BUCKET];
+#if USE_INSTANCING
 			memcpy(&mapped_buffer[n_points], bucketp, bucket_size*sizeof(struct PointVertex));
 			n_points += bucket_size;
+#else
+			for (unsigned int p = 0 ; p < bucket_size ; p++)
+			{
+				mapped_buffer[n_points*3+0].point = bucketp[p];
+				mapped_buffer[n_points*3+0].ox = 0.875f;
+				mapped_buffer[n_points*3+0].oy = -0.5f;
+				mapped_buffer[n_points*3+1].point = bucketp[p];
+				mapped_buffer[n_points*3+1].ox = -0.875f;
+				mapped_buffer[n_points*3+1].oy = -0.5f;
+				mapped_buffer[n_points*3+2].point = bucketp[p];
+				mapped_buffer[n_points*3+2].ox = 0.0f;
+				mapped_buffer[n_points*3+2].oy = 1.0f;
+				n_points++;
+			}
+#endif
 		}
 		CHECK(COMHandles.vbuffer->Unlock());
 
@@ -151,11 +215,23 @@ void PointsEngine::render()
 		CHECK(COMHandles.effect->SetFloat("w", (float)canvas_width));
 		CHECK(COMHandles.effect->SetFloat("h", (float)canvas_height));
 		CHECK(COMHandles.effect->CommitChanges());
+#if USE_INSTANCING
+		CHECK(COMHandles.device->SetVertexDeclaration(COMHandles.vdecl));
+		CHECK(COMHandles.device->SetStreamSource(0, COMHandles.instancevbuffer, 0, sizeof(struct CornerVertex)));
+		CHECK(COMHandles.device->SetStreamSourceFreq(0, D3DSTREAMSOURCE_INDEXEDDATA | n_points));
+		CHECK(COMHandles.device->SetStreamSource(1, COMHandles.vbuffer, 0, sizeof(struct PointVertex)));
+		CHECK(COMHandles.device->SetStreamSourceFreq(1, D3DSTREAMSOURCE_INSTANCEDATA | 1));
+		CHECK(COMHandles.device->SetIndices(COMHandles.indexbuffer));
+		CHECK(COMHandles.device->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, 0, 0, 4, 0, 2));
 
-		CHECK(COMHandles.device->SetFVF(POINTS_FVF));
-		CHECK(COMHandles.device->SetStreamSource(0, COMHandles.vbuffer, 0, sizeof(struct PointVertex)));
-		CHECK(COMHandles.device->DrawPrimitive(D3DPT_POINTLIST, 0, n_points));
-
+		CHECK(COMHandles.device->SetVertexDeclaration(NULL));
+		CHECK(COMHandles.device->SetStreamSourceFreq(0, 1));
+		CHECK(COMHandles.device->SetStreamSourceFreq(1, 1));
+#else
+		CHECK(COMHandles.device->SetFVF(POINT_TRI_FVF));
+		CHECK(COMHandles.device->SetStreamSource(0, COMHandles.vbuffer, 0, sizeof(struct PointTriVertex)));
+		CHECK(COMHandles.device->DrawPrimitive(D3DPT_TRIANGLELIST, 0, n_points));
+#endif
 		CHECK(COMHandles.effect->EndPass( ));
 	}
 
@@ -180,7 +256,7 @@ void PointsEngine::drawprimitive(float r, float g, float b, float a, int index)
 		p->x = trans->_41;
 		p->y = trans->_42;
 		p->z = trans->_43;
-		p->size = sqrtf(trans->_11*trans->_11 + trans->_12*trans->_12 + trans->_13*trans->_13);
+		p->size2 = trans->_11*trans->_11 + trans->_12*trans->_12 + trans->_13*trans->_13;
 		p->r = r;
 		p->g = g;
 		p->b = b;
