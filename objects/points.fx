@@ -7,30 +7,22 @@ sampler tex;
 
 struct S {
 	float4 p : POSITION;
-	float s : PSIZE;
 	float4 c : COLOR;
+	float2 o : TEXCOORD0;
 };
 
-S v(float4 p : POSITION, float size : TEXCOORD0, float4 c : TEXCOORD1) {
-	//float4 t = mul(o,p);
+S v(float3 p : POSITION, float sqs : TEXCOORD0, float4 c : TEXCOORD1, float2 o : TEXCOORD2) {
+	p.xy += sqrt(sqs)*o;
 	float4 t = p.xyzz * float4(1,1.78125,0,1);
-	S s = {t,h*size/t.w,c};
+	S s = {t,c,o};
 	return s;
 }
 
-float4 p(S s, float2 c : TEXCOORD0) : COLOR {
-	//float l = saturate(-0.8*dot(normalize(s.n),normalize(s.s)));
-	//return float4((c*l + spec*pow(l,10)).xyz,c.a);
-	float2 cc = c-0.5;
-	float d = dot(cc,cc);
-	return d < 0.25 ? s.c : 0;
-}
-
-float4 p2(S s, float2 c : TEXCOORD0) : COLOR {
-	float2 cc = c-0.5;
-	float d = dot(cc,cc);
+float4 p(S s) : COLOR {
+	float d = dot(s.o,s.o);
 	return float4(s.c.xyz, s.c.a * exp2(-d*24+2));
 }
+
 
 void ppv(float4 p : POSITION, float2 tc : TEXCOORD0, out float4 tp : POSITION, out float2 ttc : TEXCOORD0) {
 	tp = p;
@@ -65,15 +57,6 @@ float4 pp2p(float2 tc : TEXCOORD0) : COLOR0 {
 */
 
 technique {
-/*
-	pass {
-		AlphaBlendEnable = false;
-		AlphaTestEnable = true;
-		PointSpriteEnable = true;
-		VertexShader = compile vs_2_0 v();
-		PixelShader = compile ps_2_0 p();
-	}
-*/
 	pass {
 		AlphaBlendEnable = true;
 		AlphaTestEnable = false;
@@ -82,7 +65,7 @@ technique {
 		ZEnable = false;
 		//ZWriteEnable = false;
 		VertexShader = compile vs_2_0 v();
-		PixelShader = compile ps_2_0 p2();
+		PixelShader = compile ps_2_0 p();
 	}
 /*
 	pass {
@@ -92,7 +75,7 @@ technique {
 		DestBlend = ONE;
 		//ZWriteEnable = false;
 		VertexShader = compile vs_2_0 v();
-		PixelShader = compile ps_2_0 p2();
+		PixelShader = compile ps_2_0 p();
 	}
 */
 	pass {

@@ -5,12 +5,24 @@
 
 #define MAX_POINTS 1000000
 
+#define USE_INSTANCING 0
+
 struct PointVertex {
-	float x,y,z,size;
+	float x,y,z,size2;
 	float r,g,b,a;
 };
 
+struct PointTriVertex {
+	struct PointVertex point;
+	float ox,oy;
+};
+
+struct CornerVertex {
+	float x,y;
+};
+
 #define POINTS_FVF (D3DFVF_XYZ | D3DFVF_TEX2 | D3DFVF_TEXCOORDSIZE1(0) | D3DFVF_TEXCOORDSIZE4(1))
+#define POINT_TRI_FVF (D3DFVF_XYZ | D3DFVF_TEX3 | D3DFVF_TEXCOORDSIZE1(0) | D3DFVF_TEXCOORDSIZE4(1) | D3DFVF_TEXCOORDSIZE2(2))
 
 class PointsEngine : public Engine {
 	int render_width;
@@ -19,8 +31,11 @@ class PointsEngine : public Engine {
 
 	unsigned int *point_bucket_sizes;
 	struct PointVertex *point_buckets;
+#if USE_INSTANCING
 	struct PointVertex *mapped_buffer;
-
+#else
+	struct PointTriVertex *mapped_buffer;
+#endif
 	void makeobjects();
 	void prepare_render_surfaces();
 	void blit_to_screen(int pass, IDirect3DTexture9 *from);
