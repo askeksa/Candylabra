@@ -7,12 +7,12 @@ sampler tex;
 
 struct S {
 	float4 p : POSITION;
-	float4 c : COLOR;
-	float2 o : TEXCOORD0;
+	float4 c : TEXCOORD0;
+	float2 o : TEXCOORD1;
 };
 
-S v(float3 p : POSITION, float sqs : TEXCOORD0, float4 c : TEXCOORD1, float2 o : TEXCOORD2) {
-	p.xy += sqrt(sqs)*o;
+S v(float4 p : POSITION, float4 c : TEXCOORD0, float2 o : TEXCOORD1) {
+	p.xy += sqrt(p.w)*o;
 	float4 t = p.xyzz * float4(1,1.78125,0,1);
 	S s = {t,c,o};
 	return s;
@@ -20,6 +20,8 @@ S v(float3 p : POSITION, float sqs : TEXCOORD0, float4 c : TEXCOORD1, float2 o :
 
 float4 p(S s) : COLOR {
 	float d = dot(s.o,s.o);
+	//clip(0.25-d);
+ 	//return float4(s.c.rgb,d);
 	return float4(s.c.xyz, s.c.a * exp2(-d*24+2));
 }
 
@@ -60,6 +62,8 @@ technique {
 	pass {
 		AlphaBlendEnable = true;
 		AlphaTestEnable = false;
+		AlphaFunc = greater;
+		AlphaRef = 0;
 		SrcBlend = SRCALPHA;
 		DestBlend = INVSRCALPHA;
 		ZEnable = false;
