@@ -726,7 +726,7 @@ class ValueAdjuster(TextBevel, Draggable):
 
     def expandTextRange(self, i, charfuns):
         maxmatch = 0
-        for cf in charfuns:
+        for cf,vf in charfuns:
             if i != -1 and cf(self.text[i]):
                 left_i = i
                 right_i = i
@@ -734,28 +734,47 @@ class ValueAdjuster(TextBevel, Draggable):
                     left_i -= 1
                 while right_i < len(self.text)-1 and cf(self.text[right_i+1]):
                     right_i += 1
-                match = right_i - left_i + 1
-                if match > maxmatch:
-                    maxmatch = match
-                    left = left_i
-                    right = right_i
+                left_i,right_i = vf(left_i,right_i)
+                if left_i is not None and right_i is not None:
+                    match = right_i - left_i + 1
+                    if match > maxmatch:
+                        maxmatch = match
+                        left = left_i
+                        right = right_i
         if maxmatch > 0:
             return (left,right,self.getCharPos(left)[0],self.getCharPos(right)[1],self.text[left:right+1])
         else:
             return None
 
+    def verifyDrag(self, event, manager):
+        return self.hilight is not None
+
     def handleMouseEvent(self, event, manager):
         self.double = event.double
+
         event = Draggable.handleMouseEvent(self, event, manager)
 
         if self.status == Draggable.HOVER:
             def floatchar(c):
                 return c.isdigit() or c == "."
+            def floatverify(left,right):
+                if left > 0 and self.text[left-1] == '-':
+                    if left == 1 or not (self.text[left-2].isalnum() or self.text[left-2] == ')'):
+                        left -= 1
+                return left,right
+                    
             def idchar(c):
                 return c.isalnum() or c == "_"
+            def idverify(left,right):
+                if right < len(self.text)-1 and self.text[right+1] == '(':
+                    return None,None
+                return left,right
+            
             i,lx,rx = self.getCharAt(event.x)
             if i >= len(self.paramPrefix()):
-                self.hilight = self.expandTextRange(i, [floatchar,idchar])
+                self.hilight = self.expandTextRange(i, [(floatchar,floatverify),(idchar,idverify)])
+            else:
+                self.hilight = None
         elif self.status == Draggable.IDLE:
             self.hilight = None
 
@@ -768,6 +787,7 @@ class ValueAdjuster(TextBevel, Draggable):
             self.field.updateValueBar(self.field.active)
             self.field.updateDisplay()
             return None
+
         return event
 
     def initDragging(self):
@@ -876,9 +896,9 @@ class PlayButton(Button):
 
 
 class EditorRoot(Root):
-    def __init__(self, alt_child):
+    def __init__(self, alt_children):
         Root.__init__(self)
-        self.alt_child = alt_child
+        self.alt_children = alt_children
         self.alt_active = False
         self.normal_seq = []
         self.addHotkey(ord(' '), (lambda event, manager : self.switch()))
@@ -889,10 +909,12 @@ class EditorRoot(Root):
             self.normal_seq = list(seq.children)
             for c in self.normal_seq:
                 c.remove()
-            seq.addChild(self.alt_child)
+            for c in self.alt_children:
+                seq.addChild(c)
             self.alt_active = True
         else:
-            self.alt_child.remove()
+            for c in self.alt_children:
+                c.remove()
             for c in self.normal_seq:
                 seq.addChild(c)
             self.alt_active = False
