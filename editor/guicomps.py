@@ -83,8 +83,7 @@ class TextBevel(Bevel):
         self.fontsize = fontsize
         self.font = None
 
-    def render(self, info):
-        Bevel.render(self, info)
+    def getFont(self):
         if not self.font:
             fontname = self.fontname
             fontsize = self.fontsize
@@ -93,8 +92,50 @@ class TextBevel(Bevel):
             if fontsize is None:
                 fontsize = TextBevel.DEFAULT_FONTSIZE
             self.font = d3d.Font(fontname, fontsize)
+        return self.font
+
+    def render(self, info):
+        Bevel.render(self, info)
         text = (unicode(self.text),) + self.pos + self.size + (0xff000000, FONT.CENTER | FONT.VCENTER)
-        d3d.drawTexts(self.font, [text])
+        d3d.drawTexts(self.getFont(), [text])
+
+    def getTextPosAndSize(self):
+        center_x = self.pos[0] + self.size[0]/2
+        textwidth = self.getFont().getTextSize(unicode(self.text))[0]
+        left_x = center_x - (textwidth+1)/2
+        return left_x, textwidth
+
+    # Get string index of the character at the given screen x position
+    # returns (index, leftx, rightx)
+    def getCharAt(self, xpos):
+        text_left_x, textwidth = self.getTextPosAndSize()
+        left_x = text_left_x
+        right_x = left_x + textwidth
+        if xpos < left_x:
+            return (-1, self.pos[0], left_x)
+        if xpos > right_x:
+            return (-1, right_x, self.pos[0] + self.size[0])
+        left_index = 0
+        right_index = len(self.text)
+        while (right_index - left_index > 1):
+            mid_index = (left_index + right_index)/2
+            prefix_width = self.getFont().getTextSize(unicode(self.text[0:mid_index]))[0]
+            mid_x = text_left_x + prefix_width
+            if xpos >= mid_x:
+                left_index = mid_index
+                left_x = mid_x
+            else:
+                right_index = mid_index
+                right_x = mid_x
+        return left_index, left_x, right_x
+
+    # Get screen x position of the character at the given string index
+    # returns (leftx, rightx)
+    def getCharPos(self, index):
+        text_left_x, textwidth = self.getTextPosAndSize()
+        left_x = text_left_x + self.getFont().getTextSize(unicode(self.text[0:index]))[0]
+        right_x = text_left_x + self.getFont().getTextSize(unicode(self.text[0:index+1]))[0]
+        return left_x, right_x
 
 
 class Button(TextBevel):
@@ -194,6 +235,7 @@ class Draggable(Bevel):
 
     def handleMouseEvent(self, event, manager):
         pos = (event.x, event.y)[self.orientation]
+        other_pos = (event.x, event.y)[1-self.orientation]
         if self.status == Draggable.IDLE:
             self.status = Draggable.HOVER
             self.lit = True
@@ -204,6 +246,7 @@ class Draggable(Bevel):
                 return event
             if event.buttonDown(BUTTON_LEFT):
                 self.drag_origin = pos
+                self.other_origin = other_pos
                 self.delegate.initDragging()
                 self.status = Draggable.DRAGGING
                 self.pressed = True
@@ -211,11 +254,11 @@ class Draggable(Bevel):
             return event
         else: # DRAGGING
             if event.buttonDown(BUTTON_RIGHT):
-                self.delegate.updateDragging(0)
+                self.delegate.updateDragging(0,0)
                 self.delegate.stopDragging()
                 self.setIdle(event, manager)
                 return None
-            self.delegate.updateDragging(pos - self.drag_origin)
+            self.delegate.updateDragging(pos - self.drag_origin, other = other_pos - self.other_origin)
             if event.buttonUp(BUTTON_LEFT):
                 self.delegate.stopDragging()
                 self.setIdle(event, manager)
@@ -246,7 +289,7 @@ class Adjuster(Draggable):
         self.old_weights = (self.pred.weight, self.succ.weight)
         self.old_sizes = (self.pred.size[o], self.succ.size[o])
 
-    def updateDragging(self, delta):
+    def updateDragging(self, delta, other):
         o = self.orientation
         pred_size = self.pred.size[o]
         succ_size = self.succ.size[o]
@@ -330,7 +373,7 @@ class Scrollbar(Container):
     def setAreaPos(self, pos):
         self.area_pos = max(0, min(self.area_total-self.area_shown, pos))
 
-    def updateDragging(self, delta):
+    def updateDragging(self, delta, other):
         o = self.orientation
         area_pos = int(round(self.orig_area_pos + delta * self.area_total / float(self.container.size[o])))
         self.setAreaPos(area_pos)
