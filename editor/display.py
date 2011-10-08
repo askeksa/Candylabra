@@ -375,6 +375,12 @@ class BrickField(Container):
         if brick:
             node = brick.node
 
+            def adjustfunc(param, value):
+                if param in node.getOptions():
+                    return node.option(param, value)
+                else:
+                    return value
+
             def valuefunc(param, value):
                 if param in node.getOptions():
                     return node.option(param, value)
@@ -393,7 +399,7 @@ class BrickField(Container):
                 return node.definitions[p_index].exp
                 
             for op in node.getOptions() + node.getParameters():
-                vbutton = ValueAdjuster(op, valuefunc, self)
+                vbutton = ValueAdjuster(op, adjustfunc, valuefunc, self)
                 self.valuebar.addChild(vbutton)
                 any_va = True
 
@@ -703,10 +709,11 @@ class CreateButton(TextBevel):
 
 
 class ValueAdjuster(TextBevel, Draggable):
-    def __init__(self, param, valuefunc, field):
+    def __init__(self, param, adjustfunc, valuefunc, field):
         TextBevel.__init__(self)
         Draggable.__init__(self, ORIENTATION_HORIZONTAL)
         self.param = param
+        self.adjustfunc = adjustfunc
         self.valuefunc = valuefunc
         self.field = field
         self.setValue(None)
@@ -805,7 +812,7 @@ class ValueAdjuster(TextBevel, Draggable):
     def setDragValue(self, value):
         l,r,lx,rx,t = self.hilight
         p = len(self.paramPrefix())
-        value = float2string(value)
+        value = float2string(self.adjustfunc(self.param, value))
         old_value = str(self.value)
         self.setValue(old_value[:l-p] + value + old_value[r-p+1:])
         r = l + len(value)-1

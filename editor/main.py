@@ -208,11 +208,11 @@ if __name__ == "__main__":
     buttonpane.weight = 0.001
 
     button_item = CreateButton("Object", (lambda : ot.Item(0)), field, 'O')
-    button_dynitem = CreateButton("dyn object", (lambda : ot.DynamicItem(0)), field, 'D')
+    button_dynitem = CreateButton("Dyn object", (lambda : ot.DynamicItem(0)), field, 'D')
     #for o in range(0,10):
     #    button_item.addHotkey(ord('0')+o, (lambda e,m : field.setCreating(lambda : ot.DynamicItem(o))))
     button_light = CreateButton("lIght", (lambda : ot.Light(0)), field, 'I')
-    button_camera = CreateButton("caMera", (lambda : ot.Camera()), field, 'M')
+    button_camera = CreateButton("camEra", (lambda : ot.Camera()), field, 'E')
     button_identity = CreateButton("lAbel", (lambda : ot.Identity(field)), field, 'A')
     button_link = CreateButton("linK", (lambda : ot.Link(field)), field, 'K')
     button_fix = CreateButton("Fix", ot.SaveTransform, field, 'F')
