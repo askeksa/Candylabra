@@ -27,6 +27,18 @@ def float2int(val):
 def int2float(val):
     return struct.unpack('f', struct.pack('I', val))[0]
 
+def float32(f):
+    return struct.unpack('f', struct.pack('f', f))[0]
+
+def float2string(f):
+    nd = 0
+    s = "0"
+    f = float32(f)
+    while float32(float(s)) != f:
+        s = ("%."+str(nd)+"f") % f
+        nd += 1
+    return s
+
 def roundtoprec(val,prec):
     intrepr = float2int(val)
     intrepr = (intrepr + ((1 << (32-prec)) >> 1)) & (-1 << (32-prec))
@@ -699,18 +711,54 @@ class ValueAdjuster(TextBevel, Draggable):
         self.field = field
         self.setValue(None)
         self.minsize = Brick.SIZE
+        self.hilight = None
 
     def setValue(self, newvalue):
         self.value = self.valuefunc(self.param, newvalue)
         self.text = self.makeName()
         self.field.display.exportTree()
 
+    def paramPrefix(self):
+        return str(self.param) + " = "
+
     def makeName(self):
-        return "%s = %s" % (self.param, self.value)
+        return self.paramPrefix() + str(self.value)
+
+    def expandTextRange(self, i, charfuns):
+        maxmatch = 0
+        for cf in charfuns:
+            if i != -1 and cf(self.text[i]):
+                left_i = i
+                right_i = i
+                while left_i > 0 and cf(self.text[left_i-1]):
+                    left_i -= 1
+                while right_i < len(self.text)-1 and cf(self.text[right_i+1]):
+                    right_i += 1
+                match = right_i - left_i + 1
+                if match > maxmatch:
+                    maxmatch = match
+                    left = left_i
+                    right = right_i
+        if maxmatch > 0:
+            return (left,right,self.getCharPos(left)[0],self.getCharPos(right)[1],self.text[left:right+1])
+        else:
+            return None
 
     def handleMouseEvent(self, event, manager):
         self.double = event.double
         event = Draggable.handleMouseEvent(self, event, manager)
+
+        if self.status == Draggable.HOVER:
+            def floatchar(c):
+                return c.isdigit() or c == "."
+            def idchar(c):
+                return c.isalnum() or c == "_"
+            i,lx,rx = self.getCharAt(event.x)
+            if i >= len(self.paramPrefix()):
+                self.hilight = self.expandTextRange(i, [floatchar,idchar])
+        elif self.status == Draggable.IDLE:
+            self.hilight = None
+
         if self.status == Draggable.HOVER and event.buttonDown(BUTTON_RIGHT):
             self.setIdle(event, manager)
             newvalue = tkSimpleDialog.askstring("Enter value",
@@ -724,24 +772,48 @@ class ValueAdjuster(TextBevel, Draggable):
 
     def initDragging(self):
         self.doubleclicked = self.double
-        try:
-            self.orig_value = float(self.value)
-        except ValueError:
-            self.orig_value = None
-        if self.doubleclicked:
-            self.orig_precision = getprec(self.orig_value)
+        if self.hilight:
+            l,r,lx,rx,t = self.hilight
+            p = len(self.paramPrefix())
+            try:
+                self.orig_value = float(str(self.value)[l-p:r-p+1])
+                if self.doubleclicked:
+                    self.orig_precision = getprec(self.orig_value)
+            except ValueError:
+                self.orig_value = None
 
-    def updateDragging(self, delta):
+    def setDragValue(self, value):
+        l,r,lx,rx,t = self.hilight
+        p = len(self.paramPrefix())
+        value = float2string(value)
+        old_value = str(self.value)
+        self.setValue(old_value[:l-p] + value + old_value[r-p+1:])
+        r = l + len(value)-1
+        lx = self.getCharPos(l)[0]
+        rx = self.getCharPos(r)[1]
+        t = value
+        self.hilight = l,r,lx,rx,t
+
+    def updateDragging(self, delta, other=0):
         if self.orig_value is not None:
             if self.doubleclicked:
-                self.setValue(roundtoprec(self.orig_value,self.orig_precision+delta/10))
+                self.setDragValue(roundtoprec(self.orig_value,self.orig_precision+delta/10))
             else: 
-                base = max(abs(self.orig_value), 0.1)
-                value_delta = base/100.0 * delta
-                self.setValue(self.orig_value + value_delta)
+                value_delta = delta * math.exp(-8-0.05*other)
+                self.setDragValue(self.orig_value + value_delta)
 
     def stopDragging(self):
-        pass
+        self.orig_value = None
+
+    def render(self, info):
+        TextBevel.render(self, info)
+        if self.hilight:
+            l,r,lx,rx,t = self.hilight
+            text = (unicode(t), lx, self.pos[1], self.size[0], self.size[1], 0xff000000, FONT.LEFT | FONT.VCENTER)
+            rect = (lx, self.pos[1]+2, rx-lx, self.size[1]-4)
+            d3d.clear(0xffe0e0e0, [rect])
+            d3d.drawTexts(self.getFont(), [text])
+
 
 class ValueBar(Sequence):
     def __init__(self):
@@ -764,8 +836,8 @@ class TimeSlider(Scrollbar):
         #self.music_was_playing = musicIsPlaying()
         stopMusic()
 
-    def updateDragging(self, delta):
-        Scrollbar.updateDragging(self, delta)
+    def updateDragging(self, delta, other):
+        Scrollbar.updateDragging(self, delta, other)
 
     def stopDragging(self):
         Scrollbar.stopDragging(self)
