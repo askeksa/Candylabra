@@ -233,6 +233,9 @@ class Draggable(Bevel):
         self.pressed = False
         manager.removeMouseListener(self)
 
+    def verifyDrag(self, event, manager):
+        return True
+
     def handleMouseEvent(self, event, manager):
         pos = (event.x, event.y)[self.orientation]
         other_pos = (event.x, event.y)[1-self.orientation]
@@ -244,7 +247,7 @@ class Draggable(Bevel):
             if not self.hit(event.x, event.y):
                 self.setIdle(event, manager)
                 return event
-            if event.buttonDown(BUTTON_LEFT):
+            if event.buttonDown(BUTTON_LEFT) and self.verifyDrag(event, manager):
                 self.drag_origin = pos
                 self.other_origin = other_pos
                 self.delegate.initDragging()

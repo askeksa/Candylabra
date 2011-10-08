@@ -22,9 +22,9 @@ S v(float4 p : POSITION, float4 c : TEXCOORD0, float2 o : TEXCOORD1) {
 
 float4 p(S s) : COLOR {
 	float d = dot(s.o,s.o);
-	//clip(0.25-d);
+	clip(0.25-d);
  	//return float4(s.c.rgb,d);
-	float c = s.c.a;
+	float c = s.c.a + EDGE_VALUE;
 	float ratio = c / EDGE_VALUE;
 	float f = log2(ratio)/0.25;
 	return float4(s.c.xyz, c * exp2(-f*d));

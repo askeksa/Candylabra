@@ -312,7 +312,7 @@ if __name__ == "__main__":
     vseq.addChild(scrollbarh)
     vseq.addChild(bottombuttons)
 
-    root = EditorRoot(disp_seq)
+    root = EditorRoot([disp_seq, valuebar])
     root.addChild(vseq)
 
     window = Window(u"ObjectEditTool", root)
