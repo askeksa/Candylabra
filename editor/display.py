@@ -753,6 +753,30 @@ class ValueAdjuster(TextBevel, Draggable):
         else:
             return None
 
+    def expandTextToken(self, i, floatflag, idflag):
+        def floatchar(c):
+            return c.isdigit() or c == "."
+        def floatverify(left,right):
+            if left > 0 and self.text[left-1] == '-':
+                if left == 1 or not (self.text[left-2].isalnum() or self.text[left-2] == ')'):
+                    left -= 1
+            return left,right
+                
+        def idchar(c):
+            return c.isalnum() or c == "_"
+        def idverify(left,right):
+            if right < len(self.text)-1 and self.text[right+1] == '(':
+                return None,None
+            return left,right
+        
+        charfuns = []
+        if floatflag:
+            charfuns += [(floatchar,floatverify)]
+        if idflag:
+            charfuns += [(idchar,idverify)]
+
+        return self.expandTextRange(i, charfuns)
+
     def verifyDrag(self, event, manager):
         return self.hilight is not None
 
@@ -762,26 +786,19 @@ class ValueAdjuster(TextBevel, Draggable):
         event = Draggable.handleMouseEvent(self, event, manager)
 
         if self.status == Draggable.HOVER:
-            def floatchar(c):
-                return c.isdigit() or c == "."
-            def floatverify(left,right):
-                if left > 0 and self.text[left-1] == '-':
-                    if left == 1 or not (self.text[left-2].isalnum() or self.text[left-2] == ')'):
-                        left -= 1
-                return left,right
-                    
-            def idchar(c):
-                return c.isalnum() or c == "_"
-            def idverify(left,right):
-                if right < len(self.text)-1 and self.text[right+1] == '(':
-                    return None,None
-                return left,right
-            
             i,lx,rx = self.getCharAt(event.x)
             if i >= len(self.paramPrefix()):
-                self.hilight = self.expandTextRange(i, [(floatchar,floatverify),(idchar,idverify)])
+                self.hilight = self.expandTextToken(i, floatflag = True, idflag = True)
             else:
-                self.hilight = None
+                token = self.expandTextToken(len(self.text)-1, floatflag = True, idflag = False)
+                if token is not None:
+                    l,r,lx,rx,t = token
+                    if l == len(self.paramPrefix()):
+                        self.hilight = l,r,lx,rx,t
+                    else:
+                        self.hilight = None
+                else:
+                    self.hilight = None
         elif self.status == Draggable.IDLE:
             self.hilight = None
 
@@ -804,12 +821,33 @@ class ValueAdjuster(TextBevel, Draggable):
             p = len(self.paramPrefix())
             try:
                 self.orig_value = float(str(self.value)[l-p:r-p+1])
-                if self.doubleclicked:
-                    self.orig_precision = getprec(self.orig_value)
+                left,right = l,r
             except ValueError:
-                self.orig_value = None
+                # Find or create factor on variable
+                factor_found = False
+                if r < len(self.text)-1 and self.text[r+1] == '*':
+                    i = r+2
+                    if i < len(self.text) and self.text[i] == '-':
+                        i += 1
+                    if i < len(self.text):
+                        left,right,leftx,rightx,tt = self.expandTextToken(i, floatflag = True, idflag = False)
+                        if left is not None and right is not None:
+                            if not (right < len(self.text)-1 and self.text[right+1] in ['^', '@', '|', '#']):
+                                left = r+2
+                                factor_found = True
+                if not factor_found:
+                    # Create factor on variable
+                    self.setValue(self.value[:l-p] + "(" + self.value[l-p:r-p+1] + "*1)" + self.value[r-p+1:])
+                    left = r+3
+                    right = left
+            self.hilight = (left,right,self.getCharPos(left)[0],self.getCharPos(right)[1],self.text[left:right+1])
+            self.orig_value = float(str(self.value)[left-p:right-p+1])
+            self.drag_value = self.orig_value
+            if self.doubleclicked:
+                self.orig_precision = getprec(self.orig_value)
 
     def setDragValue(self, value):
+        self.drag_value = value
         l,r,lx,rx,t = self.hilight
         p = len(self.paramPrefix())
         value = float2string(self.adjustfunc(self.param, value))
@@ -830,6 +868,19 @@ class ValueAdjuster(TextBevel, Draggable):
                 self.setDragValue(self.orig_value + value_delta)
 
     def stopDragging(self):
+        l,r,lx,rx,t = self.hilight
+        p = len(self.paramPrefix())
+        if self.drag_value == 1.0 and l > 0 and self.text[l-1] == '*':
+            if not (r < len(self.text)-1 and self.text[r+1] in ['^', '@', '|', '#']):
+                # Remove factor
+                self.setValue(self.value[:l-p-1] + self.value[r-p+1:])
+                # If parenthesized id is left, remove parentheses
+                token = self.expandTextToken(l-2, floatflag = False, idflag = True)
+                if token is not None:
+                    l,r,lx,rx,t = token
+                    if l > 0 and self.text[l-1] == '(' and r < len(self.text)-1 and self.text[r+1] == ')':
+                        self.setValue(self.value[:l-p-1] + t + self.value[r-p+2:])
+        
         self.orig_value = None
 
     def render(self, info):
