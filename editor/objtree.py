@@ -51,9 +51,21 @@ def update_predefined_variables():
     nparams = windll.RenderDLL.getparams(buf)
     predefined_variables = buf.raw.split("/", nparams)[0:nparams]
 
+def float32(f):
+    return struct.unpack('f', struct.pack('f', f))[0]
+
+def float2string(f):
+    nd = 0
+    s = "0"
+    f = float32(f)
+    while float32(float(s)) != f:
+        s = ("%."+str(nd)+"f") % f
+        nd += 1
+    return s
 
 def makeMatrix(*data):
     return array.array("f", data)
+
 
 class DefValue(object):
     def __init__(self, exp):
