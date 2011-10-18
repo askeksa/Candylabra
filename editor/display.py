@@ -27,18 +27,6 @@ def float2int(val):
 def int2float(val):
     return struct.unpack('f', struct.pack('I', val))[0]
 
-def float32(f):
-    return struct.unpack('f', struct.pack('f', f))[0]
-
-def float2string(f):
-    nd = 0
-    s = "0"
-    f = float32(f)
-    while float32(float(s)) != f:
-        s = ("%."+str(nd)+"f") % f
-        nd += 1
-    return s
-
 def roundtoprec(val,prec):
     intrepr = float2int(val)
     intrepr = (intrepr + ((1 << (32-prec)) >> 1)) & (-1 << (32-prec))
@@ -850,7 +838,7 @@ class ValueAdjuster(TextBevel, Draggable):
         self.drag_value = value
         l,r,lx,rx,t = self.hilight
         p = len(self.paramPrefix())
-        value = float2string(self.adjustfunc(self.param, value))
+        value = ot.float2string(self.adjustfunc(self.param, value))
         old_value = str(self.value)
         self.setValue(old_value[:l-p] + value + old_value[r-p+1:])
         r = l + len(value)-1
