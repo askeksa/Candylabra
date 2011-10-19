@@ -208,7 +208,7 @@ class Link(LabeledNode):
         return 0x505050
 
     def export(self, exporter):
-        if len(self.children) == 0:
+        if self.label not in self.field.labelbricks:
             raise ExportException(self, "No matching label")
         if len(self.field.labelbricks[self.label]) > 1:
             raise ExportException(self, "More than one matching label")
