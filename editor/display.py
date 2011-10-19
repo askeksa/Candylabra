@@ -7,6 +7,7 @@ import d3d
 import d3dc
 import objtree as ot
 import math
+import Tkinter
 import tkSimpleDialog
 import tkMessageBox
 import time
@@ -20,6 +21,9 @@ CAMERA_FAR_Z = 1024.0
 CAMERA_ZOOM = 1.5
 
 #frame = 0
+
+tkroot = Tkinter.Tk()
+tkroot.withdraw()
 
 def float2int(val):
     return struct.unpack('I', struct.pack('f', val))[0]
@@ -792,9 +796,13 @@ class ValueAdjuster(TextBevel, Draggable):
 
         if self.status == Draggable.HOVER and event.buttonDown(BUTTON_RIGHT):
             self.setIdle(event, manager)
+            tkroot.update()
+            tkroot.deiconify()
             newvalue = tkSimpleDialog.askstring("Enter value",
                                                 self.param,
-                                                initialvalue=self.value)
+                                                initialvalue=self.value,
+                                                parent=tkroot)
+            tkroot.withdraw()
             self.setValue(newvalue)
             self.field.updateValueBar(self.field.active)
             self.field.updateDisplay()
