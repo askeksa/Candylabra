@@ -19,7 +19,7 @@ def initMusic(filename):
     if music_is_playing:
         pos = getMusicPos()
         pygame.mixer.music.stop()
-    pygame.mixer.init(samples_per_second, -16, 2, 2048)
+    pygame.mixer.init(samples_per_second, -16, 2, 8192)
     #pygame.mixer.music.load("j:\Shared\cs2.1.mp3")
     #pygame.mixer.music.load("test.ogg")
     #pygame.mixer.music.load("G:\musik\mod\mobyle.mod")
@@ -46,7 +46,7 @@ def stopMusic():
     pygame.mixer.music.stop()
     
 def getMusicPos():
-    return music_start_pos+(pygame.mixer.music.get_pos()/1000.-0.2)
+    return music_start_pos+(pygame.mixer.music.get_pos()/1000.-0.3)
 
 def musicIsPlaying():
     return music_is_playing
