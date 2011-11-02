@@ -270,7 +270,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\comcall.nh"
+				>
+			</File>
+			<File
 				RelativePath=".\constants.h"
+				>
+			</File>
+			<File
+				RelativePath=".\constants.nh"
 				>
 			</File>
 			<File

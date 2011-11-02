@@ -179,6 +179,7 @@ class Brick(TextBevel):
         return self.node.brickColor()
 
     def __getstate__(self):
+        self.node.children = []
         return (self.node, self.gridpos, self.extra_node_children)
 
     def __setstate__(self, state):
@@ -575,7 +576,7 @@ class BrickField(Container):
 
     def save(self, filename):
         # Clear field fields
-        for b in self.children:
+        for b in self.project.bricks:
             if "field" in b.node.__dict__:
                 b.node.field = None
         try:
@@ -614,6 +615,8 @@ class BrickField(Container):
                 # HACKs to improve loading compatibility
                 if isinstance(c.node, ot.Identity) and "label" not in c.node.__dict__:
                     c.node.label = ""
+                if isinstance(c.node, ot.Transform) and "isglobal" not in c.node.__dict__:
+                    c.node.isglobal = False
                 if isinstance(c.node, ot.DefinitionNode) and not isinstance(c.node, ot.LocalDefinition):
                     globaldef = ot.GlobalDefinition(c.node.var)
                     globaldef.definitions = c.node.definitions
