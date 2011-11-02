@@ -25,20 +25,23 @@ def next():
     code = code+1
     return code
 
-OP_FANOUT      = next()
-OP_SAVETRANS   = next()
-OP_REPEAT      = next()
-OP_PRIM        = next()
-OP_DYNPRIM     = next()
-OP_LIGHT       = next()
-OP_CAMERA      = next()
-OP_ASSIGN      = next()
-OP_LOCALASSIGN = next()
-OP_CONDITIONAL = next()
-OP_NOPLEAF     = next()
-OP_ROTATE      = next()
-OP_SCALE       = next()
-OP_TRANSLATE   = next()
+OP_FANOUT         = next()
+OP_SAVETRANS      = next()
+OP_REPEAT         = next()
+OP_PRIM           = next()
+OP_DYNPRIM        = next()
+OP_LIGHT          = next()
+OP_CAMERA         = next()
+OP_ASSIGN         = next()
+OP_LOCALASSIGN    = next()
+OP_CONDITIONAL    = next()
+OP_NOPLEAF        = next()
+OP_ROTATE         = next()
+OP_ROTATELOCAL    = next()
+OP_SCALE          = next()
+OP_SCALELOCAL     = next()
+OP_TRANSLATE      = next()
+OP_TRANSLATELOCAL = next()
 OP_LABEL = 0xff
 OP_END = 0xfe
 
@@ -216,12 +219,13 @@ class Link(LabeledNode):
 
 
 class Transform(ObjectNode):
-    pass
-
+    def __init__(self, isglobal):
+        ObjectNode.__init__(self)
+        self.isglobal = isglobal
 
 class Move(Transform):
-    def __init__(self):
-        Transform.__init__(self)
+    def __init__(self, isglobal=False):
+        Transform.__init__(self, isglobal)
 
     def getParameters(self):
         return ["x","y","z"]
@@ -230,19 +234,24 @@ class Move(Transform):
         return 0.0
 
     def getName(self):
-        return "move"
+        name = "%s %s %s" % tuple(d.exp for d in self.definitions)
+        if len(name) > 14:
+            name = name[0:14]
+        return name
 
     def brickColor(self):
+        if self.isglobal:
+            return 0x404080
         return 0x4040c0
 
     def export(self, exporter):
-        exporter.out += [OP_TRANSLATE]
+        exporter.out += [OP_TRANSLATE if self.isglobal else OP_TRANSLATELOCAL]
         self.exportDefinitions(exporter)
         return self.children
 
 class Scale(Transform):
-    def __init__(self):
-        Transform.__init__(self)
+    def __init__(self, isglobal=False):
+        Transform.__init__(self, isglobal)
 
     def getParameters(self):
         return ["x","y","z"]
@@ -251,13 +260,18 @@ class Scale(Transform):
         return 1.0
 
     def getName(self):
-        return "scale"
+        name = "%s %s %s" % tuple(d.exp for d in self.definitions)
+        if len(name) > 14:
+            name = name[0:14]
+        return name
 
     def brickColor(self):
+        if self.isglobal:
+            return 0x408080
         return 0x4080c0
 
     def export(self, exporter):
-        exporter.out += [OP_SCALE]
+        exporter.out += [OP_SCALE if self.isglobal else OP_SCALELOCAL]
         self.exportDefinitions(exporter)
         return self.children
 
@@ -266,9 +280,9 @@ class Rotate(Transform):
     AXIS_Y = 1
     AXIS_Z = 2
 
-    def __init__(self, axis):
+    def __init__(self, axis, isglobal=False):
+        Transform.__init__(self, isglobal)
         self.axis = axis
-        Transform.__init__(self)
 
     def getParameters(self):
         return ["angle"]
@@ -280,7 +294,10 @@ class Rotate(Transform):
         return 0.0
 
     def getName(self):
-        return "rot%s" % "XYZ"[self.axis]
+        name = "%s: %s" % ("XYZ"[self.axis], self.definitions[0].exp)
+        if len(name) > 14:
+            name = name[0:14]
+        return name
     
     def option(self, op, value):
         if value:
@@ -293,6 +310,8 @@ class Rotate(Transform):
         self.axis = axis
 
     def brickColor(self):
+        if self.isglobal:
+            return 0x804080
         return 0x8040c0
 
     def export(self, exporter):
@@ -304,7 +323,7 @@ class Rotate(Transform):
         if axis_index < index:
             # New node
             exporter.out += [zero] * (3 - index)
-            exporter.out += [OP_ROTATE]
+            exporter.out += [OP_ROTATE if self.isglobal else OP_ROTATELOCAL]
             index = 0
         exporter.out += [zero] * (axis_index - index)
         self.exportDefinitions(exporter)
@@ -602,7 +621,7 @@ class Exporter(object):
         tokens_regexp = re.compile(
             '\s+|({|}|\*|\/|%|#|\+|-|\^|\||\(|\)|\@)' # delimiters
             )
-        operators = {'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], '^': [0xF5], '+': [0xF6], '-': [0xF7], '*': [0xF8], '/': [0xF9], '%': [0xFA], '@': [0xFB], '|': [0xFB], '#': [0xFB]}
+        operators = {'mat': [0xF1], 'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], 'abs': [0xF5], '^': [0xF6], '+': [0xF7], '-': [0xF8], '*': [0xF9], '/': [0xFA], '%': [0xFB], '@': [0xFC], '|': [0xFD], '#': [0xFE]}
 
         def is_id(s):
             return id_regexp.match(s) != None
@@ -628,14 +647,15 @@ class Exporter(object):
             else:
                 tmp = lookahead()
                 if tok == '-':
-                    try:
-                        float(tmp)
-                        #hack to allow negative constants
-                        tok = '-' + gettoken()
-                        tmp = lookahead()
-                    except ValueError:
-                        #negation modelled as 0-
-                        return operators['-'] + [self.getConstIndex(0.0, self.node)] + prim()
+                    #try:
+                    #    float(tmp)
+                    #    #hack to allow negative constants
+                    #    tok = '-' + gettoken()
+                    #    tmp = lookahead()
+                    #except ValueError:
+
+                    #negation modelled as 0-
+                    return operators['-'] + [self.getConstIndex(0.0, self.node)] + prim()
         
                 if tmp == '(':          #function invokation
                     assert gettoken() == '('
@@ -649,7 +669,7 @@ class Exporter(object):
                             tok = '0'+tok
                         tok = float(tok)
                     elif tok == 'rand':
-                        return [0xF1]
+                        return [0xF0]
                     return [self.getConstIndex(tok, self.node)]
     
         def factor():
@@ -793,9 +813,9 @@ class Exporter(object):
         def skipexp(i):
             inst = instructions[i]
             i += 1
-            if inst > 0xF1:
+            if inst > 0xF0:
                 i = skipexp(i)
-            if inst > 0xF4:
+            if inst > 0xF5:
                 i = skipexp(i)
             return i
 
@@ -813,8 +833,11 @@ class Exporter(object):
             OP_CONDITIONAL: (0,1,2),
             OP_NOPLEAF: (0,0,0),
             OP_ROTATE: (0,3,0),
+            OP_ROTATELOCAL: (0,3,0),
             OP_SCALE: (0,3,0),
+            OP_SCALELOCAL: (0,3,0),
             OP_TRANSLATE: (0,3,0),
+            OP_TRANSLATELOCAL: (0,3,0),
             OP_LABEL: None
         }
 
@@ -866,23 +889,23 @@ class Exporter(object):
             OP_LOCALASSIGN: None,
             OP_CONDITIONAL: 0xF9,
             OP_NOPLEAF: 0xF6,
-            OP_ROTATE: 0xFD,
-            OP_SCALE: 0xFB,
-            OP_TRANSLATE: 0xFC,
+            OP_ROTATELOCAL: 0xFD,
+            OP_SCALELOCAL: 0xFB,
+            OP_TRANSLATELOCAL: 0xFC,
             OP_LABEL: 0xFF
         }
 
         expmap = {
-            0xF1: 0xF7, # random
+            0xF0: 0xF7, # random
             0xF2: 0xFE, # sin
             0xF3: 0xFD, # clamp
             0xF4: 0xFC, # round
-            0xF6: 0xF9, # +
-            0xF7: 0xFA, # -
-            0xF8: 0xFB, # *
+            0xF7: 0xF9, # +
+            0xF8: 0xFA, # -
+            0xF9: 0xFB, # *
 #            0xF9: 0xFA, # /
 #            0xFA: 0xFB, # %
-            0xFB: 0xF8  # @
+            0xFC: 0xF8  # @
         }
 
         instructions,constants,constmap = self.optimized_export()
@@ -892,14 +915,14 @@ class Exporter(object):
             i = i+1
             if op < 128:
                 out_insts.append(op)
-            elif op in [0xF1]: # Random
+            elif op in [0xF0]: # Random
                 out_insts.append(expmap[op])
                 bytecount_e[expmap[op]] += 1
             elif op in [0xF2, 0xF3, 0xF4]: # Unary op: sin, clamp, round
                 out_insts.append(expmap[op])
                 bytecount_e[expmap[op]] += 1
                 i = traverse_exp(i, out_insts)
-            elif op in [0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB]: # Binary op: +, -, *, /, %, @
+            elif op in [0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC]: # Binary op: +, -, *, /, %, @
                 out_insts.append(expmap[op])
                 bytecount_e[expmap[op]] += 1
                 i = traverse_exp(i, out_insts)
@@ -938,11 +961,11 @@ class Exporter(object):
                 out_insts.append(instructions[i]) # positive label
                 out_insts.append(instructions[i+1]) # negative label
                 i = i+2
-            elif inst in [OP_ROTATE]:
+            elif inst in [OP_ROTATELOCAL]:
                 i = traverse_exp(i, out_insts) # z
                 i = traverse_exp(i, []) # x
                 i = traverse_exp(i, []) # y
-            elif inst in [OP_SCALE, OP_TRANSLATE]:
+            elif inst in [OP_SCALELOCAL, OP_TRANSLATELOCAL]:
                 i = traverse_exp(i, []) # z
                 i = traverse_exp(i, out_insts) # y
                 i = traverse_exp(i, out_insts) # x

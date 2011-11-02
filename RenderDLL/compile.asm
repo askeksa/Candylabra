@@ -105,9 +105,9 @@ _half: dd 0.5
 
 section sclparam data align=4
 _param_scales:
-dd  0x40c90fdb	;2pi Rotate		1.0 is a full revolution
-dd	0x3f800000	;1   Scale
-dd	0x3f800000	;1   Translate
+times 2 dd  0x40c90fdb	;2pi Rotate		1.0 is a full revolution
+times 2 dd	0x3f800000	;1   Scale
+times 2 dd	0x3f800000	;1   Translate
 ;dd  0x437f0000	;255 Primitive color
 
 section realdata data align=4
@@ -142,6 +142,12 @@ snip random
 	fild word [esp]
 	fmul dword [_rand_scale]
 	pop eax
+snip mat
+	push eax
+	fistp dword [esp]
+	pop ebp
+	comcall	dword [comhandle(matrix_stack)], GetTop
+	fld dword [eax + ebp*4]
 snip sin
 	fmul	dword [_param_scales+0*4]
 	fsin
@@ -152,6 +158,8 @@ snip clamp
 	fstp st1
 snip round
 	frndint
+snip abs
+	fabs
 snip pow
 	;; pow function - argh!
 	fyl2x
@@ -176,7 +184,6 @@ snip mod
 	fprem
 	fstp st1
 snip noteat
-	push edx
 	fld st0
 	fimul dword [_timerFac]
 	fsub dword [_half]
@@ -188,21 +195,21 @@ snip noteat
 	fistp dword [esp]
 	pop eax
 
+	mov edx, [_channelFac]
 	shl ebp, byte 2
-	cmp ebp, [_channelFac]
+	cmp ebp, edx
 	jl .noteat_before_end
-	mov ebp, [_channelFac]
+	mov ebp, edx
 	sub ebp, byte 4
 .noteat_before_end:
 	cmp eax, byte 32
 	jge .oor_noteat
-	mul dword [_channelFac]
+	mul edx
 	fsub dword [_channelDeltas+eax+ebp]
 .oor_noteat:
-	pop edx
 
-snip mov_edx
-	mov edx, 0
+snip mov_ebx
+	mov ebx, 0
 snip fld_const
 	fld dword [_constantPool]
 snip fstp_const
@@ -212,7 +219,7 @@ snip pop_const
 snip push_const
 	push dword [_constantPool]
 snip pushfloat
-	fmul dword [_param_scales+edx*4]
+	fmul dword [_param_scales+ebx*4]
 	push eax
 	fstp dword [esp]
 snip store_index
@@ -230,19 +237,18 @@ snip repeat2
 	jz .recur_end
 	call [_jump_locations]
 .recur_end:
-snip conditional
-	fldz
-	fcomip st0,st1
-	cmova eax, edx
-	fstp st0
-	movzx eax, al
-	call [_jump_locations+eax*4]
 snip call
 	; Call opcode and relative target adjustment
 	db 0xe8
-	dd (_snip_call-_snip_call_end)
-
-snip call_end
+	dd (_snip_call-_snip_conditional)
+snip conditional
+	fldz
+	fcomip st0,st1
+	cmova eax, ebx
+	fstp st0
+	movzx eax, al
+	call [_jump_locations+eax*4]
+snip end
 
 
 section compexp text align=1
@@ -251,14 +257,14 @@ compileExp:
 	inc dword [_subexpcount]
 	xor eax, eax
 	lodsb
-	cmp al, 0xF1
+	cmp al, 0xF0
 	jae .not_constant
 		shl eax, 2
 		push eax
 		emit fld_const
 		ret
 .not_constant:
-	sub al, 0xF1
+	sub al, 0xF0
 	je .emit
 
 	push eax
@@ -393,8 +399,8 @@ compileNode:
 	stosb
 	movsb
 
-	push byte 1
-	emit mov_edx
+	push byte 2
+	emit mov_ebx
 	call compileExp
 	push byte 0
 	emit pushfloat
@@ -425,8 +431,8 @@ compileNode:
 	mov al, 0x50
 	stosb
 
-	push byte 1
-	emit mov_edx
+	push byte 2
+	emit mov_ebx
 	call compileExp
 	push byte 0
 	emit pushfloat
@@ -461,8 +467,8 @@ compileNode:
 	stosb
 	movsb
 
-	push byte 1
-	emit mov_edx
+	push byte 2
+	emit mov_ebx
 	call compileExp
 	push byte 0
 	emit pushfloat
@@ -542,8 +548,8 @@ compileNode:
 	;emb "conditional"
 	call compileExp
 
-	; mov dl, label
-	mov al, 0xb2
+	; mov bl, label
+	mov al, 0xb3
 	stosb
 	movsb
 
@@ -570,11 +576,11 @@ compileNode:
 
 	dec eax
 
-	lea ecx, [(cc_RotateLocal-cc_Pop)*4 + eax*8]
+	lea ecx, [(cc_Rotate-cc_Pop)*4 + eax*4]
 	push ecx
 
 	push eax
-	emit mov_edx
+	emit mov_ebx
 
 	call compileExp
 	push byte 0
