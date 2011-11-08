@@ -603,10 +603,14 @@ class Exporter(object):
             #frep = chr(0)*2 + frep[2:4]
             value = struct.unpack('f', frep)[0]
         except ValueError:
-            pass
-        
+            if value in self.varcount:
+                self.varcount[value] += 1
+            else:
+                self.varcount[value] = 1
+
         if value in self.constmap:
             return self.constmap[value]
+
         next_index = len(self.constmap)
         self.constmap[value] = next_index
         return next_index
@@ -754,6 +758,7 @@ class Exporter(object):
         self.marklabels(self.tree)
         self.todo = []
         self.labelmap = {}
+        self.varcount = {}
 
         self.seenlabels = set()
         self.exportnode(self.tree)
@@ -780,6 +785,18 @@ class Exporter(object):
     
     def optimized_export(self):
         def varcompare(a,b):
+            if a in predefined_variables:
+                if b in predefined_variables:
+                    return 0
+                return -1
+            if b in predefined_variables:
+                return 1
+
+            if a == 0.0:
+                return -1
+            if b == 0.0:
+                return 1
+
             if isinstance(a,types.FloatType):
                 if isinstance(b,types.FloatType):
                     if a >= 0.0 and b < 0.0:
@@ -792,10 +809,14 @@ class Exporter(object):
                 return 1 
             if isinstance(b,types.FloatType):
                 return -1
-            return 0
+
+            return self.varcount[b]-self.varcount[a]
+            #return 0
     
         instructions,constants,constmap = self.export()
-    
+
+        print self.varcount
+
         constvars = range(len(constmap))
         for v,i in constmap.iteritems():
             constvars[i] = v
@@ -819,25 +840,25 @@ class Exporter(object):
                 i = skipexp(i)
             return i
 
-        nodeformat = { # (bytes before exps, exps, bytes after exps)
-            0: (0,0,0), # fanout terminator
-            OP_FANOUT: (0,0,0),
-            OP_SAVETRANS: (0,0,0),
-            OP_REPEAT: (0,0,3),
-            OP_PRIM: (1,4,0),
-            OP_DYNPRIM: (0,5,0),
+        nodeformat = { # (bytes before exps, exps, labels, bytes after labels)
+            0: (0,0,0,0), # fanout terminator
+            OP_FANOUT: (0,0,0,0),
+            OP_SAVETRANS: (0,0,0,0),
+            OP_REPEAT: (0,0,1,2),
+            OP_PRIM: (1,4,0,0),
+            OP_DYNPRIM: (0,5,0,0),
             OP_LIGHT: None,
             OP_CAMERA: None,
-            OP_ASSIGN: (0,1,1),
-            OP_LOCALASSIGN: (0,1,1),
-            OP_CONDITIONAL: (0,1,2),
-            OP_NOPLEAF: (0,0,0),
-            OP_ROTATE: (0,3,0),
-            OP_ROTATELOCAL: (0,3,0),
-            OP_SCALE: (0,3,0),
-            OP_SCALELOCAL: (0,3,0),
-            OP_TRANSLATE: (0,3,0),
-            OP_TRANSLATELOCAL: (0,3,0),
+            OP_ASSIGN: (0,1,0,1),
+            OP_LOCALASSIGN: (0,1,0,1),
+            OP_CONDITIONAL: (0,1,2,0),
+            OP_NOPLEAF: (0,0,0,0),
+            OP_ROTATE: (0,3,0,0),
+            OP_ROTATELOCAL: (0,3,0,0),
+            OP_SCALE: (0,3,0,0),
+            OP_SCALELOCAL: (0,3,0,0),
+            OP_TRANSLATE: (0,3,0,0),
+            OP_TRANSLATELOCAL: (0,3,0,0),
             OP_LABEL: None
         }
 
@@ -845,6 +866,7 @@ class Exporter(object):
         exps = []
 
         i = 0
+        label_i = -1
         while i < len(instructions):
             inst = instructions[i]
             i += 1
@@ -854,11 +876,14 @@ class Exporter(object):
                 break
 
             if inst == OP_LABEL:
+                label_i += 1
+                print
+                print "%d:" % label_i,
                 continue
 
             nodes += [inst]
 
-            b,e,a = nodeformat[inst]
+            b,e,la,a = nodeformat[inst]
             nodes += instructions[i:i+b]
             i += b
 
@@ -866,6 +891,11 @@ class Exporter(object):
             for x in range(e):
                 i = skipexp(i)
             exps += instructions[before_exps:i]
+
+            for li in range(i,i+la):
+                nodes += [(instructions[li]-label_i) & 255]
+                print " %d" % instructions[li],
+            i += la
 
             nodes += instructions[i:i+a]
             i += a
