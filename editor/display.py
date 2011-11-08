@@ -928,6 +928,7 @@ class PlayButton(Button):
         self.display = display
         self.active = False
         Button.__init__(self, self.action, "Play", 0x808080)
+        self.addHotkey(ord(' '), (lambda event, manager : self.action()))
 
     def action(self):
         self.active = not self.active
@@ -958,7 +959,7 @@ class EditorRoot(Root):
         self.alt_children = alt_children
         self.alt_active = False
         self.normal_seq = []
-        self.addHotkey(ord(' '), (lambda event, manager : self.switch()))
+        self.addHotkey(0x1B, (lambda event, manager : self.switch()))
 
     def switch(self):
         seq = self.children[0]
