@@ -402,6 +402,21 @@ class Scrollbar(Container):
         self.updateDraggableSizeAndPos()
         Container.render(self, info)
 
+    def handleMouseEvent(self, event, manager):
+        event = Container.handleMouseEvent(self, event, manager)
+        if event is not None and event.buttonDown(BUTTON_LEFT) and self.container.hit(event.x, event.y):
+            o = self.orientation
+            if (event.x, event.y)[o] < self.draggable.pos[o]:
+                direction = -1
+            elif (event.x, event.y)[o] >= self.draggable.pos[o] + self.draggable.size[o]:
+                direction = 1
+            else:
+                diredtion = 0
+            self.initDragging()
+            self.updateDragging(self.draggable.size[o] * direction, 0)
+            self.stopDragging()
+
+
 class Scrollable(Container):
     def __init__(self, scrollbars):
         Container.__init__(self)
