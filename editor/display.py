@@ -32,9 +32,12 @@ def int2float(val):
     return struct.unpack('f', struct.pack('I', val))[0]
 
 def roundtoprec(val,prec):
-    intrepr = float2int(val)
-    intrepr = (intrepr + ((1 << (32-prec)) >> 1)) & (-1 << (32-prec))
-    return int2float(intrepr)
+    if prec <= 32:
+        intrepr = float2int(val)
+        intrepr = (intrepr + ((1 << (32-prec)) >> 1)) & (-1 << (32-prec))
+        return int2float(intrepr)
+    else:
+        return val
 
     #if val==0: return 0
     #(m,e) = math.frexp(math.fabs(val))
@@ -368,31 +371,13 @@ class BrickField(Container):
         if brick:
             node = brick.node
 
-            def adjustfunc(param, value):
-                if param in node.getOptions():
-                    return node.option(param, value)
-                else:
-                    return value
+            for op in node.getOptions():
+                vbutton = OptionAdjuster(op, self)
+                self.valuebar.addChild(vbutton)
+                any_va = True
 
-            def valuefunc(param, value):
-                if param in node.getOptions():
-                    return node.option(param, value)
-                p_index = node.getParameters().index(param)
-                if value is not None:
-                    valuestr = str(value)
-                    eq_pos = valuestr.find("=")
-                    if eq_pos != -1:
-                        p_name = valuestr[0:eq_pos].strip()
-                        value = valuestr[eq_pos+1:]
-                        node.setParamName(p_index, p_name)
-                    try:
-                        node.definitions[p_index].setExp(value)
-                    except SyntaxError:
-                        pass
-                return node.definitions[p_index].exp
-                
-            for op in node.getOptions() + node.getParameters():
-                vbutton = ValueAdjuster(op, adjustfunc, valuefunc, self)
+            for param in node.getParameters():
+                vbutton = ParamAdjuster(param, node, self)
                 self.valuebar.addChild(vbutton)
                 any_va = True
 
@@ -704,19 +689,121 @@ class CreateButton(TextBevel):
 
 
 class ValueAdjuster(TextBevel, Draggable):
-    def __init__(self, param, adjustfunc, valuefunc, field):
+    def __init__(self, field):
         TextBevel.__init__(self)
         Draggable.__init__(self, ORIENTATION_HORIZONTAL)
-        self.param = param
-        self.adjustfunc = adjustfunc
-        self.valuefunc = valuefunc
         self.field = field
-        self.setValue(None)
         self.minsize = Brick.SIZE
+
+    def handleMouseEvent(self, event, manager):
+        self.double = event.double
+
+        event = Draggable.handleMouseEvent(self, event, manager)
+
+        if self.status == Draggable.HOVER:
+            self.handleHover(event, True)
+        elif self.status == Draggable.IDLE:
+            self.handleHover(event, False)
+
+        if self.status == Draggable.HOVER and event.buttonDown(BUTTON_RIGHT):
+            self.setIdle(event, manager)
+            tkroot.update()
+            tkroot.deiconify()
+            newvalue = tkSimpleDialog.askstring("Enter value",
+                                                self.getName(),
+                                                initialvalue=self.getValue(),
+                                                parent=tkroot)
+            tkroot.withdraw()
+            self.setValue(newvalue)
+            self.field.updateValueBar(self.field.active)
+            self.field.updateDisplay()
+            return None
+
+        return event
+
+    def initDragging(self):
+        self.doubleclicked = self.double
+        self.orig_value = self.initDragValue()
+        self.drag_value = self.orig_value
+        if self.doubleclicked:
+            self.orig_precision = getprec(self.orig_value)
+
+    def updateDragging(self, delta, other=0):
+        if self.orig_value is not None:
+            if self.doubleclicked:
+                self.setDragValue(roundtoprec(self.orig_value,self.orig_precision+delta/10))
+            else:
+                value_delta = delta * math.exp(-8-0.01*other)
+                self.setDragValue(self.orig_value + value_delta)
+
+
+class OptionAdjuster(ValueAdjuster):
+    def __init__(self, option, field):
+        ValueAdjuster.__init__(self, field)
+        self.option = option
+        self.updateValue()
+
+    def getName(self):
+        return self.option.getName()
+
+    def getValue(self):
+        return self.option.getString()
+
+    def setValue(self, value):
+        if value is not None:
+            self.option.setString(value)
+        self.updateValue()
+
+    def updateValue(self):
+        self.text = self.option.getName() + " = " + self.option.getString()
+        self.field.display.exportTree()
+
+    def handleHover(self, event, hover):
+        pass
+
+    def verifyDrag(self, event, manager):
+        return self.option.getFloat() is not None
+
+    def initDragValue(self):
+        return self.option.getFloat()
+
+    def setDragValue(self, value):
+        self.drag_value = value
+        self.option.setFloat(value)
+        self.updateValue()
+
+    def stopDragging(self):
+        self.orig_value = None
+
+
+class ParamAdjuster(ValueAdjuster):
+    def __init__(self, param, node, field):
+        ValueAdjuster.__init__(self, field)
+        self.param = param
+        self.node = node
+        self.setValue(None)
         self.hilight = None
 
-    def setValue(self, newvalue):
-        self.value = self.valuefunc(self.param, newvalue)
+    def getName(self):
+        return self.param
+
+    def getValue(self):
+        return self.value
+
+    def setValue(self, value):
+        p_index = self.node.getParameters().index(self.param)
+        if value is not None:
+            valuestr = str(value)
+            eq_pos = valuestr.find("=")
+            if eq_pos != -1:
+                p_name = valuestr[0:eq_pos].strip()
+                value = valuestr[eq_pos+1:]
+                self.node.setParamName(p_index, p_name)
+            try:
+                self.node.definitions[p_index].setExp(value)
+            except SyntaxError:
+                pass
+        self.value = self.node.definitions[p_index].exp
         self.text = self.makeName()
         self.field.display.exportTree()
 
@@ -775,81 +862,53 @@ class ValueAdjuster(TextBevel, Draggable):
     def verifyDrag(self, event, manager):
         return self.hilight is not None
 
-    def handleMouseEvent(self, event, manager):
-        self.double = event.double
-
-        event = Draggable.handleMouseEvent(self, event, manager)
-
-        if self.status == Draggable.HOVER:
+    def handleHover(self, event, hover):
+        if hover:
             i,lx,rx = self.getCharAt(event.x)
             if i >= len(self.paramPrefix()):
                 self.hilight = self.expandTextToken(i, floatflag = True, idflag = True)
+                return
             else:
                 token = self.expandTextToken(len(self.text)-1, floatflag = True, idflag = False)
                 if token is not None:
                     l,r,lx,rx,t = token
                     if l == len(self.paramPrefix()):
                         self.hilight = l,r,lx,rx,t
-                    else:
-                        self.hilight = None
-                else:
-                    self.hilight = None
-        elif self.status == Draggable.IDLE:
-            self.hilight = None
+                        return
+        self.hilight = None
 
-        if self.status == Draggable.HOVER and event.buttonDown(BUTTON_RIGHT):
-            self.setIdle(event, manager)
-            tkroot.update()
-            tkroot.deiconify()
-            newvalue = tkSimpleDialog.askstring("Enter value",
-                                                self.param,
-                                                initialvalue=self.value,
-                                                parent=tkroot)
-            tkroot.withdraw()
-            self.setValue(newvalue)
-            self.field.updateValueBar(self.field.active)
-            self.field.updateDisplay()
-            return None
-
-        return event
-
-    def initDragging(self):
-        self.doubleclicked = self.double
-        if self.hilight:
-            l,r,lx,rx,t = self.hilight
-            p = len(self.paramPrefix())
-            try:
-                self.orig_value = float(str(self.value)[l-p:r-p+1])
-                left,right = l,r
-            except ValueError:
-                # Find or create factor on variable
-                factor_found = False
-                if r < len(self.text)-1 and self.text[r+1] == '*':
-                    i = r+2
-                    if i < len(self.text) and self.text[i] == '-':
-                        i += 1
-                    if i < len(self.text):
-                        left,right,leftx,rightx,tt = self.expandTextToken(i, floatflag = True, idflag = False)
-                        if left is not None and right is not None:
-                            if not (right < len(self.text)-1 and self.text[right+1] in ['^', '@', '|', '#']):
-                                left = r+2
-                                factor_found = True
-                if not factor_found:
-                    # Create factor on variable
-                    self.setValue(self.value[:l-p] + "(" + self.value[l-p:r-p+1] + "*1)" + self.value[r-p+1:])
-                    left = r+3
-                    right = left
-            self.hilight = (left,right,self.getCharPos(left)[0],self.getCharPos(right)[1],self.text[left:right+1])
-            self.orig_value = float(str(self.value)[left-p:right-p+1])
-            self.drag_value = self.orig_value
-            if self.doubleclicked:
-                self.orig_precision = getprec(self.orig_value)
+    def initDragValue(self):
+        l,r,lx,rx,t = self.hilight
+        p = len(self.paramPrefix())
+        try:
+            self.orig_value = float(str(self.value)[l-p:r-p+1])
+            left,right = l,r
+        except ValueError:
+            # Find or create factor on variable
+            factor_found = False
+            if r < len(self.text)-1 and self.text[r+1] == '*':
+                i = r+2
+                if i < len(self.text) and self.text[i] == '-':
+                    i += 1
+                if i < len(self.text):
+                    left,right,leftx,rightx,tt = self.expandTextToken(i, floatflag = True, idflag = False)
+                    if left is not None and right is not None:
+                        if not (right < len(self.text)-1 and self.text[right+1] in ['^', '@', '|', '#']):
+                            left = r+2
+                            factor_found = True
+            if not factor_found:
+                # Create factor on variable
+                self.setValue(self.value[:l-p] + "(" + self.value[l-p:r-p+1] + "*1)" + self.value[r-p+1:])
+                left = r+3
+                right = left
+        self.hilight = (left,right,self.getCharPos(left)[0],self.getCharPos(right)[1],self.text[left:right+1])
+        return float(str(self.value)[left-p:right-p+1])
 
     def setDragValue(self, value):
         self.drag_value = value
         l,r,lx,rx,t = self.hilight
         p = len(self.paramPrefix())
-        value = ot.float2string(self.adjustfunc(self.param, value))
+        value = ot.float2string(value)
         old_value = str(self.value)
         self.setValue(old_value[:l-p] + value + old_value[r-p+1:])
         r = l + len(value)-1
@@ -857,14 +916,6 @@ class ValueAdjuster(TextBevel, Draggable):
         rx = self.getCharPos(r)[1]
         t = value
         self.hilight = l,r,lx,rx,t
-
-    def updateDragging(self, delta, other=0):
-        if self.orig_value is not None:
-            if self.doubleclicked:
-                self.setDragValue(roundtoprec(self.orig_value,self.orig_precision+delta/10))
-            else: 
-                value_delta = delta * math.exp(-8-0.05*other)
-                self.setDragValue(self.orig_value + value_delta)
 
     def stopDragging(self):
         l,r,lx,rx,t = self.hilight

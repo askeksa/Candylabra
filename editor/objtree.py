@@ -70,6 +70,94 @@ def makeMatrix(*data):
     return array.array("f", data)
 
 
+class Option(object):
+    def __init__(self, node, name):
+        self.node = node
+        self.name = name
+
+    def getName(self):
+        return self.name
+
+    def __str__(self):
+        return self.getName()
+
+    def _set(self, value):
+        self.node.__dict__[self.name] = value
+
+    def _get(self):
+        return self.node.__dict__[self.name]
+
+
+class StringOption(Option):
+    def __init__(self, node, name):
+        Option.__init__(self, node, name)
+
+    def setFloat(self, fv):
+        pass
+
+    def getFloat(self):
+        return None
+
+    def setString(self, sv):
+        if sv is not None:
+            self._set(sv)
+
+    def getString(self):
+        return self._get()
+
+
+class IntOption(Option):
+    def __init__(self, node, name, minvalue, maxvalue):
+        Option.__init__(self, node, name)
+        self.minvalue = minvalue
+        self.maxvalue = maxvalue
+
+    def setValue(self, val):
+        if val:
+            try:
+                intval = int(val)
+                if intval < self.minvalue:
+                    intval = self.minvalue
+                if intval > self.maxvalue:
+                    intval = self.maxvalue
+                self._set(intval)
+            except ValueError:
+                pass
+
+    def setFloat(self, fv):
+        self.setValue(fv*10.0)
+        
+    def getFloat(self):
+        return float(self._get())/10.0
+
+    def setString(self, sv):
+        self.setValue(sv)
+
+    def getString(self):
+        return str(self._get())
+
+
+class EnumOption(Option):
+    def __init__(self, node, name, values):
+        Option.__init__(self, node, name)
+        self.values = values
+
+    def setFloat(self, fv):
+        self._set(max(0, min(int(fv+0.5), len(self.values)-1)))
+
+    def getFloat(self):
+        return float(self._get())
+
+    def setString(self, sv):
+        for i in range(len(self.values)):
+            if self.values[i].upper() == sv.upper():
+                self._set(i)
+                return
+
+    def getString(self):
+        return self.values[self._get()]
+    
+
 class DefValue(object):
     def __init__(self, exp):
         self.setExp(exp)
@@ -159,14 +247,9 @@ class LabeledNode(ObjectNode):
         self.label = ""
 
     def getOptions(self):
-        return ["label"]
+        return [StringOption(self, "label")]
 
     def getName(self):
-        return self.label
-
-    def option(self, op, value):
-        if value is not None:
-            self.label = value
         return self.label
 
 
@@ -288,7 +371,7 @@ class Rotate(Transform):
         return ["angle"]
 
     def getOptions(self):
-        return ["axis"]
+        return [EnumOption(self, "axis", ["X","Y","Z"])]
 
     def getDefault(self):
         return 0.0
@@ -298,16 +381,6 @@ class Rotate(Transform):
         if len(name) > 14:
             name = name[0:14]
         return name
-    
-    def option(self, op, value):
-        if value:
-            if value.upper() == "X": self.axis = Rotate.AXIS_X
-            if value.upper() == "Y": self.axis = Rotate.AXIS_Y
-            if value.upper() == "Z": self.axis = Rotate.AXIS_Z
-        return "XYZ"[self.axis]
-
-    def setAxis(self, axis):
-        self.axis = axis
 
     def brickColor(self):
         if self.isglobal:
@@ -340,20 +413,10 @@ class Repeat(ObjectNode):
         self.n = n
 
     def getOptions(self):
-        return ["n"]
+        return [IntOption(self, "n", 0, 65535)]
 
     def getName(self):
         return "repeat %d" % self.n
-
-    def option(self, op, value):
-        if value:
-            try:
-                intval = int(value)
-                if intval >= 0:
-                    self.n = intval
-            except ValueError:
-                pass
-        return self.n
 
     def brickColor(self):
         return 0x40c040
@@ -458,26 +521,14 @@ class LocalDefinition(DefinitionNode):
 
 
 class PrimitiveNode(ObjectNode):
-    def __init__(self, index, max_index):
+    def __init__(self):
         ObjectNode.__init__(self)
-        self.index = index
-        self.max_index = max_index
 
     def getParameters(self):
         return ["r","g","b","a"]
 
-    def getOptions(self):
-        return ["index"]
-
     def getDefault(self):
         return 0.5
-
-    def option(self, op, value):
-        if value:
-            intval = int(value)
-            if intval >= 0 and intval <= self.max_index:
-                self.index = intval
-        return self.index
 
     def brickColor(self):
         return 0xe0e020
@@ -490,7 +541,11 @@ class Item(PrimitiveNode):
     MAX_INDEX = 100
 
     def __init__(self, index):
-        PrimitiveNode.__init__(self, index, Text.MAX_INDEX)
+        PrimitiveNode.__init__(self)
+        self.index = index
+
+    def getOptions(self):
+        return [IntOption(self, "index", 0, Item.MAX_INDEX)]
 
     def getName(self):
         return "Object %d" % (self.index)
@@ -513,14 +568,11 @@ class Text(Item):
 class DynamicItem(PrimitiveNode):
     MAX_INDEX = 100
 
-    def __init__(self, index):
-        PrimitiveNode.__init__(self, index, Text.MAX_INDEX)
+    def __init__(self):
+        PrimitiveNode.__init__(self)
 
     def getParameters(self):
         return ["i", "r","g","b","a"]
-
-    def getOptions(self):
-        return []
 
     def getName(self):
         name = "%s" % (self.definitions[0].exp)
@@ -530,7 +582,7 @@ class DynamicItem(PrimitiveNode):
 
     def setDefaultValues(self):
         PrimitiveNode.setDefaultValues(self)
-        self.definitions[0] = DefValue(str(self.index))
+        self.definitions[0] = DefValue(str(0))
 
     def export(self, exporter):
         exporter.out += [OP_DYNPRIM]
@@ -543,7 +595,11 @@ class Light(PrimitiveNode):
     MAX_INDEX = 1
 
     def __init__(self, index):
-        PrimitiveNode.__init__(self, index, Light.MAX_INDEX)
+        PrimitiveNode.__init__(self)
+        self.index = index
+
+    def getOptions(self):
+        return [IntOption(self, "index", 0, Light.MAX_INDEX)]
 
     def getName(self):
         return "Light %d" % (self.index)
