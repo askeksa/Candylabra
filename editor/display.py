@@ -600,8 +600,12 @@ class BrickField(Container):
                 # HACKs to improve loading compatibility
                 if isinstance(c.node, ot.Identity) and "label" not in c.node.__dict__:
                     c.node.label = ""
-                if isinstance(c.node, ot.Transform) and "isglobal" not in c.node.__dict__:
-                    c.node.isglobal = False
+                if isinstance(c.node, ot.Transform) and "scope" not in c.node.__dict__:
+                    if "isglobal" in c.node.__dict__:
+                        c.node.scope = 1 if c.node.isglobal else 0
+                        del c.node.isglobal
+                    else:
+                        c.node.scope = 0
                 if isinstance(c.node, ot.DefinitionNode) and not isinstance(c.node, ot.LocalDefinition):
                     globaldef = ot.GlobalDefinition(c.node.var)
                     globaldef.definitions = c.node.definitions
