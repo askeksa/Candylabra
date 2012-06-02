@@ -302,13 +302,17 @@ class Link(LabeledNode):
 
 
 class Transform(ObjectNode):
-    def __init__(self, isglobal):
+    def __init__(self, scope):
         ObjectNode.__init__(self)
-        self.isglobal = isglobal
+        self.scope = scope
+
+    def getOptions(self):
+        return [EnumOption(self, "scope", ["Local", "Global"])]
+
 
 class Move(Transform):
-    def __init__(self, isglobal=False):
-        Transform.__init__(self, isglobal)
+    def __init__(self, scope=0):
+        Transform.__init__(self, scope)
 
     def getParameters(self):
         return ["x","y","z"]
@@ -323,18 +327,18 @@ class Move(Transform):
         return name
 
     def brickColor(self):
-        if self.isglobal:
+        if self.scope:
             return 0x404080
         return 0x4040c0
 
     def export(self, exporter):
-        exporter.out += [OP_TRANSLATE if self.isglobal else OP_TRANSLATELOCAL]
+        exporter.out += [OP_TRANSLATE if self.scope else OP_TRANSLATELOCAL]
         self.exportDefinitions(exporter)
         return self.children
 
 class Scale(Transform):
-    def __init__(self, isglobal=False):
-        Transform.__init__(self, isglobal)
+    def __init__(self, scope=0):
+        Transform.__init__(self, scope)
 
     def getParameters(self):
         return ["x","y","z"]
@@ -349,12 +353,12 @@ class Scale(Transform):
         return name
 
     def brickColor(self):
-        if self.isglobal:
+        if self.scope:
             return 0x408080
         return 0x4080c0
 
     def export(self, exporter):
-        exporter.out += [OP_SCALE if self.isglobal else OP_SCALELOCAL]
+        exporter.out += [OP_SCALE if self.scope else OP_SCALELOCAL]
         self.exportDefinitions(exporter)
         return self.children
 
@@ -363,15 +367,15 @@ class Rotate(Transform):
     AXIS_Y = 1
     AXIS_Z = 2
 
-    def __init__(self, axis, isglobal=False):
-        Transform.__init__(self, isglobal)
+    def __init__(self, axis, scope=0):
+        Transform.__init__(self, scope)
         self.axis = axis
 
     def getParameters(self):
         return ["angle"]
 
     def getOptions(self):
-        return [EnumOption(self, "axis", ["X","Y","Z"])]
+        return Transform.getOptions(self) + [EnumOption(self, "axis", ["X","Y","Z"])]
 
     def getDefault(self):
         return 0.0
@@ -383,7 +387,7 @@ class Rotate(Transform):
         return name
 
     def brickColor(self):
-        if self.isglobal:
+        if self.scope:
             return 0x804080
         return 0x8040c0
 
@@ -396,7 +400,7 @@ class Rotate(Transform):
         if axis_index < index:
             # New node
             exporter.out += [zero] * (3 - index)
-            exporter.out += [OP_ROTATE if self.isglobal else OP_ROTATELOCAL]
+            exporter.out += [OP_ROTATE if self.scope else OP_ROTATELOCAL]
             index = 0
         exporter.out += [zero] * (axis_index - index)
         self.exportDefinitions(exporter)
