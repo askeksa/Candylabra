@@ -208,7 +208,7 @@ if __name__ == "__main__":
     buttonpane.weight = 0.001
 
     button_item = CreateButton("Object", (lambda : ot.Item(0)), field, 'O')
-    button_dynitem = CreateButton("Dyn object", (lambda : ot.DynamicItem(0)), field, 'D')
+    button_dynitem = CreateButton("Dyn object", (lambda : ot.DynamicItem()), field, 'D')
     #for o in range(0,10):
     #    button_item.addHotkey(ord('0')+o, (lambda e,m : field.setCreating(lambda : ot.DynamicItem(o))))
     button_light = CreateButton("lIght", (lambda : ot.Light(0)), field, 'I')
