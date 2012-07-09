@@ -16,6 +16,7 @@ public:
 	virtual float getaspect() = 0;
 	virtual float random() = 0;
 	virtual char *predefined_variables();
+	virtual bool use_effect();
 };
 
 #endif
