@@ -16,6 +16,7 @@
 #include "engine_eris.h"
 #include "engine_ikadalawampu.h"
 #include "engine_points.h"
+#include "engine_dx11particles.h"
 
 using namespace std;
 
@@ -64,33 +65,36 @@ extern "C" {
 		i += sprintf(&parambuf[i], active_engine->predefined_variables());
 		n += 4;
 
-		D3DXEFFECT_DESC desc;
-		COMHandles.effect->GetDesc(&desc);
-		for (unsigned int p = 0 ; p < desc.Parameters ; p++)
+		if (active_engine->use_effect())
 		{
-			D3DXPARAMETER_DESC pdesc;
-			D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
-			COMHandles.effect->GetParameterDesc(param, &pdesc);
-			if (pdesc.Elements >= 1) continue;
-			switch(pdesc.Class)
+			D3DXEFFECT_DESC desc;
+			COMHandles.effect->GetDesc(&desc);
+			for (unsigned int p = 0 ; p < desc.Parameters ; p++)
 			{
-			case D3DXPC_SCALAR:
-				COMHandles.effect->GetValue(param, &paramvals[n], D3DX_DEFAULT);
-				i += sprintf(&parambuf[i], "%s/", pdesc.Name);
-				n++;
-				break;
-				/*
-			case D3DXPC_VECTOR:
-				COMHandles.effect->GetValue(param, &paramvals[n], D3DX_DEFAULT);
-				for (unsigned int c = 1 ; c <= pdesc.Columns ; c++)
+				D3DXPARAMETER_DESC pdesc;
+				D3DXHANDLE param = COMHandles.effect->GetParameter(NULL, p);
+				COMHandles.effect->GetParameterDesc(param, &pdesc);
+				if (pdesc.Elements >= 1) continue;
+				switch(pdesc.Class)
 				{
-					i += sprintf(&parambuf[i], "%s%d/", pdesc.Name, c);
+				case D3DXPC_SCALAR:
+					COMHandles.effect->GetValue(param, &paramvals[n], D3DX_DEFAULT);
+					i += sprintf(&parambuf[i], "%s/", pdesc.Name);
 					n++;
+					break;
+					/*
+				case D3DXPC_VECTOR:
+					COMHandles.effect->GetValue(param, &paramvals[n], D3DX_DEFAULT);
+					for (unsigned int c = 1 ; c <= pdesc.Columns ; c++)
+					{
+						i += sprintf(&parambuf[i], "%s%d/", pdesc.Name, c);
+						n++;
+					}
+					break;
+					*/
+				default:
+					break;
 				}
-				break;
-				*/
-			default:
-				break;
 			}
 		}
 		nparams = n;
@@ -134,7 +138,8 @@ extern "C" {
 	int channelCounts[32*16384];
 	unsigned char* notes;
 
-	bool __stdcall init3() {
+	bool create_effect() {
+		COMHandles.effect = NULL;
 		if (D3DXCreateEffectFromFile(COMHandles.device, effectfile, NULL, NULL, 0, NULL, &COMHandles.effect, ERRORS) != D3D_OK)
 		{
 			if (errors == NULL)
@@ -149,6 +154,18 @@ extern "C" {
 			return false;
 		}
 		effect_valid = true;
+		return true;
+	}
+
+	void destroy_effect() {
+		if (COMHandles.effect)
+		{
+			COMHandles.effect->Release();
+			COMHandles.effect = NULL;
+		}
+	}
+
+	void __stdcall init_sync() {
 /*
 		mf = new MemoryFile("sync");
 		int* ptr = (int*)mf->getPtr();
@@ -171,9 +188,6 @@ extern "C" {
 			}
 		}
 		delete mf;
-
-		initparams();
-		return true;
 	}
 
 	void __stdcall init2() {
@@ -182,8 +196,12 @@ extern "C" {
 		CHECK(COMHandles.device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &COMHandles.backbuffer));
 		CHECK(COMHandles.device->GetDepthStencilSurface(&COMHandles.depthbuffer));
 
-		init3();
+		init_sync();
+		if (active_engine->use_effect()) {
+			create_effect();
+		}
 		active_engine->init();
+		initparams();
 	}
 
 	RECT scissorRect;
@@ -214,12 +232,12 @@ extern "C" {
 		D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
 	}
 
-static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Points|";
+static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Points|DX11P|";
 
 	RENDERDLL_API int __stdcall getengines(char *buf)
 	{
 		strcpy(buf, enginenames);
-		return 6;
+		return 7;
 	}
 
 	void init_engine(int engine_id)
@@ -243,6 +261,9 @@ static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Po
 			break;
 		case 5:
 			active_engine = new PointsEngine();
+			break;
+		case 6:
+			active_engine = new DX11ParticlesEngine();
 			break;
 		}
 		current_engine_id = engine_id;
@@ -273,17 +294,14 @@ static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Po
 	{
 		if (!inited) return 0;
 
-		if (effect_valid)
-		{
-			COMHandles.effect->Release();
-		}
-
 		strncpy(effectfile, effect, 100);
 		strncpy(syncfile, sync, 100);
 		strncpy(datafile, data, 100);
-		if (!init3())
+		init_sync();
+
+		if (active_engine->use_effect())
 		{
-			return 0;
+			destroy_effect();
 		}
 
 		if (engine_id != current_engine_id)
@@ -291,10 +309,20 @@ static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Po
 			active_engine->deinit();
 			delete active_engine;
 			init_engine(engine_id);
+			if (active_engine->use_effect() && !create_effect())
+			{
+				return 0;
+			}
 			active_engine->init();
 		} else {
+			if (active_engine->use_effect() && !create_effect())
+			{
+				return 0;
+			}
 			active_engine->reinit();
 		}
+		initparams();
+
 		return 1;
 	}
 
