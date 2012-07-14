@@ -63,7 +63,11 @@ extern "C" {
 		paramvals[2] = 1.0f;
 		paramvals[3] = 0.0f;
 		i += sprintf(&parambuf[i], active_engine->predefined_variables());
-		n += 4;
+		for (int si = 0 ; si < i ; si++) {
+			if (parambuf[si] == '/') {
+				n += 1;
+			}
+		}
 
 		if (active_engine->use_effect())
 		{
