@@ -211,7 +211,7 @@ if __name__ == "__main__":
     button_dynitem = CreateButton("Dyn object", (lambda : ot.DynamicItem()), field, 'D')
     #for o in range(0,10):
     #    button_item.addHotkey(ord('0')+o, (lambda e,m : field.setCreating(lambda : ot.DynamicItem(o))))
-    button_light = CreateButton("lIght", (lambda : ot.Light(0)), field, 'I')
+    button_light = CreateButton("ligHt", (lambda : ot.Light(0)), field, 'H')
     button_camera = CreateButton("camEra", (lambda : ot.Camera()), field, 'E')
     button_identity = CreateButton("lAbel", (lambda : ot.Identity(field)), field, 'A')
     button_link = CreateButton("linK", (lambda : ot.Link(field)), field, 'K')
@@ -227,7 +227,9 @@ if __name__ == "__main__":
     #button_groty = CreateButton("G rotate y", (lambda : ot.Rotate(ot.Rotate.AXIS_Y, isglobal=True)), field)
     #button_grotz = CreateButton("G rotate z", (lambda : ot.Rotate(ot.Rotate.AXIS_Z, isglobal=True)), field)
     button_repeat = CreateButton("Repeat", (lambda : ot.Repeat(4)), field, 'R')
+    button_loop = CreateButton("looP", (lambda : ot.Loop(4)), field, 'P')
     button_cond = CreateButton("Conditional", (lambda : ot.Conditional()), field, 'C')
+    button_if = CreateButton("If", (lambda : ot.If()), field, 'I')
     button_globaldef = CreateButton("Globaldef", (lambda : ot.GlobalDefinition("v")), field, 'G')
     button_localdef = CreateButton("Localdef", (lambda : ot.LocalDefinition("v")), field, 'L')
 
@@ -252,7 +254,9 @@ if __name__ == "__main__":
     #buttonpane.addChild(button_groty)
     #buttonpane.addChild(button_grotz)
     buttonpane.addChild(button_repeat)
+    buttonpane.addChild(button_loop)
     buttonpane.addChild(button_cond)
+    buttonpane.addChild(button_if)
     buttonpane.addChild(button_globaldef)
     buttonpane.addChild(button_localdef)
     buttonpane.addChild(filler)

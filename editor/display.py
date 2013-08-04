@@ -216,6 +216,8 @@ class Brick(TextBevel):
             child_bricks = self.childBricks()
             if isinstance(self.node, ot.Link) and self.node.label in self.field.labelbricks:
                 child_bricks = self.field.labelbricks[self.node.label] + child_bricks
+            if isinstance(self.node, ot.Loop):
+                child_bricks = [self] + child_bricks
 
             self.node.children = [b.buildTree(visited) for b in child_bricks]
         return self.node

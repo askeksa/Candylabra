@@ -442,6 +442,32 @@ class Repeat(ObjectNode):
         return []
 
 
+class Loop(ObjectNode):
+    def __init__(self, n):
+        ObjectNode.__init__(self)
+        self.n = n
+
+    def getOptions(self):
+        return [IntOption(self, "n", 1, 65536)]
+
+    def getName(self):
+        return "loop %d" % self.n
+
+    def brickColor(self):
+        return 0x20a020
+
+    def export_nchildren(self):
+        return 1
+
+    def export(self, exporter):
+        n_rep = self.n
+        if (n_rep % 256) == 255 or (n_rep / 256) > 254:
+            raise ExportException(self, "Illegal loop count")
+        repeatnode = Repeat(self.n-1)
+        repeatnode.children = [self]
+        return [repeatnode] + self.children[1:]
+
+
 class Conditional(ObjectNode):
     def __init__(self):
         ObjectNode.__init__(self)
@@ -466,8 +492,39 @@ class Conditional(ObjectNode):
             raise ExportException(self, "Conditional must have two children")
         exporter.out += [OP_CONDITIONAL]
         self.exportDefinitions(exporter)
-        exporter.todo.append((self.children[0], len(exporter.out)))
         exporter.todo.append((self.children[1], len(exporter.out)+1))
+        exporter.todo.append((self.children[0], len(exporter.out)))
+        exporter.out += [0,0]
+        return []
+
+class If(ObjectNode):
+    def __init__(self):
+        ObjectNode.__init__(self)
+
+    def getParameters(self):
+        return ["condition"]
+
+    def getDefault(self):
+        return 0.0
+
+    def getName(self):
+        return self.definitions[0].exp
+
+    def brickColor(self):
+        return 0x008060
+
+    def export_nchildren(self):
+        return 0
+
+    def export(self, exporter):
+        node0 = ObjectNode()
+        node1 = ObjectNode()
+        node1.children = self.children
+
+        exporter.out += [OP_CONDITIONAL]
+        self.exportDefinitions(exporter)
+        exporter.todo.append((node1, len(exporter.out)+1))
+        exporter.todo.append((node0, len(exporter.out)))
         exporter.out += [0,0]
         return []
 
@@ -542,7 +599,7 @@ class PrimitiveNode(ObjectNode):
 
 
 class Item(PrimitiveNode):
-    MAX_INDEX = 100
+    MAX_INDEX = 255
 
     def __init__(self, index):
         PrimitiveNode.__init__(self)
@@ -570,8 +627,6 @@ class Text(Item):
 
 
 class DynamicItem(PrimitiveNode):
-    MAX_INDEX = 100
-
     def __init__(self):
         PrimitiveNode.__init__(self)
 
@@ -596,7 +651,7 @@ class DynamicItem(PrimitiveNode):
 
 
 class Light(PrimitiveNode):
-    MAX_INDEX = 1
+    MAX_INDEX = 255
 
     def __init__(self, index):
         PrimitiveNode.__init__(self)
@@ -907,8 +962,8 @@ class Exporter(object):
             OP_REPEAT: (0,0,1,2),
             OP_PRIM: (1,4,0,0),
             OP_DYNPRIM: (0,5,0,0),
-            OP_LIGHT: None,
-            OP_CAMERA: None,
+            OP_LIGHT: (1,4,0,0),
+            OP_CAMERA: (0,0,0,0),
             OP_ASSIGN: (0,1,0,1),
             OP_LOCALASSIGN: (0,1,0,1),
             OP_CONDITIONAL: (0,1,2,0),
