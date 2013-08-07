@@ -399,7 +399,7 @@ void DX11ParticlesEngine::render()
 	tree_pass(0);
 	memcpy(&constantBuffer[global.firstvar], &constantPool[global.firsttoolvar], global.numvars*4);
 	float time = GetSecs();
-	*(float *)&constantBuffer[6] *= (time - last_time);
+	*(float *)&constantBuffer[7] *= (time - last_time);
 	last_time = time;
 
 	ID3D11UnorderedAccessView *tuav=ParticleUAV;ParticleUAV=Particle2UAV;Particle2UAV=tuav;
