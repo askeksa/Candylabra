@@ -5,7 +5,7 @@ float w,h;
 
 sampler tex;
 
-const float EDGE_VALUE = 0.0078125;
+const float EDGE_VALUE = 0.00390625;
 
 struct S {
 	float4 p : POSITION;
@@ -27,7 +27,9 @@ float4 p(S s) : COLOR {
 	float c = s.c.a + EDGE_VALUE;
 	float ratio = c / EDGE_VALUE;
 	float f = log2(ratio)/0.25;
-	return float4(s.c.xyz, c * exp2(-f*d));
+	float a = c * exp2(-f*d);
+	//a += EDGE_VALUE*sin(d*1024);
+	return float4(s.c.xyz, a);
 }
 
 
