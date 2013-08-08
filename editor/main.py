@@ -169,8 +169,9 @@ def set_bpm():
     bpm = tkSimpleDialog.askfloat("Enter value",
                                   "Beats per minute",
                                   initialvalue=field.project.bpm)
-    field.project.bpm = bpm
-    field.display.setProject(field.project)
+    if bpm is not None:
+        field.project.bpm = bpm
+        field.display.setProject(field.project)
 
 
 if __name__ == "__main__":
