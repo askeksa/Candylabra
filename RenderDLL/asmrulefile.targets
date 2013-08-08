@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <PropertyPageSchema
+      Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+    <AvailableItemName
+      Include="Asm">
+      <Targets>_Asm</Targets>
+    </AvailableItemName>
+  </ItemGroup>
+  <UsingTask
+    TaskName="Asm"
+    TaskFactory="XamlTaskFactory"
+    AssemblyName="Microsoft.Build.Tasks.v4.0">
+    <Task>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml</Task>
+  </UsingTask>
+  <Target
+    Name="_Asm"
+    BeforeTargets="$(AsmBeforeTargets)"
+    AfterTargets="$(AsmAfterTargets)"
+    Condition="'@(Asm)' != ''"
+    DependsOnTargets="$(AsmDependsOn);ComputeAsmOutput"
+    Outputs="%(Asm.Outputs)"
+    Inputs="%(Asm.Identity);%(Asm.AdditionalDependencies);$(MSBuildProjectFile)">
+    <ItemGroup
+      Condition="'@(SelectedFiles)' != ''">
+      <Asm
+        Remove="@(Asm)"
+        Condition="'%(Identity)' != '@(SelectedFiles)'" />
+    </ItemGroup>
+    <ItemGroup>
+      <Asm_tlog
+        Include="%(Asm.Outputs)"
+        Condition="'%(Asm.Outputs)' != '' and '%(Asm.ExcludedFromBuild)' != 'true'">
+        <Source>@(Asm, '|')</Source>
+      </Asm_tlog>
+    </ItemGroup>
+    <Message
+      Importance="High"
+      Text="%(Asm.ExecutionDescription)" />
+    <WriteLinesToFile
+      Condition="'@(Asm_tlog)' != '' and '%(Asm_tlog.ExcludedFromBuild)' != 'true'"
+      File="$(IntDir)$(ProjectName).write.1.tlog"
+      Lines="^%(Asm_tlog.Source);@(Asm_tlog-&gt;'%(Fullpath)')" />
+    <Asm
+      Condition="'@(Asm)' != '' and '%(Asm.ExcludedFromBuild)' != 'true'"
+      CommandLineTemplate="%(Asm.CommandLineTemplate)"
+      AdditionalOptions="%(Asm.AdditionalOptions)"
+      Inputs="%(Asm.Identity)" />
+  </Target>
+  <PropertyGroup>
+    <ComputeLinkInputsTargets>
+            $(ComputeLinkInputsTargets);
+            ComputeAsmOutput;
+          </ComputeLinkInputsTargets>
+    <ComputeLibInputsTargets>
+            $(ComputeLibInputsTargets);
+            ComputeAsmOutput;
+          </ComputeLibInputsTargets>
+  </PropertyGroup>
+  <Target
+    Name="ComputeAsmOutput"
+    Condition="'@(Asm)' != ''">
+    <ItemGroup>
+      <AsmDirsToMake
+        Condition="'@(Asm)' != '' and '%(Asm.ExcludedFromBuild)' != 'true'"
+        Include="%(Asm.Outputs)" />
+      <Link
+        Include="%(AsmDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <Lib
+        Include="%(AsmDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <ImpLib
+        Include="%(AsmDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+    </ItemGroup>
+    <MakeDir
+      Directories="@(AsmDirsToMake-&gt;'%(RootDir)%(Directory)')" />
+  </Target>
+</Project>
