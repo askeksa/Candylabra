@@ -230,8 +230,8 @@ class Project:
         self.effect_file = "../objects/default.fx"
         self.music_file = "../objects/Silence.ogg"
         self.bpm = 120.0
-        self.sync_file = "sync"
-        self.data_file = "texts.txt"
+        self.sync_file = "../objects/dummy.sync"
+        self.data_file = "../objects/dummy.dat"
 
 class BrickField(Container):
     IDLE = 0
