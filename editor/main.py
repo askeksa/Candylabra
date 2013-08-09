@@ -13,6 +13,7 @@ import struct
 import traceback
 import types
 import os
+import time
 
 import tkFileDialog
 import tkSimpleDialog
@@ -353,3 +354,5 @@ if __name__ == "__main__":
             field.setRoot(None)
 
             quit -= 1
+
+    field.save(time.strftime("autosave_%Y-%m-%d_%H.%M.%S.ob"))
