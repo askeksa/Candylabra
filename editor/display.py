@@ -259,9 +259,14 @@ class BrickField(Container):
         self.display.setProject(self.project)
         self.labelbricks = dict()
         self.linkbricks = dict()
+        self.hidden = False
+        self.addHotkey(d3dc.VK.TAB, (lambda event, manager : self.switchHidden()))
 
     def __getstate__(self):
         raise Exception("Internal error: Attempt to serialize the BrickField!")
+
+    def switchHidden(self):
+        self.hidden = not self.hidden
 
     def delete(self, bricks):
         if self.root in bricks:
@@ -292,6 +297,9 @@ class BrickField(Container):
         drawSpline(aposx,aposy, bposx,bposy, color)
 
     def render(self, info):
+        if self.hidden:
+            return
+
         oldrect = info.addScissorRect(self.pos + self.size)
 
         for b in self.children:
@@ -1016,7 +1024,7 @@ class EditorRoot(Root):
         self.alt_children = alt_children
         self.alt_active = False
         self.normal_seq = []
-        self.addHotkey(0x1B, (lambda event, manager : self.switch()))
+        self.addHotkey(d3dc.VK.ESCAPE, (lambda event, manager : self.switch()))
 
     def switch(self):
         seq = self.children[0]
