@@ -162,6 +162,10 @@ void PointsEngine::render()
 {
 	constantPool[2] = 1.0f;
 
+	double time1 = 0.0, time2 = 0.0;
+	LARGE_INTEGER perf_freq, perf_time0, perf_time1, perf_time2;
+	QueryPerformanceFrequency(&perf_freq);
+
 	D3DXTECHNIQUE_DESC tdesc;
 	CHECK(COMHandles.effect->GetTechniqueDesc(COMHandles.effect->GetTechnique(0), &tdesc));
 
@@ -174,11 +178,15 @@ void PointsEngine::render()
 	{
 		CHECK(COMHandles.effect->BeginPass(p));
 	
+		QueryPerformanceCounter(&perf_time0);
+
 		//CHECK(COMHandles.matrix_stack->LoadMatrix(&proj));
 		memset(point_bucket_sizes, 0, NUM_BUCKETS*sizeof(unsigned int));
 		tree_pass(p);
 
 		//qsort(mapped_buffer, n_points, sizeof(struct PointVertex), vertex_compare);
+
+		QueryPerformanceCounter(&perf_time1);
 
 		unsigned int n_points = 0;
 		CHECK(COMHandles.vbuffer->Lock(0, 0, (void **)&mapped_buffer, D3DLOCK_DISCARD));
@@ -206,6 +214,10 @@ void PointsEngine::render()
 #endif
 		}
 		CHECK(COMHandles.vbuffer->Unlock());
+
+		QueryPerformanceCounter(&perf_time2);
+		time1 += (perf_time1.QuadPart - perf_time0.QuadPart) / (double) perf_freq.QuadPart;
+		time2 += (perf_time2.QuadPart - perf_time1.QuadPart) / (double) perf_freq.QuadPart;
 
 		uploadparams();
 		setfov();
@@ -241,6 +253,10 @@ void PointsEngine::render()
 	blit_to_screen(tdesc.Passes-1, COMHandles.postbuffer1tex);
 
 	CHECK(COMHandles.effect->End());
+
+	int time1cms = (int) (time1 * 100000.0);
+	int time2cms = (int) (time2 * 100000.0);
+	render_return = time1cms + (time2cms << 16);
 }
 
 void PointsEngine::drawprimitive(float r, float g, float b, float a, int index)

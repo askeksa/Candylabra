@@ -41,3 +41,5 @@ extern "C" {
 	extern D3DXMATRIXA16 proj;
 	extern char datafile[];
 }
+
+extern int render_return;
