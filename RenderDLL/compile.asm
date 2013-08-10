@@ -202,10 +202,11 @@ snip noteat
 	mov ebp, edx
 	sub ebp, byte 4
 .noteat_before_end:
-	cmp eax, byte 32
-	jge .oor_noteat
 	mul edx
-	fsub dword [_channelDeltas+eax+ebp]
+	add eax, ebp
+	cmp eax, 5000000*4
+	jge .oor_noteat
+	fsub dword [_channelDeltas+eax]
 .oor_noteat:
 
 snip mov_ebx
