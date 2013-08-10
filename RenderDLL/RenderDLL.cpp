@@ -138,8 +138,8 @@ extern "C" {
 	int numRows;
 	int timerFac,channelFac;
 	int channelDataLength;
-	float channelDeltas[32*16384];
-	int channelCounts[32*16384];
+	float channelDeltas[5000000];
+	int channelCounts[5000000];
 	unsigned char* notes;
 
 	bool create_effect() {
