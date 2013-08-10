@@ -23,6 +23,8 @@ using namespace std;
 int current_engine_id = -1;
 Engine *active_engine;
 
+int render_return;
+
 char effectfile[101];
 char syncfile[101];
 char datafile[101];
@@ -419,6 +421,8 @@ static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Po
 	RENDERDLL_API int __stdcall renderobj(char* prog, float* constants) {
 		if (!inited || !effect_valid) return 0;
 
+		render_return = 0;
+
 		program = prog;
 		compileTree(prog);
 		memcpy(constantPool, constants, sizeof(float)*256);
@@ -449,7 +453,7 @@ static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Po
 			COMHandles.device->Clear(2, hborders, D3DCLEAR_TARGET, 0xFF0000, 1.0f, 0);
 		}
 
-		return 0;
+		return render_return;
 	}
 
 

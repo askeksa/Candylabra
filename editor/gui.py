@@ -210,7 +210,8 @@ def intersectRect(r1, r2):
 
 
 class RenderInfo(object):
-    def __init__(self):
+    def __init__(self, window):
+        self.window = window
         self.scissor = None
 
     def addScissorRect(self, rect):
@@ -492,6 +493,7 @@ class Window(object):
         self.manager = InputManager()
         self.error = None
         self.pos = None
+        self.timers = []
 
         root.window = self
         root.calculateMinMax()
@@ -518,7 +520,7 @@ class Window(object):
             if self.quit:
                 break
 
-            info = RenderInfo()
+            info = RenderInfo(self)
             info.setScissorRect(None)
             self.root.prerender(info)
             d3d.clear()
@@ -545,6 +547,9 @@ class Window(object):
     def setTitle(self, title):
         self.title = title
 
+    def setTimers(self, timers):
+        self.timers = timers
+
     def setError(self, error):
         self.error = error
 
@@ -558,8 +563,9 @@ class Window(object):
         if self.error:
             titlestring = "Error: " + self.error
         else:
+            titlestring = "%s - %.1f fps" % (self.title, fps)
+            for timer in self.timers:
+                titlestring += "  %3d.%02d ms" % (timer / 100, timer % 100)
             if self.pos is not None:
-                titlestring = "%s - %.1f fps (%d,%d)" % ((self.title, fps) + self.pos)
-            else:
-                titlestring = "%s - %.1f fps" % (self.title, fps)
+                titlestring += "  (%d,%d)" % self.pos
         d3d.setWindow(x,y,w,h, unicode(titlestring))

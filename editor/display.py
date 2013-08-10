@@ -129,10 +129,19 @@ class MeshDisplay(Component):
             self.setBinding("time", max(0,self.timebar.area_pos/1000.) * (self.project.bpm / 60.0))
             
             oldrect = info.addScissorRect(self.pos + self.size)
-            windll.RenderDLL.renderobj(self.exported_program, self.exported_constants)
+            render_return = windll.RenderDLL.renderobj(self.exported_program, self.exported_constants)
             info.setScissorRect(oldrect)
 
             d3d.setState(d3dc.RS.CULLMODE, d3dc.RS.CULL.NONE)
+
+            timer0 = render_return & 0xffff
+            timer1 = (render_return >> 16) & 0xffff
+            timers = []
+            if timer0 != 0:
+                timers.append(timer0)
+            if timer1 != 0:
+                timers.append(timer1)
+            info.window.setTimers(timers)
 
     def handleMouseEvent(self, event, manager):
         if event.button == BUTTON_WHEELUP:
