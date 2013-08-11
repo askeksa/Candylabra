@@ -738,9 +738,12 @@ class Exporter(object):
     def exportexp(self, exp):
         id_regexp = re.compile('[a-zA-Z_][0-9a-zA-Z_]*')
         tokens_regexp = re.compile(
-            '\s+|({|}|\*|\/|%|#|\+|-|\^|\||\(|\)|\@)' # delimiters
+            '\s+|({|}|\*|\/|%|#|\+|-|\^|\(|\)|\@)' # delimiters
             )
-        operators = {'mat': [0xF1], 'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], 'abs': [0xF5], '^': [0xF6], '+': [0xF7], '-': [0xF8], '*': [0xF9], '/': [0xFA], '%': [0xFB], '@': [0xFC], '|': [0xFD], '#': [0xFE]}
+        operators = {
+            'mat': [0xF1], 'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], 'abs': [0xF5], 'log': [0xF6], 'exp': [0xF7],
+            '+': [0xF8], '-': [0xF9], '*': [0xFA], '/': [0xFB], '%': [0xFC], '@': [0xFD], '#': [0xFE],
+            '^': [0xF7, 0xFA, 0xF6] }
 
         def is_id(s):
             return id_regexp.match(s) != None
@@ -794,10 +797,13 @@ class Exporter(object):
         def factor():
             instructions = prim()
             tmp = lookahead()
-            while (tmp in ['^', '@', '|', '#']):
+            while (tmp in ['^', '@', '#']):
                 gettoken()
                 right = prim()
-                instructions = operators[tmp] + right + instructions
+                if tmp == '^':
+                    instructions = operators[tmp] + instructions + right
+                else:
+                    instructions = operators[tmp] + right + instructions
                 tmp = lookahead()
         
             return instructions

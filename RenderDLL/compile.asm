@@ -132,6 +132,7 @@ _treecode:
 	popa
 	ret
 
+	; Zero-operand operations
 snip random
 	mov eax, dword [_constantPool+4]
 	imul eax, 16307
@@ -142,6 +143,8 @@ snip random
 	fild word [esp]
 	fmul dword [_rand_scale]
 	pop eax
+
+	; One-operand operations
 snip mat
 	push eax
 	fistp dword [esp]
@@ -160,9 +163,11 @@ snip round
 	frndint
 snip abs
 	fabs
-snip pow
-	;; pow function - argh!
+snip log
+	fld1
+	fxch st1
 	fyl2x
+snip exp
 	fld1
 	fld st1
 	fprem
@@ -172,6 +177,8 @@ snip pow
 	faddp st1
 	fscale
 	fstp st1
+
+	; Two-operand operations
 snip add
 	faddp st1
 snip sub
@@ -272,7 +279,7 @@ compileExp:
 	call compileExp
 	pop eax
 
-	cmp al, _snip_id_pow
+	cmp al, _snip_id_add
 	jb .emit
 
 	push eax
