@@ -138,7 +138,8 @@ extern "C" {
 	int noteSamples;
 	int numChannels;
 	int numRows;
-	int timerFac,channelFac;
+	float timerFac,timerFacRec;
+	int channelFac;
 	int channelDataLength;
 	float channelDeltas[5000000];
 	int channelCounts[5000000];
@@ -183,7 +184,8 @@ extern "C" {
 		MemoryFile* mf = new MemoryFile(syncfile);
 		if (mf->ok()) {
 			int* ptr = (int*)mf->getPtr();
-			timerFac = *ptr++;
+			timerFac = (float) *ptr++;
+			timerFacRec = 1.0f / timerFac;
 			channelFac = *ptr++;
 			channelDataLength = *ptr++;
 			if (channelDataLength <= sizeof(channelDeltas))
