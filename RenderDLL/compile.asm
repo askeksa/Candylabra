@@ -132,6 +132,33 @@ _treecode:
 	popa
 	ret
 
+_noteat:
+	fld st0
+	fimul dword [_timerFac]
+	fsub dword [_half]
+	push eax
+	fistp dword [esp]
+	pop ebp
+	fxch st0,st1
+	push eax
+	fistp dword [esp]
+	pop eax
+
+	mov edx, [_channelFac]
+	shl ebp, byte 2
+	cmp ebp, edx
+	jl .noteat_before_end
+	mov ebp, edx
+	sub ebp, byte 4
+.noteat_before_end:
+	mul edx
+	add eax, ebp
+	cmp eax, 5000000*4
+	jge .oor_noteat
+	fsub dword [_channelDeltas+eax]
+.oor_noteat:
+	ret
+
 	; Zero-operand operations
 snip random
 	mov eax, dword [_constantPool+4]
@@ -191,30 +218,8 @@ snip mod
 	fprem
 	fstp st1
 snip noteat
-	fld st0
-	fimul dword [_timerFac]
-	fsub dword [_half]
-	push eax
-	fistp dword [esp]
-	pop ebp
-	fxch st0,st1
-	push eax
-	fistp dword [esp]
-	pop eax
-
-	mov edx, [_channelFac]
-	shl ebp, byte 2
-	cmp ebp, edx
-	jl .noteat_before_end
-	mov ebp, edx
-	sub ebp, byte 4
-.noteat_before_end:
-	mul edx
-	add eax, ebp
-	cmp eax, 5000000*4
-	jge .oor_noteat
-	fsub dword [_channelDeltas+eax]
-.oor_noteat:
+	mov eax, _noteat
+	call eax
 
 snip mov_ebx
 	mov ebx, 0
