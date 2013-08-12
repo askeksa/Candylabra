@@ -957,7 +957,7 @@ class Exporter(object):
             i += 1
             if inst > 0xF0:
                 i = skipexp(i)
-            if inst > 0xF5:
+            if inst > 0xF7:
                 i = skipexp(i)
             return i
 
