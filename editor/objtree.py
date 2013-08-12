@@ -800,10 +800,7 @@ class Exporter(object):
             while (tmp in ['^', '@', '#']):
                 gettoken()
                 right = prim()
-                if tmp == '^':
-                    instructions = operators[tmp] + instructions + right
-                else:
-                    instructions = operators[tmp] + right + instructions
+                instructions = operators[tmp] + instructions + right
                 tmp = lookahead()
         
             return instructions

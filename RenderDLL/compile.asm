@@ -9,6 +9,7 @@ extern _placecamera@0
 extern _channelDeltas
 extern _channelCounts
 extern _timerFac
+extern _timerFacRec
 extern _channelFac
 extern _nodecount
 extern _subexpcount
@@ -133,16 +134,15 @@ _treecode:
 	ret
 
 _noteat:
+	push eax
+	fistp dword [esp]
+	pop eax
+	fmul dword [_timerFac]
 	fld st0
-	fimul dword [_timerFac]
 	fsub dword [_half]
 	push eax
 	fistp dword [esp]
 	pop ebp
-	fxch st0,st1
-	push eax
-	fistp dword [esp]
-	pop eax
 
 	mov edx, [_channelFac]
 	shl ebp, byte 2
@@ -155,8 +155,35 @@ _noteat:
 	add eax, ebp
 	cmp eax, 5000000*4
 	jge .oor_noteat
-	fsub dword [_channelDeltas+eax]
+	fisub word [_channelDeltas+eax]
 .oor_noteat:
+	fmul dword [_timerFacRec]
+	ret
+
+_notecount:
+	push eax
+	fistp dword [esp]
+	pop eax
+	fmul dword [_timerFac]
+	fsub dword [_half]
+	push eax
+	fistp dword [esp]
+	pop ebp
+
+	mov edx, [_channelFac]
+	shl ebp, byte 2
+	cmp ebp, edx
+	jl .notecount_before_end
+	mov ebp, edx
+	sub ebp, byte 4
+.notecount_before_end:
+	mul edx
+	add eax, ebp
+	fldz
+	cmp eax, 5000000*4
+	jge .oor_notecount
+	fiadd word [_channelDeltas+2+eax]
+.oor_notecount:
 	ret
 
 	; Zero-operand operations
@@ -219,6 +246,9 @@ snip mod
 	fstp st1
 snip noteat
 	mov eax, _noteat
+	call eax
+snip notecount
+	mov eax, _notecount
 	call eax
 
 snip mov_ebx
