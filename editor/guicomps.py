@@ -123,14 +123,15 @@ class TextBevel(Bevel):
         return left_x, textwidth
 
     # Get string index of the character at the given screen x position
+    # Returns (index, left x screen pos, right x screen pos)
     def getCharAt(self, xpos):
         text_left_x, textwidth = self.getTextPosAndSize()
         left_x = text_left_x
         right_x = left_x + textwidth
         if xpos < left_x:
-            return -1
+            return (-1, self.pos[0], left_x)
         if xpos > right_x:
-            return len(self.text)
+            return (len(self.text), right_x, self.pos[0] + self.size[0])
         left_index = 0
         right_index = len(self.text)
         while (right_index - left_index > 1):
@@ -143,10 +144,9 @@ class TextBevel(Bevel):
             else:
                 right_index = mid_index
                 right_x = mid_x
-        return left_index
+        return left_index, left_x, right_x
 
-    # Get screen x position of the character at the given string index
-    # returns (leftx, rightx)
+    # Get screen x position of the left edge of the character at the given string index
     def getTextIndexPos(self, index):
         text_left_x, textwidth = self.getTextPosAndSize()
         return text_left_x + self.getFont().getTextSize(unicode(self.text[0:index]))[0]

@@ -713,10 +713,11 @@ class CreateButton(TextBevel):
 
 class ValueAdjuster(TextBevel, Draggable):
     def __init__(self, field):
-        TextBevel.__init__(self)
+        TextBevel.__init__(self, fontname = u"Courier New", fontsize = 15)
         Draggable.__init__(self, ORIENTATION_HORIZONTAL)
         self.field = field
         self.minsize = Brick.SIZE
+        self.editor = None
 
     def handleMouseEvent(self, event, manager):
         self.double = event.double
@@ -729,20 +730,29 @@ class ValueAdjuster(TextBevel, Draggable):
             self.handleHover(event, False)
 
         if self.status == Draggable.HOVER and event.buttonDown(BUTTON_RIGHT):
-            self.setIdle(event, manager)
-            tkroot.update()
-            tkroot.deiconify()
-            newvalue = tkSimpleDialog.askstring("Enter value",
-                                                self.getName(),
-                                                initialvalue=self.getValue(),
-                                                parent=tkroot)
-            tkroot.withdraw()
-            self.setValue(newvalue)
-            self.field.updateValueBar(self.field.active)
-            self.field.updateDisplay()
+            cursor, mark = self.getTextEditRange(event.x)
+            length_before = len(self.text)
+            self.text = self.getValue()
+            prefix_length = length_before - len(self.text)
+            cursor = max(0, cursor - prefix_length)
+            mark = max(0, mark - prefix_length)
+
+            self.editor = ValueAdjusterEditor(self, cursor, mark, manager)
+            manager.addMouseListener(self.editor)
+            manager.addKeyListener(self.editor)
             return None
 
         return event
+
+    def acceptEditedText(self, text):
+        self.setValue(text)
+        self.field.updateValueBar(self.field.active)
+        self.field.updateDisplay()
+
+    def detachEditor(self, manager):
+        manager.removeMouseListener(self.editor)
+        manager.removeKeyListener(self.editor)
+        self.editor = None
 
     def initDragging(self):
         self.doubleclicked = self.double
@@ -758,6 +768,170 @@ class ValueAdjuster(TextBevel, Draggable):
             else:
                 value_delta = delta * math.exp(-8-0.01*other)
                 self.setDragValue(self.orig_value + value_delta)
+
+    def render(self, info):
+        if self.editor:
+            block_range = (self.editor.rangeStart(), self.editor.rangeEnd(), 0xff808080)
+            cursor_range = (self.editor.cursor, self.editor.cursor, 0xffffffff)
+            self.setColorRanges([block_range, cursor_range])
+        TextBevel.render(self, info)
+
+    def getTextEditRange(self, x):
+        i,lx,rx = self.getCharAt(x)
+        if x > (lx + rx)/2:
+            i += 1
+        if i < 0:
+            i == 0
+        if i > len(self.text):
+            i = self.text
+        return i,i
+
+
+class ValueAdjusterEditor:
+    def __init__(self, adjuster, initial_cursor, initial_mark, manager):
+        self.adjuster = adjuster
+        self.cursor = initial_cursor
+        self.mark = initial_mark
+        self.manager = manager
+        self.original_text = adjuster.text
+        self.undo_stack = []
+        self.redo_stack = []
+
+    def rangeStart(self):
+        return min(self.cursor, self.mark)
+
+    def rangeEnd(self):
+        return max(self.cursor, self.mark)
+
+    def hasRange(self):
+        return self.cursor != self.mark
+
+    def handleMouseEvent(self, event, manager):
+        return None
+
+    def handleKeyEvent(self, event, manager):
+        if not event.direction == KEY_DOWN:
+            return None
+
+        text = self.adjuster.text
+        old_state = text, self.cursor, self.mark
+
+        # Commands
+        if event.keyHeld(d3dc.VK.CONTROL):
+            if event.code == ord('A'):
+                # Select all
+                self.cursor = len(text)
+                self.mark = 0
+            elif event.code == ord('C'):
+                # Copy
+                if self.hasRange():
+                    cliptext = text[self.rangeStart():self.rangeEnd()]
+                else:
+                    cliptext = text
+                tkroot.clipboard_clear()
+                tkroot.clipboard_append(cliptext)
+            elif event.code == ord('V'):
+                # Paste
+                cliptext = tkroot.selection_get(selection = "CLIPBOARD")
+                text = text[:self.rangeStart()] + cliptext + text[self.rangeEnd():]
+                self.cursor = self.rangeStart() + len(cliptext)
+                self.mark = self.cursor
+            elif event.code == ord('X'):
+                # Cut
+                if self.hasRange():
+                    cliptext = text[self.rangeStart():self.rangeEnd()]
+                    text = text[:self.rangeStart()] + text[self.rangeEnd():]
+                    self.cursor = self.rangeStart()
+                    self.mark = self.cursor
+                else:
+                    cliptext = text
+                    text = ""
+                    self.cursor = 0
+                    self.mark = self.cursor
+                tkroot.clipboard_clear()
+                tkroot.clipboard_append(cliptext)
+            elif event.code == ord('Y'):
+                # Redo
+                if len(self.redo_stack) > 0:
+                    self.undo_stack.append((text, self.cursor, self.mark))
+                    text, self.cursor, self.mark = self.redo_stack.pop()
+                    self.adjuster.text = text
+            elif event.code == ord('Z'):
+                # Undo
+                if len(self.undo_stack) > 0:
+                    self.redo_stack.append((text, self.cursor, self.mark))
+                    text, self.cursor, self.mark = self.undo_stack.pop()
+                    self.adjuster.text = text
+
+        # Editor terminators
+        elif event.code == d3dc.VK.RETURN:
+            self.adjuster.acceptEditedText(text)
+            if not event.keyHeld(d3dc.VK.SHIFT):
+                self.adjuster.detachEditor(manager)
+            return None
+        elif event.code == d3dc.VK.ESCAPE:
+            self.adjuster.acceptEditedText(self.original_text)
+            if not event.keyHeld(d3dc.VK.SHIFT):
+                self.adjuster.detachEditor(manager)
+            return None
+
+        # Navigation
+        elif event.code == d3dc.VK.LEFT:
+            if event.keyHeld(d3dc.VK.SHIFT):
+                self.cursor = max(0, self.cursor - 1)
+            else:
+                if self.hasRange():
+                    self.cursor = self.rangeStart()
+                else:
+                    self.cursor = max(0, self.cursor - 1)
+                self.mark = self.cursor
+        elif event.code == d3dc.VK.RIGHT:
+            if event.keyHeld(d3dc.VK.SHIFT):
+                self.cursor = min(self.cursor + 1, len(text))
+            else:
+                if self.hasRange():
+                    self.cursor = self.rangeEnd()
+                else:
+                    self.cursor = min(self.cursor + 1, len(text))
+                self.mark = self.cursor
+        elif event.code == d3dc.VK.HOME:
+            self.cursor = 0
+            if not event.keyHeld(d3dc.VK.SHIFT):
+                self.mark = self.cursor
+        elif event.code == d3dc.VK.END:
+            self.cursor = len(text)
+            if not event.keyHeld(d3dc.VK.SHIFT):
+                self.mark = self.cursor
+
+        # Deletion
+        elif event.code == d3dc.VK.BACK:
+            if self.hasRange():
+                text = text[:self.rangeStart()] + text[self.rangeEnd():]
+                self.cursor = self.rangeStart()
+                self.mark = self.cursor
+            elif self.cursor > 0:
+                text = text[:self.cursor-1] + text[self.cursor:]
+                self.cursor -= 1
+                self.mark = self.cursor
+        elif event.code == d3dc.VK.DELETE:
+            if self.hasRange():
+                text = text[:self.rangeStart()] + text[self.rangeEnd():]
+                self.cursor = self.rangeStart()
+                self.mark = self.cursor
+            elif self.cursor < len(text):
+                text = text[:self.cursor] + text[self.cursor+1:]
+
+        # Text input
+        elif event.char >= ord(' ') and event.char <= ord('~'):
+            text = text[:self.rangeStart()] + chr(event.char) + text[self.rangeEnd():]
+            self.cursor = self.rangeStart() + 1
+            self.mark = self.cursor
+
+        if text != self.adjuster.text:
+            self.undo_stack.append(old_state)
+            self.redo_stack = []
+            self.adjuster.text = text
+        return None
 
 
 class OptionAdjuster(ValueAdjuster):
@@ -798,6 +972,9 @@ class OptionAdjuster(ValueAdjuster):
     def stopDragging(self):
         self.orig_value = None
 
+    def getTextEditRange(self, x):
+        return len(self.text),0
+
 
 class ParamAdjuster(ValueAdjuster):
     def __init__(self, param, node, field):
@@ -820,7 +997,7 @@ class ParamAdjuster(ValueAdjuster):
             eq_pos = valuestr.find("=")
             if eq_pos != -1:
                 p_name = valuestr[0:eq_pos].strip()
-                value = valuestr[eq_pos+1:]
+                value = valuestr[eq_pos+1:].strip()
                 self.node.setParamName(p_index, p_name)
             try:
                 self.node.definitions[p_index].setExp(value)
@@ -887,7 +1064,7 @@ class ParamAdjuster(ValueAdjuster):
 
     def handleHover(self, event, hover):
         if hover:
-            i = self.getCharAt(event.x)
+            i,lx,rx = self.getCharAt(event.x)
             if i >= len(self.paramPrefix()) and i < len(self.text):
                 self.hilight = self.expandTextToken(i, floatflag = True, idflag = True)
                 return
@@ -899,6 +1076,13 @@ class ParamAdjuster(ValueAdjuster):
                         self.hilight = l,r,t
                         return
         self.hilight = None
+
+    def getTextEditRange(self, x):
+        if self.hilight:
+            l,r,t = self.hilight
+            return r+1,l
+        else:
+            return ValueAdjuster.getTextEditRange(self, x)
 
     def initDragValue(self):
         l,r,t = self.hilight
@@ -960,7 +1144,7 @@ class ParamAdjuster(ValueAdjuster):
             self.setColorRanges([(l,r+1,0xffe0e0e0)])
         else:
             self.setColorRanges([])
-        TextBevel.render(self, info)
+        ValueAdjuster.render(self, info)
 
 
 class ValueBar(Sequence):
