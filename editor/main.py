@@ -355,4 +355,4 @@ if __name__ == "__main__":
 
             quit -= 1
 
-    field.save(time.strftime("autosave_%Y-%m-%d_%H.%M.%S.ob"))
+    field.save(time.strftime("../autosave/autosave_%Y-%m-%d_%H.%M.%S.ob"))
