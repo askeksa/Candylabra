@@ -82,6 +82,20 @@ class TextBevel(Bevel):
         self.fontname = fontname
         self.fontsize = fontsize
         self.font = None
+        self.highlights = []
+
+    # list of (startindex,stopindex,color)
+    def setColorRanges(self,highlights):
+        if highlights is None:
+            highlights = []
+        self.highlights = []
+        for i0,i1,color in highlights:
+            x0 = self.getTextIndexPos(i0)
+            x1 = self.getTextIndexPos(i1)
+            if i0 == i1:
+                x0 -= 1
+                x1 += 1
+            self.highlights.append((x0,x1,color))
 
     def getFont(self):
         if not self.font:
@@ -96,6 +110,9 @@ class TextBevel(Bevel):
 
     def render(self, info):
         Bevel.render(self, info)
+        for x0,x1,color in self.highlights:
+            rect = (x0, self.pos[1]+2, x1-x0, self.size[1]-4)
+            d3d.clear(color, [rect])
         text = (unicode(self.text),) + self.pos + self.size + (0xff000000, FONT.CENTER | FONT.VCENTER)
         d3d.drawTexts(self.getFont(), [text])
 
@@ -106,15 +123,14 @@ class TextBevel(Bevel):
         return left_x, textwidth
 
     # Get string index of the character at the given screen x position
-    # returns (index, leftx, rightx)
     def getCharAt(self, xpos):
         text_left_x, textwidth = self.getTextPosAndSize()
         left_x = text_left_x
         right_x = left_x + textwidth
         if xpos < left_x:
-            return (-1, self.pos[0], left_x)
+            return -1
         if xpos > right_x:
-            return (-1, right_x, self.pos[0] + self.size[0])
+            return len(self.text)
         left_index = 0
         right_index = len(self.text)
         while (right_index - left_index > 1):
@@ -127,15 +143,13 @@ class TextBevel(Bevel):
             else:
                 right_index = mid_index
                 right_x = mid_x
-        return left_index, left_x, right_x
+        return left_index
 
     # Get screen x position of the character at the given string index
     # returns (leftx, rightx)
-    def getCharPos(self, index):
+    def getTextIndexPos(self, index):
         text_left_x, textwidth = self.getTextPosAndSize()
-        left_x = text_left_x + self.getFont().getTextSize(unicode(self.text[0:index]))[0]
-        right_x = text_left_x + self.getFont().getTextSize(unicode(self.text[0:index+1]))[0]
-        return left_x, right_x
+        return text_left_x + self.getFont().getTextSize(unicode(self.text[0:index]))[0]
 
 
 class Button(TextBevel):

@@ -854,7 +854,7 @@ class ParamAdjuster(ValueAdjuster):
                         left = left_i
                         right = right_i
         if maxmatch > 0:
-            return (left,right,self.getCharPos(left)[0],self.getCharPos(right)[1],self.text[left:right+1])
+            return (left,right,self.text[left:right+1])
         else:
             return None
 
@@ -887,21 +887,21 @@ class ParamAdjuster(ValueAdjuster):
 
     def handleHover(self, event, hover):
         if hover:
-            i,lx,rx = self.getCharAt(event.x)
-            if i >= len(self.paramPrefix()):
+            i = self.getCharAt(event.x)
+            if i >= len(self.paramPrefix()) and i < len(self.text):
                 self.hilight = self.expandTextToken(i, floatflag = True, idflag = True)
                 return
             else:
                 token = self.expandTextToken(len(self.text)-1, floatflag = True, idflag = False)
                 if token is not None:
-                    l,r,lx,rx,t = token
+                    l,r,t = token
                     if l == len(self.paramPrefix()):
-                        self.hilight = l,r,lx,rx,t
+                        self.hilight = l,r,t
                         return
         self.hilight = None
 
     def initDragValue(self):
-        l,r,lx,rx,t = self.hilight
+        l,r,t = self.hilight
         p = len(self.paramPrefix())
         try:
             self.orig_value = float(str(self.value)[l-p:r-p+1])
@@ -914,7 +914,7 @@ class ParamAdjuster(ValueAdjuster):
                 if i < len(self.text) and self.text[i] == '-':
                     i += 1
                 if i < len(self.text):
-                    left,right,leftx,rightx,tt = self.expandTextToken(i, floatflag = True, idflag = False)
+                    left,right,tt = self.expandTextToken(i, floatflag = True, idflag = False)
                     if left is not None and right is not None:
                         if not (right < len(self.text)-1 and self.text[right+1] in ['^', '@', '|', '#']):
                             left = r+2
@@ -924,24 +924,22 @@ class ParamAdjuster(ValueAdjuster):
                 self.setValue(self.value[:l-p] + "(" + self.value[l-p:r-p+1] + "*1)" + self.value[r-p+1:])
                 left = r+3
                 right = left
-        self.hilight = (left,right,self.getCharPos(left)[0],self.getCharPos(right)[1],self.text[left:right+1])
+        self.hilight = (left,right,self.text[left:right+1])
         return float(str(self.value)[left-p:right-p+1])
 
     def setDragValue(self, value):
         self.drag_value = value
-        l,r,lx,rx,t = self.hilight
+        l,r,t = self.hilight
         p = len(self.paramPrefix())
         value = ot.float2string(value)
         old_value = str(self.value)
         self.setValue(old_value[:l-p] + value + old_value[r-p+1:])
         r = l + len(value)-1
-        lx = self.getCharPos(l)[0]
-        rx = self.getCharPos(r)[1]
         t = value
-        self.hilight = l,r,lx,rx,t
+        self.hilight = l,r,t
 
     def stopDragging(self):
-        l,r,lx,rx,t = self.hilight
+        l,r,t = self.hilight
         p = len(self.paramPrefix())
         if self.drag_value == 1.0 and l > 0 and self.text[l-1] == '*':
             if not (r < len(self.text)-1 and self.text[r+1] in ['^', '@', '|', '#']):
@@ -950,20 +948,19 @@ class ParamAdjuster(ValueAdjuster):
                 # If parenthesized id is left, remove parentheses
                 token = self.expandTextToken(l-2, floatflag = False, idflag = True)
                 if token is not None:
-                    l,r,lx,rx,t = token
+                    l,r,t = token
                     if l > 0 and self.text[l-1] == '(' and r < len(self.text)-1 and self.text[r+1] == ')':
                         self.setValue(self.value[:l-p-1] + t + self.value[r-p+2:])
         
         self.orig_value = None
 
     def render(self, info):
-        TextBevel.render(self, info)
         if self.hilight:
-            l,r,lx,rx,t = self.hilight
-            text = (unicode(t), lx, self.pos[1], self.size[0], self.size[1], 0xff000000, FONT.LEFT | FONT.VCENTER)
-            rect = (lx, self.pos[1]+2, rx-lx, self.size[1]-4)
-            d3d.clear(0xffe0e0e0, [rect])
-            d3d.drawTexts(self.getFont(), [text])
+            l,r,t = self.hilight
+            self.setColorRanges([(l,r+1,0xffe0e0e0)])
+        else:
+            self.setColorRanges([])
+        TextBevel.render(self, info)
 
 
 class ValueBar(Sequence):
