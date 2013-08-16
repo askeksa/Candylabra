@@ -781,9 +781,9 @@ class ValueAdjuster(TextBevel, Draggable):
         if x > (lx + rx)/2:
             i += 1
         if i < 0:
-            i == 0
+            i = 0
         if i > len(self.text):
-            i = self.text
+            i = len(self.text)
         return i,i
 
 
