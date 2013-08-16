@@ -57,16 +57,23 @@ global _treecode
 
 section snips text align=1
 	_snips:
-section snipoffs data align=1
-	_snipoffs:
+section snipsize data align=1
+	_snipsizes:
+%xdefine _snip_prev 0
+%define _snip_notfirst 0
 
 %macro snip 1
 	section snips
 	_snip_%1:
-	section snipoffs
-	_snipoff_%1:
-		db _snip_%1-_snips
-	_snip_id_%1 equ _snipoff_%1-_snipoffs
+	section snipsize
+	_snip_off_%1 equ _snip_%1-_snips
+	%if _snip_notfirst
+		db _snip_off_%1-_snip_prev
+	%endif
+	%define _snip_notfirst 1
+	_snipsize_%1:
+	%xdefine _snip_prev _snip_off_%1
+	_snip_id_%1 equ _snipsize_%1-_snipsizes
 	section snips
 %endmacro
 
@@ -80,19 +87,23 @@ section emitcode text align=1
 emitCode@4:
 	; al = snip ID
 	; edi = dest
-	push esi
 
-	movzx eax, al
-	mov eax, [_snipoffs+eax]
-	sub ah, al
-	movzx ecx, ah
-	movzx eax, al
-	lea esi, [_snips+eax]
+	push esi
+	xor edx, edx
+	xor ecx, ecx
+	mov esi, _snips
+.loop:
+	add esi, ecx
+	movzx ecx, byte [_snipsizes+edx]
+	inc edx
+	cmp dl, al
+	jle .loop
 	rep movsb
-	mov eax, [esp+8]
+	pop esi
+
+	mov eax, [esp+4]
 	add dword [edi-4], eax
 
-	pop esi
 	ret 4
 
 %define NUMTICKSlog 12
@@ -133,7 +144,68 @@ _treecode:
 	popa
 	ret
 
-_noteat:
+	; Zero-operand operations
+snip random
+	mov eax, dword [_constantPool+4]
+	imul eax, 16307
+	add eax, byte 17
+	mov [_constantPool+4], eax
+	shr eax, 14
+	push eax
+	fild word [esp]
+	fmul dword [_rand_scale]
+	pop eax
+
+	; One-operand operations
+snip mat
+	push eax
+	fistp dword [esp]
+	pop ebp
+	comcall	dword [comhandle(matrix_stack)], GetTop
+	fld dword [eax + ebp*4]
+snip sin
+	fmul	dword [_param_scales+0*4]
+	fsin
+snip round
+	frndint
+snip abs
+	fabs
+snip log
+	fld1
+	fxch st1
+	fyl2x
+snip exp
+	fld1
+	fld st1
+	fprem
+	fstp st1
+	f2xm1
+	fld1
+	faddp st1
+	fscale
+	fstp st1
+
+	; Two-operand operations
+snip min
+	fcomi st0, st1
+	fcmovnb st0, st1
+	fstp st1
+snip max
+	fcomi st0, st1
+	fcmovb st0, st1
+	fstp st1
+snip add
+	faddp st1
+snip sub
+	fsubp st1
+snip mul
+	fmulp st1
+snip div
+	fdivp st1
+snip mod
+	fprem
+	fstp st1
+snip noteat
 	push eax
 	fistp dword [esp]
 	pop eax
@@ -158,9 +230,7 @@ _noteat:
 	fisub word [_channelDeltas+eax]
 .oor_noteat:
 	fmul dword [_timerFacRec]
-	ret
-
-_notecount:
+snip notecount
 	push eax
 	fistp dword [esp]
 	pop eax
@@ -184,72 +254,6 @@ _notecount:
 	jge .oor_notecount
 	fiadd word [_channelDeltas+2+eax]
 .oor_notecount:
-	ret
-
-	; Zero-operand operations
-snip random
-	mov eax, dword [_constantPool+4]
-	imul eax, 16307
-	add eax, byte 17
-	mov [_constantPool+4], eax
-	shr eax, 14
-	push eax
-	fild word [esp]
-	fmul dword [_rand_scale]
-	pop eax
-
-	; One-operand operations
-snip mat
-	push eax
-	fistp dword [esp]
-	pop ebp
-	comcall	dword [comhandle(matrix_stack)], GetTop
-	fld dword [eax + ebp*4]
-snip sin
-	fmul	dword [_param_scales+0*4]
-	fsin
-snip clamp
-	fldz
-	fcomi st0, st1
-	fcmovb st0, st1 ; move original value if greater than 0
-	fstp st1
-snip round
-	frndint
-snip abs
-	fabs
-snip log
-	fld1
-	fxch st1
-	fyl2x
-snip exp
-	fld1
-	fld st1
-	fprem
-	fstp st1
-	f2xm1
-	fld1
-	faddp st1
-	fscale
-	fstp st1
-
-	; Two-operand operations
-snip add
-	faddp st1
-snip sub
-	fsubp st1
-snip mul
-	fmulp st1
-snip div
-	fdivp st1
-snip mod
-	fprem
-	fstp st1
-snip noteat
-	mov eax, _noteat
-	call eax
-snip notecount
-	mov eax, _notecount
-	call eax
 
 snip mov_ebx
 	mov ebx, 0
@@ -300,21 +304,21 @@ compileExp:
 	inc dword [_subexpcount]
 	xor eax, eax
 	lodsb
-	cmp al, 0xF0
+	cmp al, 0xEF
 	jae .not_constant
 		shl eax, 2
 		push eax
 		emit fld_const
 		ret
 .not_constant:
-	sub al, 0xF0
+	sub al, 0xEF
 	je .emit
 
 	push eax
 	call compileExp
 	pop eax
 
-	cmp al, _snip_id_add
+	cmp al, _snip_id_min
 	jb .emit
 
 	push eax

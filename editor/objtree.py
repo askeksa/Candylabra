@@ -738,12 +738,18 @@ class Exporter(object):
     def exportexp(self, exp):
         id_regexp = re.compile('[a-zA-Z_][0-9a-zA-Z_]*')
         tokens_regexp = re.compile(
-            '\s+|({|}|\*|\/|%|#|\+|-|\^|\(|\)|\@)' # delimiters
+            '\s+|({|}|\*|\/|%|#|\+|-|\^|\(|\)|\@|,)' # delimiters
             )
         operators = {
-            'mat': [0xF1], 'sin': [0xF2], 'clamp':[0xF3], 'round':[0xF4], 'abs': [0xF5], 'log': [0xF6], 'exp': [0xF7],
+            'mat': [0xF0], 'sin': [0xF1], 'round':[0xF2], 'abs': [0xF3], 'log': [0xF4], 'exp': [0xF5],
+            'min': [0xF6], 'max': [0xF7],
             '+': [0xF8], '-': [0xF9], '*': [0xFA], '/': [0xFB], '%': [0xFC], '@': [0xFD], '#': [0xFE],
-            '^': [0xF7, 0xFA, 0xF6] }
+            '^': [0xF5, 0xFA, 0xF4], 'clamp': [0xF7, self.getConstIndex(0.0, self.node)] }
+
+        arguments = {
+            'mat': 1, 'sin': 1, 'clamp': 1, 'round': 1, 'abs': 1, 'log': 1, 'exp': 1,
+            'min': 2, 'max': 2
+        }
 
         def is_id(s):
             return id_regexp.match(s) != None
@@ -781,9 +787,21 @@ class Exporter(object):
         
                 if tmp == '(':          #function invokation
                     assert gettoken() == '('
-                    e = expression()
+                    args = []
+                    while lookahead() != ')':
+                        args.append(expression())
+                        sep = lookahead()
+                        if sep == ',':
+                            assert gettoken() == ','
+                        elif sep != ')':
+                            raise Exception("syntax error in expression: " + sep)
                     assert gettoken() == ')'
-                    return operators[tok] + e
+                    if len(args) != arguments[tok]:
+                        raise Exception("Wrong number of arguments to function " + tok)
+                    res = operators[tok]
+                    for e in args:
+                        res = res + e
+                    return res
                 else:
                     #variable reference or float constant
                     if not is_id(tok):
@@ -791,7 +809,7 @@ class Exporter(object):
                             tok = '0'+tok
                         tok = float(tok)
                     elif tok == 'rand':
-                        return [0xF0]
+                        return [0xEF]
                     return [self.getConstIndex(tok, self.node)]
     
         def factor():
@@ -961,9 +979,9 @@ class Exporter(object):
         def skipexp(i):
             inst = instructions[i]
             i += 1
-            if inst > 0xF0:
+            if inst > 0xEF:
                 i = skipexp(i)
-            if inst > 0xF7:
+            if inst > 0xF5:
                 i = skipexp(i)
             return i
 
