@@ -836,13 +836,22 @@ class Exporter(object):
             raise Exception("syntax error in expression")
         self.out += instructions
 
-    def marklabels(self, node):
+    def marklabels(self, node, ancestors):
         if node in self.visited:
+            if node in ancestors:
+                raise ExportException(node, "Cycle without repeat")
             self.labeled.add(node)
         else:
             self.visited.add(node)
-            for c in node.children:
-                self.marklabels(c)
+            if isinstance(node, Repeat):
+                for c in node.children:
+                    self.marklabels(c, [])
+            else:
+                ancestors.append(node)
+                for c in node.children:
+                    if c != node:
+                        self.marklabels(c, ancestors)
+                ancestors.pop()
     
     def exportnode(self, node):
         outpos = len(self.out)
@@ -873,7 +882,7 @@ class Exporter(object):
         self.out = []
         self.visited = set()
         self.labeled = set()
-        self.marklabels(self.tree)
+        self.marklabels(self.tree, [])
         self.todo = []
         self.labelmap = {}
         self.varcount = {}
