@@ -27,7 +27,7 @@ float4 p(S s) : COLOR {
 	float c = abs(s.c.a) + EDGE_VALUE;
 	float ratio = c / EDGE_VALUE;
 	float f = log2(ratio)/0.25;
-	float a = saturate(c * exp2(-f*d));
+	float a = saturate(c * exp2(-f*d) - EDGE_VALUE);
 	//a += EDGE_VALUE*sin(d*1024);
 	return float4(s.c.xyz * a, s.c.a < 0.0 ? 0.0 : a);
 }
