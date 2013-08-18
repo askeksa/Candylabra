@@ -8,7 +8,6 @@ static void check(char *n, int r) {
 		char buff[512];
 		sprintf_s(buff, 512, "%s returned %s\n", n, DXGetErrorString(r));
 		MessageBox(0, buff, 0, 0);
-		ExitProcess(1);
 	}
 }
 #define CHECK(s) check(#s, s)
@@ -19,7 +18,6 @@ static void checkcompile(char *statement, int error) {
 		char buff[2048];
 		sprintf_s(buff, 2048, "%s\nfailed with error %s\n%s", statement, DXGetErrorString(error), errors->GetBufferPointer());
 		MessageBox(0, buff, 0, 0);
-		ExitProcess(1);
 	}
 }
 #define CHECKC(s) checkcompile(#s, s)
