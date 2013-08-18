@@ -427,6 +427,9 @@ class BrickField(Container):
                    for b in self.children
                    if not ignoreselected or not b in self.selected)
 
+    def bottomBrickPos(self):
+        return max(b.gridpos[1] for b in self.children) * Brick.HEIGHT
+
 #    def handleKeyEvent(self, event, manager):
 #        if event.direction == KEY_DOWN:
 #            tkMessageBox.showerror("Key", "%d" % event.code)
