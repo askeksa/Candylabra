@@ -206,8 +206,14 @@ if __name__ == "__main__":
     scrollfield.weight = 2.0
     adjuster = Adjuster()
 
-    scrollfield.addHotkey(d3dc.VK.NEXT, (lambda e,m : scrollbarh.jump(1) if e.keyHeld(d3dc.VK.SHIFT) else scrollbarv.jump(1)))
-    scrollfield.addHotkey(d3dc.VK.PRIOR, (lambda e,m : scrollbarh.jump(-1) if e.keyHeld(d3dc.VK.SHIFT) else scrollbarv.jump(-1)))
+    scrollfield.addHotkey(d3dc.VK.NEXT, (lambda e,m : scrollbarh.jump(1) if e.keyHeld(d3dc.VK.SHIFT)
+        else scrollbarv.jump(1)))
+    scrollfield.addHotkey(d3dc.VK.PRIOR, (lambda e,m : scrollbarh.jump(-1) if e.keyHeld(d3dc.VK.SHIFT)
+        else scrollbarv.jump(-1)))
+    scrollfield.addHotkey(d3dc.VK.END, (lambda e,m : scrollbarh.jump(99) if e.keyHeld(d3dc.VK.SHIFT)
+        else scrollbarv.setAreaPos(field.bottomBrickPos()+20-scrollfield.size[1])))
+    scrollfield.addHotkey(d3dc.VK.HOME, (lambda e,m : scrollbarh.jump(-99) if e.keyHeld(d3dc.VK.SHIFT)
+        else scrollbarv.jump(-99)))
 
     buttonpane = Sequence(ORIENTATION_VERTICAL)
     buttonpane.weight = 0.001
