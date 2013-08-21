@@ -228,8 +228,6 @@ class SaveTransform(ObjectNode):
         return 1
 
     def export(self, exporter):
-        if len(self.children) == 0:
-            raise ExportException(self, "Fix node with no children")
         if len(self.children) == 1:
             exporter.out += [OP_SAVETRANS]
             return self.children
