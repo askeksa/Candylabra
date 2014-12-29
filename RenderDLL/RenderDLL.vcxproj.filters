@@ -48,6 +48,9 @@
     <ClCompile Include="RenderDLL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="engine_uboat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="engine_dx11particles.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -110,6 +113,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="engine_dx11particles.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="engine_uboat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -25,7 +25,9 @@ struct COMStruct {
 	LPDIRECT3DTEXTURE9			postbuffer2tex;
 	LPDIRECT3DSURFACE9			postbuffer2;
 	LPDIRECT3DSURFACE9			renderdepthbuffer;
+	LPDIRECT3DTEXTURE9			renderdepthbuffertex;
 	LPDIRECT3DSURFACE9			cubedepth;
+	LPDIRECT3DSURFACE9			dummysurface;
 	LPDIRECT3DVOLUMETEXTURE9	randomtex;
 	LPDIRECT3DVOLUMETEXTURE9	textures[N_OBJECTS]; // Object shape textures
 	LPDIRECT3DVOLUMETEXTURE9	dtextures[N_OBJECTS]; // Detail textures
