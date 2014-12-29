@@ -272,6 +272,17 @@ if __name__ == "__main__":
     buttonpane.addChild(button_localdef)
     buttonpane.addChild(filler)
 
+    filler = Component()
+    filler.weight = 1000000
+
+    ENGCOL = 0x609090
+    enginepane = Sequence(ORIENTATION_VERTICAL)
+    enginepane.weight = 0.001
+    for id, name in enumerate(get_engines()):
+        engine_button = Button((lambda eid : (lambda : set_engine(eid)))(id), name, color = ENGCOL)
+        enginepane.addChild(engine_button)
+    enginepane.addChild(filler)
+
     bottombuttons = Sequence(ORIENTATION_HORIZONTAL)
     bottombuttons.weight = 0.001
 
@@ -287,8 +298,6 @@ if __name__ == "__main__":
     filler = Component()
     filler.weight = 1000000
 
-    ENGCOL = 0x609090
-    engine_buttons = [Button((lambda eid : (lambda : set_engine(eid)))(id), name, color = ENGCOL) for (id, name) in enumerate(get_engines())]
     PARCOL = 0x807070
     button_effect = Button(set_effect, "effect", color = PARCOL)
     button_music = Button(set_music, "music", color = PARCOL)
@@ -304,8 +313,6 @@ if __name__ == "__main__":
     bottombuttons.addChild(button_export_compiler)
     bottombuttons.addChild(button_export_amiga)
     bottombuttons.addChild(filler)
-    for b in engine_buttons:
-        bottombuttons.addChild(b)
     bottombuttons.addChild(button_effect)
     bottombuttons.addChild(button_music)
     bottombuttons.addChild(button_bpm)
@@ -322,6 +329,7 @@ if __name__ == "__main__":
     hseq.addChild(buttonpane)
     hseq.addChild(scrollfield)
     hseq.addChild(scrollbarv)
+    hseq.addChild(enginepane)
     edit_seq = Sequence(ORIENTATION_VERTICAL)
     #edit_seq.addChild(timepane)
     edit_seq.addChild(hseq)
