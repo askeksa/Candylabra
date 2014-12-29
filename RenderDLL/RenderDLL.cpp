@@ -17,6 +17,7 @@
 #include "engine_ikadalawampu.h"
 #include "engine_points.h"
 #include "engine_dx11particles.h"
+#include "engine_uboat.h"
 
 using namespace std;
 
@@ -240,12 +241,12 @@ extern "C" {
 		D3DXMatrixPerspectiveFovLH(&proj, constantPool[2], aspect, CAMERA_NEAR_Z, CAMERA_FAR_Z);
 	}
 
-static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Points|DX11P|";
+static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Points|DX11P|UBoat|";
 
 	RENDERDLL_API int __stdcall getengines(char *buf)
 	{
 		strcpy(buf, enginenames);
-		return 7;
+		return 8;
 	}
 
 	void init_engine(int engine_id)
@@ -272,6 +273,9 @@ static const char enginenames[] = "Atrium|TextObject|Haumea|Eris|Ikadalawampu|Po
 			break;
 		case 6:
 			active_engine = new DX11ParticlesEngine();
+			break;
+		case 7:
+			active_engine = new UBoatEngine();
 			break;
 		}
 		current_engine_id = engine_id;

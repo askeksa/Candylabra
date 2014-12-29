@@ -125,6 +125,7 @@
     <ClCompile Include="engine_ikadalawampu.cpp" />
     <ClCompile Include="engine_points.cpp" />
     <ClCompile Include="engine_textobj.cpp" />
+    <ClCompile Include="engine_uboat.cpp" />
     <ClCompile Include="Marching.cpp" />
     <ClCompile Include="MemoryFile.cpp" />
     <ClCompile Include="RenderDLL.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="engine_ikadalawampu.h" />
     <ClInclude Include="engine_points.h" />
     <ClInclude Include="engine_textobj.h" />
+    <ClInclude Include="engine_uboat.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="Marching.h" />
     <ClInclude Include="MemoryFile.h" />
