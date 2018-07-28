@@ -54,6 +54,9 @@
     <ClCompile Include="engine_dx11particles.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="engine_sprites.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Asm Include="compile.asm">
@@ -63,6 +66,9 @@
       <Filter>Source Files</Filter>
     </Asm>
     <Asm Include="interpret.asm">
+      <Filter>Source Files</Filter>
+    </Asm>
+    <Asm Include="random.asm">
       <Filter>Source Files</Filter>
     </Asm>
   </ItemGroup>
@@ -116,6 +122,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="engine_uboat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="engine_sprites.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

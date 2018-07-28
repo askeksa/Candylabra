@@ -32,6 +32,8 @@ struct COMStruct {
 	LPDIRECT3DVOLUMETEXTURE9	textures[N_OBJECTS]; // Object shape textures
 	LPDIRECT3DVOLUMETEXTURE9	dtextures[N_OBJECTS]; // Detail textures
 	LPD3DXMESH					meshes[N_OBJECTS];
+	LPDIRECT3DTEXTURE9          sprites[N_OBJECTS];
+	D3DXIMAGE_INFO              sprite_info[N_OBJECTS];
 	LPDIRECT3DCUBETEXTURE9		cubetex[N_LIGHTS];
 };
 

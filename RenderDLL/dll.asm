@@ -11,12 +11,16 @@ extern __imp__D3DXWeldVertices@28
 extern __imp__D3DXComputeNormals@8
 extern _constantPool
 
+extern _Oidos_RandomData
+
 global _rand_scale
 global _mentor_synth_random@0
 global _amiga_random@0
+global _oidos_random@0
 
 section realdata data align=4
 _rand_scale: dd 0.000030517578125	;1/32768
+_oidos_rand_scale: dd 0x30000000	;2^-31
 
 section rand code align=1
 _mentor_synth_random@0:
@@ -41,4 +45,14 @@ _amiga_random@0:
 	fild word [esp]
 	fmul dword [_rand_scale]
 	pop eax
+	ret
+
+_oidos_random@0:
+	mov ecx, _Oidos_RandomData
+	mov eax, [ecx]
+	xadd [_constantPool+4], eax
+	shl eax, 5
+	shr eax, 14
+	fild dword [ecx + eax*4]
+	fmul dword [_oidos_rand_scale]
 	ret

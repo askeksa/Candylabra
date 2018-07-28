@@ -36,6 +36,7 @@ extern "C" {
 	void setfov();
 	float __stdcall mentor_synth_random();
 	float __stdcall amiga_random();
+	float __stdcall oidos_random();
 	extern D3DXMATRIXA16 proj;
 	extern char datafile[];
 }

@@ -113,6 +113,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -124,6 +125,7 @@
     <ClCompile Include="engine_haumea.cpp" />
     <ClCompile Include="engine_ikadalawampu.cpp" />
     <ClCompile Include="engine_points.cpp" />
+    <ClCompile Include="engine_sprites.cpp" />
     <ClCompile Include="engine_textobj.cpp" />
     <ClCompile Include="engine_uboat.cpp" />
     <ClCompile Include="Marching.cpp" />
@@ -134,6 +136,7 @@
     <Asm Include="compile.asm" />
     <Asm Include="dll.asm" />
     <Asm Include="interpret.asm" />
+    <Asm Include="random.asm" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="comcall.h" />
@@ -145,6 +148,7 @@
     <ClInclude Include="engine_haumea.h" />
     <ClInclude Include="engine_ikadalawampu.h" />
     <ClInclude Include="engine_points.h" />
+    <ClInclude Include="engine_sprites.h" />
     <ClInclude Include="engine_textobj.h" />
     <ClInclude Include="engine_uboat.h" />
     <ClInclude Include="main.h" />

@@ -6,6 +6,7 @@ extern _constantPool
 extern _drawprimitive@20
 extern _placelight@20
 extern _placecamera@0
+extern _frandom@0;
 extern _channelDeltas
 extern _channelCounts
 extern _timerFac
@@ -146,15 +147,7 @@ _treecode:
 
 	; Zero-operand operations
 snip random
-	mov eax, dword [_constantPool+4]
-	imul eax, 16307
-	add eax, byte 17
-	mov [_constantPool+4], eax
-	shr eax, 14
-	push eax
-	fild word [esp]
-	fmul dword [_rand_scale]
-	pop eax
+	; Dummy, not used in tool
 
 	; One-operand operations
 snip mat
@@ -312,7 +305,7 @@ compileExp:
 		ret
 .not_constant:
 	sub al, 0xEF
-	je .emit
+	je .random
 
 	push eax
 	call compileExp
@@ -328,7 +321,12 @@ compileExp:
 	push byte 0
 	call emitCode@4
 	ret
-
+.random
+	mov eax, _frandom@0
+	sub eax, edi
+	push eax
+	emit call
+	ret
 
 section comptree text align=1
 
