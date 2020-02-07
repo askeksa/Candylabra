@@ -1212,27 +1212,15 @@ class PlayButton(Button):
 
 
 class EditorRoot(Root):
-    def __init__(self, alt_children):
+    def __init__(self, child_funs):
         Root.__init__(self)
-        self.alt_children = alt_children
-        self.alt_active = False
-        self.normal_seq = []
+        self.child_funs = child_funs
+        self.child_index = 0
+        self.addChild(child_funs[0]())
         self.addHotkey(d3dc.VK.ESCAPE, (lambda event, manager : self.switch()))
 
     def switch(self):
-        seq = self.children[0]
-        if not self.alt_active:
-            self.normal_seq = list(seq.children)
-            for c in self.normal_seq:
-                c.remove()
-            for c in self.alt_children:
-                seq.addChild(c)
-            self.alt_active = True
-        else:
-            for c in self.alt_children:
-                c.remove()
-            for c in self.normal_seq:
-                seq.addChild(c)
-            self.alt_active = False
-            self.normal_seq = []
+        self.child_index = (self.child_index + 1) % len(self.child_funs)
+        self.children[0].remove()
+        self.addChild(self.child_funs[self.child_index]())
             

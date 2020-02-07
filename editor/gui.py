@@ -351,6 +351,13 @@ class Container(Component):
         if update:
             self._update()
 
+    def clearChildren(self, update=True):
+        for child in self.children:
+            child.parent = None
+        self.children = []
+        if update:
+            self._update()
+
     def _update(self):
         self.updateMinMax()
         if self.parent:
@@ -523,7 +530,7 @@ class Window(object):
             info = RenderInfo(self)
             info.setScissorRect(None)
             self.root.prerender(info)
-            d3d.clear()
+            d3d.clear(0xFF404040)
             d3d.beginScene()
             info.setScissorRect((0,0) + self.root.size)
             try:

@@ -215,8 +215,21 @@ if __name__ == "__main__":
     scrollfield.addHotkey(d3dc.VK.HOME, (lambda e,m : scrollbarh.jump(-99) if e.keyHeld(d3dc.VK.SHIFT)
         else scrollbarv.jump(-99)))
 
-    buttonpane = Sequence(ORIENTATION_VERTICAL)
-    buttonpane.weight = 0.001
+    filler = Component()
+    filler.weight = 1000000
+
+    buttonpanes = Sequence(ORIENTATION_HORIZONTAL)
+    buttonpane1 = Sequence(ORIENTATION_VERTICAL)
+    buttonpane2 = Sequence(ORIENTATION_VERTICAL)
+    filepane = Sequence(ORIENTATION_VERTICAL)
+    parampane = Sequence(ORIENTATION_VERTICAL)
+    enginepane = Sequence(ORIENTATION_VERTICAL)
+    buttonpanes.addChild(filler)
+    buttonpanes.addChild(buttonpane1)
+    buttonpanes.addChild(buttonpane2)
+    buttonpanes.addChild(filepane)
+    buttonpanes.addChild(parampane)
+    buttonpanes.addChild(enginepane)
 
     button_item = CreateButton("Object", (lambda : ot.Item(0)), field, 'O')
     button_dynitem = CreateButton("Dyn object", (lambda : ot.DynamicItem()), field, 'D')
@@ -244,47 +257,35 @@ if __name__ == "__main__":
     button_globaldef = CreateButton("Globaldef", (lambda : ot.GlobalDefinition("v")), field, 'G')
     button_localdef = CreateButton("Localdef", (lambda : ot.LocalDefinition("v")), field, 'L')
 
-    filler = Component()
-    filler.weight = 1000000
-
-    buttonpane.addChild(button_item)
-    buttonpane.addChild(button_dynitem)
-    buttonpane.addChild(button_light)
-    buttonpane.addChild(button_camera)
-    buttonpane.addChild(button_identity)
-    buttonpane.addChild(button_link)
-    buttonpane.addChild(button_fix)
-    buttonpane.addChild(button_move)
-    buttonpane.addChild(button_scale)
-    buttonpane.addChild(button_rotx)
-    buttonpane.addChild(button_roty)
-    buttonpane.addChild(button_rotz)
+    buttonpane1.addChild(button_item)
+    buttonpane1.addChild(button_dynitem)
+    buttonpane1.addChild(button_light)
+    buttonpane1.addChild(button_camera)
+    buttonpane1.addChild(button_fix)
+    buttonpane1.addChild(button_move)
+    buttonpane1.addChild(button_scale)
+    buttonpane1.addChild(button_rotx)
+    buttonpane1.addChild(button_roty)
+    buttonpane1.addChild(button_rotz)
     #buttonpane.addChild(button_gmove)
     #buttonpane.addChild(button_gscale)
     #buttonpane.addChild(button_grotx)
     #buttonpane.addChild(button_groty)
     #buttonpane.addChild(button_grotz)
-    buttonpane.addChild(button_repeat)
-    buttonpane.addChild(button_loop)
-    buttonpane.addChild(button_cond)
-    buttonpane.addChild(button_if)
-    buttonpane.addChild(button_globaldef)
-    buttonpane.addChild(button_localdef)
-    buttonpane.addChild(filler)
-
-    filler = Component()
-    filler.weight = 1000000
+    buttonpane2.addChild(button_identity)
+    buttonpane2.addChild(button_link)
+    buttonpane2.addChild(button_repeat)
+    buttonpane2.addChild(button_loop)
+    buttonpane2.addChild(button_cond)
+    buttonpane2.addChild(button_if)
+    buttonpane2.addChild(button_globaldef)
+    buttonpane2.addChild(button_localdef)
 
     ENGCOL = 0x609090
-    enginepane = Sequence(ORIENTATION_VERTICAL)
     enginepane.weight = 0.001
     for id, name in enumerate(get_engines()):
         engine_button = Button((lambda eid : (lambda : set_engine(eid)))(id), name, color = ENGCOL)
         enginepane.addChild(engine_button)
-    enginepane.addChild(filler)
-
-    bottombuttons = Sequence(ORIENTATION_HORIZONTAL)
-    bottombuttons.weight = 0.001
 
     FBCOL = 0x806060
     button_load = Button(load, "load", color = FBCOL)
@@ -295,9 +296,6 @@ if __name__ == "__main__":
     button_export_compiler = Button((lambda : export(lambda exporter : exporter.export_for_compiler())), "export comp", color = FBCOL)
     button_export_amiga = Button((lambda : export(lambda exporter : exporter.export_amiga(), swap_endian = True)), "export amiga", color = FBCOL)
 
-    filler = Component()
-    filler.weight = 1000000
-
     PARCOL = 0x807070
     button_effect = Button(set_effect, "effect", color = PARCOL)
     button_music = Button(set_music, "music", color = PARCOL)
@@ -305,48 +303,62 @@ if __name__ == "__main__":
     button_sync = Button(set_sync, "sync", color = PARCOL)
     button_data = Button(set_data, "data", color = PARCOL)
 
-    bottombuttons.addChild(button_load)
-    bottombuttons.addChild(button_insert)
-    bottombuttons.addChild(button_save)
-    bottombuttons.addChild(button_saveas)
-    bottombuttons.addChild(button_export)
-    bottombuttons.addChild(button_export_compiler)
-    bottombuttons.addChild(button_export_amiga)
-    bottombuttons.addChild(filler)
-    bottombuttons.addChild(button_effect)
-    bottombuttons.addChild(button_music)
-    bottombuttons.addChild(button_bpm)
-    bottombuttons.addChild(button_sync)
-    bottombuttons.addChild(button_data)
+    filepane.addChild(button_load)
+    filepane.addChild(button_insert)
+    filepane.addChild(button_save)
+    filepane.addChild(button_saveas)
+    filepane.addChild(button_export)
+    filepane.addChild(button_export_compiler)
+    filepane.addChild(button_export_amiga)
 
+    parampane.addChild(button_effect)
+    parampane.addChild(button_music)
+    parampane.addChild(button_bpm)
+    parampane.addChild(button_sync)
+    parampane.addChild(button_data)
 
-    #buttonscroll = Scrollbar(ORIENTATION_VERTICAL)
-    #buttonfield = Scrollable(buttonscroll)
-    #buttonfield.addChild(buttonpane)
+    hscroll = Sequence(ORIENTATION_VERTICAL)
+    hscroll.addChild(scrollfield)
+    hscroll.addChild(scrollbarh)
+    vscroll = Sequence(ORIENTATION_HORIZONTAL)
+    vscroll.addChild(hscroll)
+    vscroll.addChild(scrollbarv)
 
-    hseq = Sequence(ORIENTATION_HORIZONTAL)
-    vseq = Sequence(ORIENTATION_VERTICAL)
-    hseq.addChild(buttonpane)
-    hseq.addChild(scrollfield)
-    hseq.addChild(scrollbarv)
-    hseq.addChild(enginepane)
-    edit_seq = Sequence(ORIENTATION_VERTICAL)
-    #edit_seq.addChild(timepane)
-    edit_seq.addChild(hseq)
+    display_and_buttons = Sequence(ORIENTATION_VERTICAL)
+    display_and_buttons.weight = 0.01
 
-    disp_seq = Sequence(ORIENTATION_VERTICAL)
-    disp_seq.addChild(display)
-    disp_seq.addChild(timepane)
-    
-    vseq.addChild(disp_seq)
-    vseq.addChild(adjuster)
-    vseq.addChild(edit_seq)
-    vseq.addChild(valuebar)
-    vseq.addChild(scrollbarh)
-    vseq.addChild(bottombuttons)
+    def layout_with_editor():
+        filler = Component()
+        filler.weight = 0.01
+        buttonpanes.weight = 0.01
 
-    root = EditorRoot([disp_seq, valuebar])
-    root.addChild(vseq)
+        display_and_buttons.addChild(display)
+        display_and_buttons.addChild(filler)
+        display_and_buttons.addChild(buttonpanes)
+
+        hseq = Sequence(ORIENTATION_HORIZONTAL)
+        hseq.addChild(vscroll)
+        hseq.addChild(adjuster)
+        hseq.addChild(display_and_buttons)
+
+        vseq = Sequence(ORIENTATION_VERTICAL)
+        vseq.addChild(hseq)
+        vseq.addChild(valuebar)
+        vseq.addChild(timepane)
+
+        return vseq
+
+    def layout_fullscreen_effect():
+        display_and_buttons.clearChildren(update=False)
+
+        vseq = Sequence(ORIENTATION_VERTICAL)
+        vseq.addChild(display)
+        vseq.addChild(valuebar)
+        vseq.addChild(timepane)
+
+        return vseq
+
+    root = EditorRoot([layout_with_editor, layout_fullscreen_effect])
 
     window = Window(u"ObjectEditTool", root)
     window.maximize()
