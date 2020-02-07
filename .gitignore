@@ -1,0 +1,10 @@
+/autosave/*.ob
+/editor/*.pyc
+/editor/RenderDLL.dll
+.vs/
+Debug/
+Release/
+ipch/
+*.sdf
+*.suo
+*.user
